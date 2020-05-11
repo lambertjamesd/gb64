@@ -1,0 +1,2 @@
+
+void runTests(char* testOutput);
