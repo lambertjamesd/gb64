@@ -13,7 +13,7 @@ struct Z80State {
     int state;
 };
 
-extern int runZ80CPU(struct Z80State* state, unsigned char* memory, int runLength);
+extern int runZ80CPU(struct Z80State* state, void** memoryMap, int cyclesToRun);
 
 #define GB_MEMORY_MAP_SIZE  0x10000
 extern struct Z80State gZ80;

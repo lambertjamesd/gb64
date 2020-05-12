@@ -166,7 +166,11 @@ game(void)
 					++cstring;
 				}
 
-				++cstring;
+				if (*cstring)
+				{
+					++cstring;
+				}
+
 				y += 20;
 			}
 		}

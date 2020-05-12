@@ -22,10 +22,11 @@
 
 .set ADDR, $s0
 .set VAL,  $s1
+.set TMP2,  $s2
 
 .set CPUState, $a0
 .set MemoryStart, $a1
-.set InstructionCount, $a2
+.set CycleCount, $a2
 
 .set Param0, $a3
 
@@ -46,8 +47,14 @@
 .eqv H_FLAG, 0x20
 .eqv C_FLAG, 0x10
 
-.eqv STACK_SIZE, 0x4
+.eqv STACK_SIZE, 0x14
 .eqv ST_RA, 0x0
+.eqv ST_CYCLES_REQUESTED, 0x4
+.eqv ST_S0, 0x8
+.eqv ST_S1, 0xC
+.eqv ST_S2, 0x10
+
+.eqv CYCLES_PER_INSTR, 0x1
 
 .macro clear_flags flags
     andi GB_F, GB_F, %lo(flags)
@@ -61,7 +68,11 @@
 .balign 4 
 runZ80CPU:
     addi $sp, $sp, -STACK_SIZE
-    sw $ra, ST_RA($sp)
+    sw $ra, ST_RA($sp) # save return address
+    sw CycleCount, ST_CYCLES_REQUESTED($sp) # save the original cycles to run 
+    sw $s0, ST_S0($sp) # save whatever these are
+    sw $s1, ST_S1($sp) # save whatever these are
+    sw $s2, ST_S2($sp) # save whatever these are
 
     lbu GB_A, CPU_STATE_A(CPUState)
     lbu GB_F, CPU_STATE_F(CPUState)
@@ -76,139 +87,221 @@ runZ80CPU:
     lhu GB_SP, CPU_STATE_SP(CPUState)
     lhu GB_PC, CPU_STATE_PC(CPUState)
 
-    j GB_FINISH_RUN
-    nop
-    # saveReturnAddress
-    # load registers from CPUState
-
 DECODE_NEXT:
+    blez CycleCount, GB_BREAK_LOOP
+    nop
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
-    # la $at, GB_NOP
-    lui $at, %hi(GB_NOP)
-    ori $at, $at, %lo(GB_NOP)
+    nop
+
+    la $at, GB_NOP # load start of jump table
+    sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
     add $ra, $at, $v0
     jr $ra
-    nop
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR
+    #################
+    # Each entry in the jump table needs
+    # to be 8 instructions apart
+    # any under must be padded with nops
 GB_NOP: # start of jump table
     j DECODE_NEXT
     nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
 GB_LD_BC_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
-    nop
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     jal READ_NEXT_INSTRUCTION
     addi GB_B, $v0, 0 # store B
     j DECODE_NEXT
     addi GB_C, $v0, 0 # store C
+    nop
+    nop
 GB_LD_BC_A:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     add VAL, GB_A, 0 # write the value to store
     sll ADDR, GB_B, 8 # write upper address
     j GB_DO_WRITE # call store subroutine
-    ori ADDR, GB_C, 0 # write address to store
+    ori ADDR, GB_C, 0 # write lower address
+    nop
+    nop
+    nop
 GB_INC_BC:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     addi GB_C, GB_C, 1 # incement the register
     srl $at, GB_C, 8
     andi GB_C, GB_C, 0xFF # keep at 8 bits
     add GB_B, GB_B, $at # add carry bit
     j DECODE_NEXT
     andi GB_B, GB_B, 0xFF # keep at 8 bits
+    nop
 GB_INC_B:
     jal GB_INC # call increment
     addi Param0, GB_B, 0 # move register to call parameter
     j DECODE_NEXT
     addi GB_B, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
 GB_DEC_B:
     jal GB_DEC # call decrement high bit
     addi Param0, GB_B, 0 # move register to call parameter
     j DECODE_NEXT
     addi GB_B, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
 GB_LD_B_D8:
     jal READ_NEXT_INSTRUCTION # read immediate value
-    nop
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
     addi GB_B, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
 GB_RLCA:
     jal GB_RLC_IMPL # do RLC
     addi Param0, GB_A, 0 # store A into param
     j DECODE_NEXT
     addi GB_A, Param0, 0 # store result back into A
+    nop
+    nop
+    nop
+    nop
 GB_LD_A16_SP:
     jal READ_NEXT_INSTRUCTION # read immediate value
-    nop
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 4 # update cycles run
     jal READ_NEXT_INSTRUCTION # read immediate value
     sll GB_SP, $v0 #store upper address
     j DECODE_NEXT
     ori GB_SP, $v0, 0 #store lower address
+    nop
+    nop
 GB_ADD_HL_BC:
-    add $at, GB_H, GB_B # add upper order bits
-    sll $at, $at, 8 # shift upper order bits
-    add $at, $at, GB_L # add lower order bits
-    add $at, $at, GB_C 
-    andi GB_L, $at, 0xFF # store lower order bits
-    srl GB_H, $at, 8 # store higher order bits
-    j DECODE_NEXT
-    andi GB_H, GB_H, 0xFF # keep higher order bits at 8 bits
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll Param0, GB_B, 8 # load high order bits
+    j _ADD_TO_HL
+    or Param0, Param0, GB_C # load low order bits
+    nop
+    nop
+    nop
+    nop
 GB_LD_A_BC:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     sll ADDR, GB_B, 8 # load upper address
     jal GB_DO_READ # call read instruction
     ori ADDR, GB_C, 0 # load lower address
     j DECODE_NEXT
     addi GB_A, $v0, 0 # store result into a
+    nop
+    nop
 GB_DEC_BC:
-    addi GB_C, GB_C, -1
-    sra $at, GB_C, 8
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_C, GB_C, -1 # decrement C
+    sra $at, GB_C, 8 # shift carry
+    add GB_B, GB_B, $at  # add carry to b
+    andi GB_C, GB_C, 0xFF # mask C
     j DECODE_NEXT
-    add GB_B, GB_B, $at
+    andi GB_B, GB_B, 0xFF # mask B
+    nop
 GB_INC_C:
     jal GB_INC # call increment
     addi Param0, GB_C, 0 # move register to call parameter
     j DECODE_NEXT
     addi GB_C, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
 GB_DEC_C:
     jal GB_DEC # call decrement high bit
     addi Param0, GB_C, 0 # move register to call parameter
     j DECODE_NEXT
     addi GB_C, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
 GB_LD_C_D8:
     jal READ_NEXT_INSTRUCTION # read immediate value
-    nop
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
     addi GB_C, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
 GB_RRCA:
     jal GB_RRC_IMPL # call rotate
     addi Param0, GB_A, 0 # move register to call parameter
     j DECODE_NEXT
     addi GB_A, Param0, 0 # store paramter back
+    nop
+    nop
+    nop
+    nop
 GB_STOP:
     addi $at, $zero, 1
+    j GB_BREAK_LOOP # exit early
     sw $at, CPU_STATE_STOPPED(CPUState)
-    j DECODE_NEXT
-    addi InstructionCount, $zero, 0
+    nop
+    nop
+    nop
+    nop
+    nop
 
 ######################
 # Return instructions left to run
 ######################
-GB_FINISH_RUN:
-    lw $ra, ST_RA($sp)
-    addi $sp, $sp, STACK_SIZE
+GB_BREAK_LOOP:
+    lw $v0, ST_CYCLES_REQUESTED($sp) # retrieve original cycles requested
+    sub $v0, $v0, CycleCount # calculate and return the number of cycles run
+_GB_EXIT_EARLY:
+    sb GB_A, CPU_STATE_A(CPUState)
+    sb GB_F, CPU_STATE_F(CPUState)
+    sb GB_B, CPU_STATE_B(CPUState)
+    sb GB_C, CPU_STATE_C(CPUState)
+
+    sb GB_D, CPU_STATE_D(CPUState)
+    sb GB_E, CPU_STATE_E(CPUState)
+    sb GB_H, CPU_STATE_H(CPUState)
+    sb GB_L, CPU_STATE_L(CPUState)
+
+    sh GB_SP, CPU_STATE_SP(CPUState)
+    sh GB_PC, CPU_STATE_PC(CPUState)
+    
+    lw $s0, ST_S0($sp) # restore whatever these are
+    lw $s1, ST_S1($sp) # restore whatever these are
+    lw $s2, ST_S2($sp) # restore whatever these are
+    lw $ra, ST_RA($sp) # load return address
     jr $ra
-    addi $v0, GB_PC, 0
+    addi $sp, $sp, STACK_SIZE
 
 ######################
 # Writes VAL to ADDR
 ######################
 
 GB_DO_WRITE:
-    lui $at, 0xFFFF
-    # first check if address is in shadow ram (0xE000-0xFDFF)
-    addi $at, $at, 0x2000 
-    add $at, ADDR, $at # ADDR - 0xE000
-    bltz $at, _GB_DO_WRITE
-    addi $at, $at, -0X1E00 # ADDR - 0xFE00
-    bgtz $at, _GB_DO_WRITE
+    addiu $at, $zero, 0x8000
+    sub $at, ADDR, $at
+    bgez $at, _GB_DO_WRITE # if ADDR >= 0x8000 just write
+    nop 
+    # todo do bank switching
+    j DECODE_NEXT
     nop
-    addi ADDR, ADDR, -0x2000 # shift the address into working ram
 _GB_DO_WRITE:
-    add ADDR, ADDR, MemoryStart # use address relative to emulator memory
+    srl $at, ADDR, 9 # load bank in $at
+    andi ADDR, ADDR, 0x1FF # keep offset in ADDR
+    sll $at, $at, 2 # word align the memory map offset
+    add $at, $at, MemoryStart # lookup start of bank in array at MemoryStart
+    lw $at, 0($at) # load start of memory bank
+    add ADDR, ADDR, $at # use address relative to memory bank
     j DECODE_NEXT
     sb VAL, 0(ADDR) # store the byte
     
@@ -217,19 +310,14 @@ _GB_DO_WRITE:
 ######################
 
 GB_DO_READ:
-    lui $at, 0xFFFF
-    # first check if address is in shadow ram (0xE000-0xFDFF)
-    addi $at, $at, 0x2000 
-    add $at, ADDR, $at # ADDR - 0xE000
-    bltz $at, _GB_DO_WRITE
-    addi $at, $at, -0X1E00 # ADDR - 0xFE00
-    bgtz $at, _GB_DO_WRITE
-    nop
-    addi ADDR, ADDR, -0x2000 # shift the address into working ram
-_GB_DO_READ:
-    add ADDR, ADDR, MemoryStart # use address relative to emulator memory
+    srl $at, ADDR, 9 # load bank in $at
+    andi ADDR, ADDR, 0x1FF # keep offset in ADDR
+    sll $at, $at, 2 # word align the memory map offset
+    add $at, $at, MemoryStart # lookup start of bank in array at MemoryStart
+    lw $at, 0($at) # load start of memory bank
+    add ADDR, ADDR, $at # use address relative to memory bank
     jr $ra
-    lbu $v0, 0(ADDR)
+    lbu $v0, 0(ADDR) # load the byte
 
 #######################
 # Increments the high byte of Param0
@@ -325,6 +413,34 @@ _GB_RRC_IMPL_IS_ZERO:
     jr $ra
     set_flags Z_FLAG # set Z_FLAG
 
+
+#######################
+# Adds Param0 to HL
+#######################
+
+_ADD_TO_HL:
+    add GB_L, GB_L, Param0 # add to L
+    srl $at, GB_L, 8 # get upper bits
+    andi GB_L, GB_L, 0xFF # mask to 8 bits
+    add Param0, GB_H, $at # add upper bits to h
+
+    xor $at, Param0, $at # determine half carry bit
+    xor $at, GB_H, $at
+
+    addi GB_H, Param0, 0 # store final result into GB_H
+
+    andi $at, $at, 0x10 # mask carry bit
+    sll $at, $at, 1 # move carry bit into H flag position
+    clear_flags ~N_FLAG
+    or GB_F, GB_F, $at # set half bit
+
+    srl $at, GB_H, 4 # shift carry bit to C flag position
+    andi $at, $at, 0x10 # mask carry bit
+    or GB_F, GB_F, $at # set carry git
+    j DECODE_NEXT
+    andi GB_F, GB_F, 0xFF # mask to 8 bits
+
+
 #######################
 # Reads the byte at PC
 # increments the program counter
@@ -333,7 +449,6 @@ _GB_RRC_IMPL_IS_ZERO:
 
 READ_NEXT_INSTRUCTION:
     # read at PC, increment PC, return value
-    add $v0, GB_PC, MemoryStart
-    lbu $v0, 0($v0)
-    jr $ra
+    addi ADDR, GB_PC, 0
+    j GB_DO_READ
     addi GB_PC, GB_PC, 1
