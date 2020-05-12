@@ -97,7 +97,7 @@ int testLD_BC_A(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
 {
     int run;
 
-    z80->a = 63; z80->f = 0xF0; z80->b = 0x1; z80->c = 0x5;
+    z80->a = 63; z80->f = 0xF0; z80->b = 0x81; z80->c = 0x5;
     z80->d = 4; z80->e = 5; z80->h = 6; z80->l = 7;
     z80->pc = 0; z80->sp = 0;
 
@@ -105,12 +105,8 @@ int testLD_BC_A(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
 
     run = runZ80CPU(z80, memoryMap, 1);
 
-    sprintf("ADDR: %d", run);
-
-    return 0;
-
     if (
-        !testZ80STate("LD BC A", testOutput, z80, 63, 0xF0, 1, 5, 4, 5, 6, 7, 1, 0) ||
+        !testZ80STate("LD BC A", testOutput, z80, 63, 0xF0, 0x81, 5, 4, 5, 6, 7, 1, 0) ||
         !testInt("LD BC A run result", testOutput, run, 2) ||
         !testInt("LD BC A stored value", testOutput, memory[0x15], 63))
     {
@@ -135,9 +131,9 @@ int runTests(char* testOutput) {
     initializeZ80(&z80);
 
     if (
-        !testNOP(&z80, memoryMap, memory, testOutput) ||
-        !testLD_BC_d16(&z80, memoryMap, memory, testOutput) ||
-        //!testLD_BC_A(&z80, memoryMap, memory, testOutput) ||
+        // !testNOP(&z80, memoryMap, memory, testOutput) ||
+        // !testLD_BC_d16(&z80, memoryMap, memory, testOutput) ||
+        !testLD_BC_A(&z80, memoryMap, memory, testOutput) ||
         0)
     {
         return 0;

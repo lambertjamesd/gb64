@@ -125,7 +125,7 @@ GB_LD_BC_A:
     add VAL, GB_A, 0 # write the value to store
     sll ADDR, GB_B, 8 # write upper address
     j GB_DO_WRITE # call store subroutine
-    ori ADDR, GB_C, 0 # write lower address
+    or ADDR, ADDR, GB_C # write lower address
     nop
     nop
     nop
