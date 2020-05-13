@@ -57,11 +57,11 @@
 .eqv CYCLES_PER_INSTR, 0x1
 
 .macro clear_flags flags
-    andi GB_F, GB_F, %lo(flags)
+    andi GB_F, GB_F, %lo(~(\flags))
 .endm
 
 .macro set_flags flags
-    ori GB_F, GB_F, flags
+    ori GB_F, GB_F, \flags
 .endm
 
 .global runZ80CPU 
@@ -178,9 +178,9 @@ GB_LD_A16_SP:
     jal READ_NEXT_INSTRUCTION # read immediate value
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 4 # update cycles run
     jal READ_NEXT_INSTRUCTION # read immediate value
-    sll GB_SP, $v0 #store upper address
+    sll GB_SP, $v0, 8 #store upper address
     j DECODE_NEXT
-    ori GB_SP, $v0, 0 #store lower address
+    or GB_SP, GB_SP, $v0 #store lower address
     nop
     nop
 GB_ADD_HL_BC:
@@ -327,7 +327,7 @@ GB_INC:
     addi Param0, Param0, 0x1
     andi Param0, Param0, 0xFF # keep register at 8 bits
     bne Param0, $zero, _GB_INC_CHECK_HALF
-    clear_flags ~N_FLAG
+    clear_flags Z_FLAG | N_FLAG
     jr $ra
     set_flags Z_FLAG | H_FLAG # set ZH flags
 
@@ -340,7 +340,7 @@ _GB_INC_CHECK_HALF:
 
 _GB_INC_DONE:
     jr $ra
-    clear_flags ~H_FLAG # clear H flag
+    clear_flags H_FLAG # clear H flag
 
 #######################
 # Decrements the high byte of Param0
@@ -352,7 +352,7 @@ GB_DEC:
     bne Param0, $zero, _GB_DEC_CHECK_HALF
     set_flags N_FLAG # set N flag
 
-    clear_flags ~H_FLAG # clear H flag
+    clear_flags H_FLAG # clear H flag
     jr $ra
     set_flags Z_FLAG # set Z flag
 
@@ -360,9 +360,9 @@ _GB_DEC_CHECK_HALF:
     andi $at, Param0, 0x3 # check if h flag should be set
     addi $at, $at, -0x3
     bne $at, $zero, _GB_DEC_DONE
-    nop
+    clear_flags Z_FLAG
     jr $ra
-    clear_flags ~H_FLAG # clear H flag
+    clear_flags H_FLAG # clear H flag
 
 _GB_DEC_DONE:
     jr $ra
@@ -375,20 +375,16 @@ _GB_DEC_DONE:
 
 GB_RLC_IMPL:
     beq Param0, $zero, _GB_RLC_IMPL_IS_ZERO
+    andi GB_F, GB_F, 0x0 # clear all flags
     sll Param0, Param0, 1 # shift the bit once
 
     srl $at, Param0, 8 # shift carry bit back
     or Param0, Param0, $at # put rotated bit back
     sll $at, $at, 4 # shift carry bit into C_FLAG position
-    andi GB_F, GB_F, 0x0 # clear flags
-    set_flags $at # set C_FLAG
+    or GB_F, GB_F, $at # set C_FLAG
+_GB_RLC_IMPL_IS_ZERO:
     jr $ra
     andi Param0, Param0, 0xFF # keep param 8 bits
-
-_GB_RLC_IMPL_IS_ZERO:
-    andi GB_F, GB_F, 0x0 # clear all flags
-    jr $ra
-    set_flags Z_FLAG # set Z_FLAG
 
 #######################
 # Rotates Param0 1 bit left and 
@@ -406,7 +402,7 @@ GB_RRC_IMPL:
     sll $at, $at, 4 # shift carry bit into C_FLAG position
     andi GB_F, GB_F, 0x0 # clear flags
     jr $ra
-    set_flags $at # set C_FLAG
+    or GB_F, GB_F, $at # set C_FLAG
 
 _GB_RRC_IMPL_IS_ZERO:
     andi GB_F, GB_F, 0x0 # clear all flags
@@ -431,7 +427,7 @@ _ADD_TO_HL:
 
     andi $at, $at, 0x10 # mask carry bit
     sll $at, $at, 1 # move carry bit into H flag position
-    clear_flags ~N_FLAG
+    clear_flags N_FLAG
     or GB_F, GB_F, $at # set half bit
 
     srl $at, GB_H, 4 # shift carry bit to C flag position

@@ -26,9 +26,9 @@ ASFLAGS         = -mabi=32
 N64LIB          = -lultra_d
 endif
 
-APP =		bin/game.out
+APP =		bin/gb.out
 
-TARGETS =	bin/game.n64
+TARGETS =	bin/gb.n64
 
 TEXHFILES =	
 
