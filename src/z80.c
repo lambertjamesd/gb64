@@ -4,7 +4,7 @@ struct Z80State gZ80;
 // 16K memory map
 unsigned char gbMemory[GB_MEMORY_MAP_SIZE];
 
-extern void zeroMemory(unsigned char* memory, int size)
+void zeroMemory(unsigned char* memory, int size)
 {
     int* asInt;
 
@@ -25,10 +25,10 @@ extern void zeroMemory(unsigned char* memory, int size)
     }
 }
 
-extern void initializeZ80(struct Z80State* state)
+void initializeZ80(struct Z80State* state)
 {
     state->a = 0; state->f = 0; state->b = 0; state->c = 0;
     state->d = 0; state->e = 0; state->h = 0; state->l = 0;
     state->sp = 0; state->pc = 0;
-    state->state = 0;
+    state->stopReason = STOP_REASON_NONE;
 }

@@ -32,7 +32,7 @@
 #include "static.h"
 #include "controller.h"
 #include "font_ext.h"
-#include "src/z80_test.h"
+#include "src/test/z80_test.h"
 
 /*
  * Task header.

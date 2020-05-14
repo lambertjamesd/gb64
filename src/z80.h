@@ -1,4 +1,12 @@
 
+enum STOP_REASON {
+    STOP_REASON_NONE,
+    STOP_REASON_STOP,
+    STOP_REASON_HALT,
+    STOP_REASON_INTERRUPT_RET,
+    STOP_REASON_ERROR,
+};
+
 struct Z80State {
     unsigned char a;
     unsigned char f;
@@ -10,7 +18,9 @@ struct Z80State {
     unsigned char l;
     unsigned short sp;
     unsigned short pc;
-    int state;
+    unsigned char stopReason;
+    unsigned char unused0;
+    unsigned short unused1;
 };
 
 extern int runZ80CPU(struct Z80State* state, void** memoryMap, int cyclesToRun);

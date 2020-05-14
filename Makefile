@@ -36,7 +36,9 @@ HFILES =	$(TEXHFILES) boot.h game.h controller.h font.h font_ext.h \
 		letters_img.h static.h
 
 CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
-	src/z80_test.c                \
+	src/test/z80_test.c                \
+	src/test/z80_tests_0.c                \
+	src/test/z80_tests_1.c                \
 	src/z80.c 
 
 S_FILES = asm/CPU.s

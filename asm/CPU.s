@@ -40,7 +40,7 @@
 .eqv CPU_STATE_L, 0x7
 .eqv CPU_STATE_SP, 0x8
 .eqv CPU_STATE_PC, 0xA
-.eqv CPU_STATE_STOPPED, 0xC
+.eqv CPU_STATE_STOP_REASON, 0xC
 
 .eqv Z_FLAG, 0x80
 .eqv N_FLAG, 0x40
@@ -55,6 +55,12 @@
 .eqv ST_S2, 0x10
 
 .eqv CYCLES_PER_INSTR, 0x1
+
+.eqv STOP_REASON_NONE, 0x0
+.eqv STOP_REASON_STOP, 0x1
+.eqv STOP_REASON_HALT, 0x2
+.eqv STOP_REASON_INTERRUPT_RET, 0x3
+.eqv STOP_REASON_ERROR, 0x4
 
 .macro clear_flags flags
     andi GB_F, GB_F, %lo(~(\flags))
@@ -86,6 +92,9 @@ runZ80CPU:
 
     lhu GB_SP, CPU_STATE_SP(CPUState)
     lhu GB_PC, CPU_STATE_PC(CPUState)
+    
+    addi $at, $zero, STOP_REASON_NONE
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
 
 DECODE_NEXT:
     blez CycleCount, GB_BREAK_LOOP
@@ -102,6 +111,7 @@ DECODE_NEXT:
     # Each entry in the jump table needs
     # to be 8 instructions apart
     # any under must be padded with nops
+#### 0x0X
 GB_NOP: # start of jump table
     j DECODE_NEXT
     nop
@@ -196,7 +206,7 @@ GB_LD_A_BC:
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     sll ADDR, GB_B, 8 # load upper address
     jal GB_DO_READ # call read instruction
-    ori ADDR, GB_C, 0 # load lower address
+    or ADDR, ADDR, GB_C # load lower address
     j DECODE_NEXT
     addi GB_A, $v0, 0 # store result into a
     nop
@@ -246,12 +256,85 @@ GB_RRCA:
     nop
     nop
     nop
+#### 0x1X
 GB_STOP:
-    addi $at, $zero, 1
+    jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
+    nop
+    addi $at, $zero, STOP_REASON_STOP
     j GB_BREAK_LOOP # exit early
-    sw $at, CPU_STATE_STOPPED(CPUState)
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
     nop
     nop
+    nop
+GB_LD_DE_D16:
+    jal READ_NEXT_INSTRUCTION # read immedate values
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    jal READ_NEXT_INSTRUCTION
+    addi GB_D, $v0, 0 # store D
+    j DECODE_NEXT
+    addi GB_E, $v0, 0 # store E
+    nop
+    nop
+GB_LD_DE_A:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    add VAL, GB_A, 0 # write the value to store
+    sll ADDR, GB_D, 8 # write upper address
+    j GB_DO_WRITE # call store subroutine
+    or ADDR, ADDR, GB_E # write lower address
+    nop
+    nop
+    nop
+GB_INC_DE:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_E, GB_E, 1 # incement the register
+    srl $at, GB_E, 8
+    andi GB_E, GB_E, 0xFF # keep at 8 bits
+    add GB_D, GB_D, $at # add carry bit
+    j DECODE_NEXT
+    andi GB_D, GB_D, 0xFF # keep at 8 bits
+    nop
+GB_INC_D:
+    jal GB_INC # call increment
+    addi Param0, GB_D, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_D, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_DEC_D:
+    jal GB_DEC # call decrement high bit
+    addi Param0, GB_D, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_D, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_D8:
+    jal READ_NEXT_INSTRUCTION # read immediate value
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j DECODE_NEXT
+    addi GB_D, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
+GB_RLA:
+    jal GB_RL_IMPL # do RLC
+    addi Param0, GB_A, 0 # store A into param
+    j DECODE_NEXT
+    addi GB_A, Param0, 0 # store result back into A
+    nop
+    nop
+    nop
+    nop
+GB_JA:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
+    lb $v0, 0(ADDR) # load the byte again, but signed this time
+    j DECODE_NEXT
+    add GB_PC, GB_PC, $v0
     nop
     nop
     nop
@@ -375,16 +458,15 @@ _GB_DEC_DONE:
 
 GB_RLC_IMPL:
     beq Param0, $zero, _GB_RLC_IMPL_IS_ZERO
-    andi GB_F, GB_F, 0x0 # clear all flags
     sll Param0, Param0, 1 # shift the bit once
-
     srl $at, Param0, 8 # shift carry bit back
     or Param0, Param0, $at # put rotated bit back
-    sll $at, $at, 4 # shift carry bit into C_FLAG position
-    or GB_F, GB_F, $at # set C_FLAG
+    andi Param0, Param0, 0xFF # keep param 8 bits
+    jr $ra
+    sll GB_F, $at, 4 # shift carry bit into C_FLAG position
 _GB_RLC_IMPL_IS_ZERO:
     jr $ra
-    andi Param0, Param0, 0xFF # keep param 8 bits
+    andi GB_F, $zero, Z_FLAG # set Z_FLAG
 
 #######################
 # Rotates Param0 1 bit left and 
@@ -397,15 +479,31 @@ GB_RRC_IMPL:
     srl Param0, Param0, 1 # shift bit once
     or Param0, Param0, $at # put rotated bit back
     andi Param0, Param0, 0xFF # keep param 8 bits
-
-    andi $at, $at, 0x1 # mask carry bit
-    sll $at, $at, 4 # shift carry bit into C_FLAG position
-    andi GB_F, GB_F, 0x0 # clear flags
+    andi $at, $at, 0x80 # mask carry bit
     jr $ra
-    or GB_F, GB_F, $at # set C_FLAG
+    srl GB_F, $at, 3 # move carry bit into C_FLAG
 
 _GB_RRC_IMPL_IS_ZERO:
-    andi GB_F, GB_F, 0x0 # clear all flags
+    jr $ra
+    andi GB_F, $zero, Z_FLAG # set Z_FLAG
+    
+#######################
+# Rotates Param0 1 bit left through carry and 
+# sets flags
+#######################
+
+GB_RL_IMPL:
+    sll Param0, Param0, 1 # shift the bit once
+    srl $at, GB_F, 4 # shift carry bit into position
+    andi $at, $at, 0x1 # mask carry bit
+    or Param0, Param0, $at # set carry bit
+    andi $at, Param0, 0x100 # read new carry bit
+    andi Param0, Param0, 0xFF # set to 8 bits
+    beq Param0, $zero, _GB_RL_IMPL_IS_ZERO
+    srl GB_F, $at, 4 # shift new carry bit into carry flag 
+    jr $ra
+    nop
+_GB_RL_IMPL_IS_ZERO:
     jr $ra
     set_flags Z_FLAG # set Z_FLAG
 
@@ -427,7 +525,7 @@ _ADD_TO_HL:
 
     andi $at, $at, 0x10 # mask carry bit
     sll $at, $at, 1 # move carry bit into H flag position
-    clear_flags N_FLAG
+    clear_flags N_FLAG | H_FLAG | C_FLAG
     or GB_F, GB_F, $at # set half bit
 
     srl $at, GB_H, 4 # shift carry bit to C flag position
