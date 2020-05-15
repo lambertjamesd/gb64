@@ -7,6 +7,13 @@ enum STOP_REASON {
     STOP_REASON_ERROR,
 };
 
+enum GB_FLAGS {
+    GB_FLAGS_Z = 0x80,
+    GB_FLAGS_N = 0x40,
+    GB_FLAGS_H = 0x20,
+    GB_FLAGS_C = 0x10,
+};
+
 struct Z80State {
     unsigned char a;
     unsigned char f;

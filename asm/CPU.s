@@ -329,13 +329,13 @@ GB_RLA:
     nop
     nop
     nop
-GB_JA:
+GB_JR:
     jal READ_NEXT_INSTRUCTION
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
-    lb $v0, 0(ADDR) # load the byte again, but signed this time
+    sll $v0, $v0, 24 # sign extend the bytes
+    sra $v0, $v0, 24
     j DECODE_NEXT
     add GB_PC, GB_PC, $v0
-    nop
     nop
     nop
 GB_ADD_HL_DE:
@@ -397,6 +397,301 @@ GB_RRA:
     addi Param0, GB_A, 0
     j DECODE_NEXT
     addi GB_A, Param0, 0
+    nop
+    nop
+    nop
+    nop
+### 0x2X
+GB_JR_NZ:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
+    sll $v0, $v0, 24 # sign extend the bytes
+    andi $at, GB_F, Z_FLAG # check z flag
+    bne $at, $zero, DECODE_NEXT # skip jump if not zero
+    sra $v0, $v0, 24 # second half of sign extend bits
+    j DECODE_NEXT
+    add GB_PC, GB_PC, $v0
+GB_LD_HL_D16:
+    jal READ_NEXT_INSTRUCTION # read immedate values
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    jal READ_NEXT_INSTRUCTION
+    addi GB_H, $v0, 0 # store H
+    j DECODE_NEXT
+    addi GB_L, $v0, 0 # store L
+    nop
+    nop
+GB_LDI_HL_A:
+    add VAL, GB_A, 0 # write the value to store
+    sll ADDR, GB_H, 8 # write upper address
+    or ADDR, ADDR, GB_L # write lower address
+
+    addi GB_L, ADDR, 1 # increment address
+    srl GB_H, GB_L, 8 # store upper bits
+    andi GB_L, GB_L, 0xFF # mask lower bits
+    andi GB_H, GB_H, 0xFF # mask upper bits bits
+    j GB_DO_WRITE # call store subroutine
+    # intentially leave off nop to overflow to next instruction
+GB_INC_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_L, GB_L, 1 # incement the register
+    srl $at, GB_L, 8
+    andi GB_L, GB_L, 0xFF # keep at 8 bits
+    add GB_H, GB_H, $at # add carry bit
+    j DECODE_NEXT
+    andi GB_H, GB_H, 0xFF # keep at 8 bits
+    nop
+GB_INC_H:
+    jal GB_INC # call increment
+    addi Param0, GB_H, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_H, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_DEC_H:
+    jal GB_DEC # call decrement high bit
+    addi Param0, GB_H, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_H, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_D8:
+    jal READ_NEXT_INSTRUCTION # read immediate value
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j DECODE_NEXT
+    addi GB_H, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
+GB_DAA:
+    j DECODE_NEXT
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_JR_Z:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
+    sll $v0, $v0, 24 # sign extend the bytes
+    andi $at, GB_F, Z_FLAG # check z flag
+    beq $at, $zero, DECODE_NEXT # skip jump if zero
+    sra $v0, $v0, 24 # second half of sign extend bits
+    j DECODE_NEXT
+    add GB_PC, GB_PC, $v0
+GB_ADD_HL_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll Param0, GB_H, 8 # load high order bits
+    j _ADD_TO_HL
+    or Param0, Param0, GB_L # load low order bits
+_MASK_HL:
+    andi GB_L, GB_L, 0xFF # mask lower bits
+    andi GB_H, GB_H, 0xFF # mask upper bits bits
+    j DECODE_NEXT
+    nop
+GB_LDI_A_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    jal GB_DO_READ # call read instruction
+    addi GB_L, ADDR, 1 # increment L
+    addi GB_A, $v0, 0 # store result into a
+    j _MASK_HL
+    srl GB_H, GB_L, 8 # store incremented H
+GB_DEC_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_L, GB_L, -1 # decrement E
+    sra $at, GB_L, 8 # shift carry
+    add GB_H, GB_H, $at  # add carry to D
+    andi GB_L, GB_L, 0xFF # mask E
+    j DECODE_NEXT
+    andi GB_H, GB_H, 0xFF # mask D
+    nop
+GB_INC_L:
+    jal GB_INC # call increment
+    addi Param0, GB_L, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_L, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_DEC_L:
+    jal GB_DEC # call decrement high bit
+    addi Param0, GB_L, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_L, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_D8:
+    jal READ_NEXT_INSTRUCTION # read immediate value
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j DECODE_NEXT
+    addi GB_L, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
+GB_CPL:
+    xori GB_A, GB_A, 0xFF
+    j DECODE_NEXT
+    set_flags N_FLAG | H_FLAG
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0x3X
+GB_JR_NC:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
+    sll $v0, $v0, 24 # sign extend the bytes
+    andi $at, GB_F, C_FLAG # check c flag
+    bne $at, $zero, DECODE_NEXT # skip jump if not zero
+    sra $v0, $v0, 24 # second half of sign extend bits
+    j DECODE_NEXT
+    add GB_PC, GB_PC, $v0
+GB_LD_SP_D16:
+    jal READ_NEXT_INSTRUCTION # read immedate values
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    jal READ_NEXT_INSTRUCTION
+    sll GB_SP, $v0, 8 # store high bits
+    j DECODE_NEXT
+    or GB_SP, GB_SP, $v0 # store low bits
+    nop
+    nop
+GB_LDD_HL_A:
+    add VAL, GB_A, 0 # write the value to store
+    sll ADDR, GB_H, 8 # write upper address
+    or ADDR, ADDR, GB_L # write lower address
+
+    addi GB_L, ADDR, -1 # decrement address
+    srl GB_H, GB_L, 8 # store upper bits
+    andi GB_L, GB_L, 0xFF # mask lower bits
+    andi GB_H, GB_H, 0xFF # mask upper bits bits
+    j GB_DO_WRITE # call store subroutine
+    # intentially leave off nop to overflow to next instruction
+GB_INC_SP:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_SP, GB_SP, 1
+    j DECODE_NEXT
+    andi GB_SP, GB_SP, 0xFFFF
+    nop
+    nop
+    nop
+    nop
+GB_INC_HL_ADDR:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    sll ADDR, GB_H, 8 # write upper address
+    jal GB_DO_READ
+    or ADDR, ADDR, GB_L # write lower address
+    jal GB_INC # call increment
+    addi Param0, $v0, 0 # move loaded value to call parameter
+    j DECODE_NEXT
+    sb Param0, 0(ADDR) # use same ADDR calculated in GB_DO_READ
+GB_DEC_HL_ADDR:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    sll ADDR, GB_H, 8 # write upper address
+    jal GB_DO_READ
+    or ADDR, ADDR, GB_L # write lower address
+    jal GB_DEC # call decrement
+    addi Param0, $v0, 0 # move loaded value to call parameter
+    j DECODE_NEXT
+    sb Param0, 0(ADDR) # use same ADDR calculated in GB_DO_READ
+GB_LD_HL_ADDR_D8:
+    jal READ_NEXT_INSTRUCTION # read immediate value
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    add VAL, $v0, 0 # write the value to store
+    sll ADDR, GB_H, 8 # write upper address
+    j GB_DO_WRITE
+    or ADDR, ADDR, GB_L # write lower address
+    nop
+    nop
+GB_SCF:
+    clear_flags N_FLAG | H_FLAG
+    j DECODE_NEXT
+    set_flags C_FLAG
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_JR_C:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
+    sll $v0, $v0, 24 # sign extend the bytes
+    andi $at, GB_F, C_FLAG # check c flag
+    beq $at, $zero, DECODE_NEXT # skip jump if zero
+    sra $v0, $v0, 24 # second half of sign extend bits
+    j DECODE_NEXT
+    add GB_PC, GB_PC, $v0
+GB_ADD_HL_SP:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _ADD_TO_HL
+    addi Param0, GB_SP, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LDD_A_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    jal GB_DO_READ # call read instruction
+    addi GB_L, ADDR, -1 # decrement L
+    addi GB_A, $v0, 0 # store result into a
+    j _MASK_HL
+    srl GB_H, GB_L, 8 # store incremented H
+GB_DEC_SP:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_SP, GB_SP, -1
+    j DECODE_NEXT
+    andi GB_SP, GB_SP, 0xFFFF
+    nop
+    nop
+    nop
+    nop
+GB_INC_A:
+    jal GB_INC # call increment
+    addi Param0, GB_A, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_A, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_DEC_A:
+    jal GB_DEC # call decrement high bit
+    addi Param0, GB_A, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_A, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_D8:
+    jal READ_NEXT_INSTRUCTION # read immediate value
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j DECODE_NEXT
+    addi GB_A, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
+GB_CCF:
+    clear_flags N_FLAG | H_FLAG
+    j DECODE_NEXT
+    xori GB_F, GB_F, C_FLAG
+    nop
     nop
     nop
     nop
@@ -615,6 +910,15 @@ _ADD_TO_HL:
     or GB_F, GB_F, $at # set carry git
     j DECODE_NEXT
     andi GB_F, GB_F, 0xFF # mask to 8 bits
+
+#######################
+# Decimal encodes Param0
+#######################
+
+GB_DA:
+    andi $at, Param0, 0x0F
+    jr $ra
+    nop
 
 
 #######################

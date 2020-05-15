@@ -66,6 +66,8 @@ int runTests(char* testOutput) {
     if (
         !run0x0Tests(&z80, memoryMap, memory, subTestOutput) ||
         !run0x1Tests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0x2Tests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0x3Tests(&z80, memoryMap, memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

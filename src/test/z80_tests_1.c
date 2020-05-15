@@ -261,7 +261,7 @@ int testRLA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char*
     ;
 }
 
-int testJA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testJR(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -269,17 +269,17 @@ int testJA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* 
     expected = *z80;
     expected.pc = 4;
 
-    memory[0] = Z80_JA;
+    memory[0] = Z80_JR;
     memory[1] = 2;
     memory[2] = Z80_NOP;
     memory[3] = Z80_NOP;
-    memory[4] = Z80_JA;
+    memory[4] = Z80_JR;
     memory[5] = (unsigned char)(-6);
 
     run = runZ80CPU(z80, memoryMap, 1);
 
-    if (!testZ80State("JA", testOutput, z80, &expected) ||
-        !testInt("JA run result", testOutput, run, 3))
+    if (!testZ80State("JR", testOutput, z80, &expected) ||
+        !testInt("JR run result", testOutput, run, 3))
     {
         return 0;
     }
@@ -288,8 +288,8 @@ int testJA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* 
     run = runZ80CPU(z80, memoryMap, 1);
 
     return 
-        testZ80State("JA", testOutput, z80, &expected) &&
-        testInt("JA run result", testOutput, run, 3) &&
+        testZ80State("JR", testOutput, z80, &expected) &&
+        testInt("JR run result", testOutput, run, 3) &&
         1
     ;
 }
@@ -523,7 +523,7 @@ int run0x1Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
         testDEC_D(z80, memoryMap, memory, testOutput) &&
         testLD_D_d8(z80, memoryMap, memory, testOutput) &&
         testRLA(z80, memoryMap, memory, testOutput) &&
-        testJA(z80, memoryMap, memory, testOutput) &&
+        testJR(z80, memoryMap, memory, testOutput) &&
         testADD_HL_DE(z80, memoryMap, memory, testOutput) &&
         testLD_A_DE(z80, memoryMap, memory, testOutput) &&
         testDEC_DE(z80, memoryMap, memory, testOutput) &&
