@@ -338,6 +338,69 @@ GB_JA:
     nop
     nop
     nop
+GB_ADD_HL_DE:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll Param0, GB_D, 8 # load high order bits
+    j _ADD_TO_HL
+    or Param0, Param0, GB_E # load low order bits
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_DE:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_D, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_E # load lower address
+    j DECODE_NEXT
+    addi GB_A, $v0, 0 # store result into a
+    nop
+    nop
+GB_DEC_DE:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi GB_E, GB_E, -1 # decrement E
+    sra $at, GB_E, 8 # shift carry
+    add GB_D, GB_D, $at  # add carry to D
+    andi GB_E, GB_E, 0xFF # mask E
+    j DECODE_NEXT
+    andi GB_D, GB_D, 0xFF # mask D
+    nop
+GB_INC_E:
+    jal GB_INC # call increment
+    addi Param0, GB_E, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_E, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_DEC_E:
+    jal GB_DEC # call decrement high bit
+    addi Param0, GB_E, 0 # move register to call parameter
+    j DECODE_NEXT
+    addi GB_E, Param0, 0 # move register back from call parameter
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_D8:
+    jal READ_NEXT_INSTRUCTION # read immediate value
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j DECODE_NEXT
+    addi GB_E, $v0, 0 #store value
+    nop
+    nop
+    nop
+    nop
+GB_RRA:
+    jal GB_RR_IMPL
+    addi Param0, GB_A, 0
+    j DECODE_NEXT
+    addi GB_A, Param0, 0
+    nop
+    nop
+    nop
+    nop
 
 ######################
 # Return instructions left to run
@@ -506,7 +569,26 @@ GB_RL_IMPL:
 _GB_RL_IMPL_IS_ZERO:
     jr $ra
     set_flags Z_FLAG # set Z_FLAG
+    
+#######################
+# Rotates Param0 1 bit right through carry and 
+# sets flags
+#######################
 
+GB_RR_IMPL:
+    sll $at, GB_F, 4 # shift carry bit into position
+    or Param0, Param0, $at # set carry bit
+    sll $at, Param0, 4 # shift new carry bit into pos
+    andi GB_F, $at, 0x10 # set carry bit
+
+    srl Param0, Param0, 1 # shift the bit once
+    beq Param0, $zero, _GB_RR_IMPL_IS_ZERO
+    andi Param0, Param0, 0xFF # set to 8 bits
+    jr $ra
+    nop
+_GB_RR_IMPL_IS_ZERO:
+    jr $ra
+    set_flags Z_FLAG # set Z_FLAG
 
 #######################
 # Adds Param0 to HL

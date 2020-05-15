@@ -33,7 +33,9 @@ TARGETS =	bin/gb.n64
 TEXHFILES =	
 
 HFILES =	$(TEXHFILES) boot.h game.h controller.h font.h font_ext.h \
-		letters_img.h static.h
+		letters_img.h static.h \
+		src/test/z80_test.h    \
+		src/z80.h
 
 CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
 	src/test/z80_test.c                \

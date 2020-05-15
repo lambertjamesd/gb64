@@ -46,3 +46,10 @@ int runTests(char* testOutput);
 #define Z80_LD_D_d8     0x16
 #define Z80_RLA         0x17
 #define Z80_JA          0x18
+#define Z80_ADD_HL_DE   0x19
+#define Z80_LD_A_DE     0x1A
+#define Z80_DEC_DE      0x1B
+#define Z80_INC_E       0x1C
+#define Z80_DEC_E       0x1D
+#define Z80_LD_E_d8     0x1E
+#define Z80_RRA         0x1F

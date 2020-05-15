@@ -294,6 +294,224 @@ int testJA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* 
     ;
 }
 
+int testADD_HL_DE(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+    z80->h = 0x02;
+    z80->l = 0x80;
+    z80->d = 0x80;
+    z80->e = 0x81;
+    expected = *z80;
+    expected.pc = 1;
+    expected.h = 0x83;
+    expected.l = 0x01;
+    expected.f = 0x0;
+
+    memory[0] = Z80_ADD_HL_DE;
+    memory[1] = Z80_ADD_HL_DE;
+    memory[2] = Z80_ADD_HL_DE;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    if (!testZ80State("HL DE", testOutput, z80, &expected) ||
+        !testInt("HL DE run result", testOutput, run, 2))
+    {
+        return 0;
+    }
+    
+    z80->d = 0xD;
+    z80->e = 0;
+    expected.pc = 2;
+    expected.h = 0x90;
+    expected.l = 0x01;
+    expected.d = 0xD;
+    expected.e = 0;
+    expected.f = 0x20;
+    
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    if (!testZ80State("HL DE", testOutput, z80, &expected) ||
+        !testInt("HL DE run result", testOutput, run, 2))
+    {
+        return 0;
+    }
+
+    z80->d = 0x70;
+    run = runZ80CPU(z80, memoryMap, 1);
+    expected.pc = 3;
+    expected.h = 0x00;
+    expected.l = 0x01;
+    expected.d = 0x70;
+    expected.f = 0x10;
+
+    return 
+        testZ80State("HL DE half", testOutput, z80, &expected) &&
+        testInt("HL DE run result", testOutput, run, 2) &&
+        1
+    ;
+}
+
+int testLD_A_DE(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+    z80->d = 0x21;
+    z80->e = 0x30;
+    expected = *z80;
+    expected.pc = 1;
+    expected.a = 0xA3;
+
+    memory[0] = Z80_LD_A_DE;
+    memory[1] = 23;
+    memory[0x130] = 0xA3;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    return 
+        testZ80State("LD A DE", testOutput, z80, &expected) &&
+        testInt("LD A DE run result", testOutput, run, 2) &&
+        1
+    ;
+}
+
+
+int testDEC_DE(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+
+    z80->d = 1;
+    z80->e = 3;
+
+    expected = *z80;
+    expected.pc = 1;
+    expected.d = 1;
+    expected.e = 2;
+
+    memory[0] = Z80_DEC_DE;
+    memory[1] = Z80_DEC_DE;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    if (!testZ80State("DEC DE", testOutput, z80, &expected) ||
+        !testInt("DEC DE run result", testOutput, run, 2))
+    {
+        return 0;
+    }
+
+    z80->d = 1; z80->e = 0;
+    expected.d = 0;
+    expected.e = 0xFF;
+    expected.pc = 2;
+    
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    return testZ80State("DEC DE rollover", testOutput, z80, &expected);
+}
+
+
+int testINC_E(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+    expected = *z80;
+    expected.pc = 1;
+    expected.e = 1;
+
+    memory[0] = Z80_INC_E;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+    
+    return 
+        testZ80State("INC E", testOutput, z80, &expected) &&
+        testInt("INC E", testOutput, run, 1) &&
+        1
+    ;
+}
+
+int testDEC_E(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+    expected = *z80;
+    expected.f = 0x40;
+    expected.pc = 1;
+    expected.e = 0xFF;
+
+    memory[0] = Z80_DEC_E;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+    
+    return 
+        testZ80State("DEC E", testOutput, z80, &expected) &
+        testInt("DEC E", testOutput, run, 1) &&
+        1
+    ;
+}
+
+
+int testLD_E_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+    expected = *z80;
+    expected.pc = 2;
+    expected.e = 23;
+
+    memory[0] = Z80_LD_E_d8;
+    memory[1] = 23;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    return 
+        testZ80State("LD E d8", testOutput, z80, &expected) &&
+        testInt("LD E d8 run result", testOutput, run, 2) &&
+        1
+    ;
+}
+
+int testRRA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+{
+    int run;
+    struct Z80State expected;
+    initializeZ80(z80);
+    expected = *z80;
+    expected.pc = 1;
+    expected.a = 0xC0;
+    z80->a = 0x80;
+    z80->f = 0xF0;
+
+    memory[0] = Z80_RRA;
+    memory[1] = Z80_RRA;
+
+    run = runZ80CPU(z80, memoryMap, 1);
+
+    if (!testZ80State("RRA", testOutput, z80, &expected) ||
+        !testInt("RRA run result", testOutput, run, 1))
+    {
+        return 0;
+    }
+
+    z80->a = 0x01;
+    expected.pc = 2;
+    expected.a = 0x0;
+    expected.f = 0x90;
+    run = runZ80CPU(z80, memoryMap, 1);
+    
+    return 
+        testZ80State("RRA set carry", testOutput, z80, &expected) &&
+        testInt("RRA run result", testOutput, run, 1) &&
+        1
+    ;
+}
+
 int run0x1Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
 {
     return 
@@ -306,6 +524,13 @@ int run0x1Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
         testLD_D_d8(z80, memoryMap, memory, testOutput) &&
         testRLA(z80, memoryMap, memory, testOutput) &&
         testJA(z80, memoryMap, memory, testOutput) &&
+        testADD_HL_DE(z80, memoryMap, memory, testOutput) &&
+        testLD_A_DE(z80, memoryMap, memory, testOutput) &&
+        testDEC_DE(z80, memoryMap, memory, testOutput) &&
+        testINC_E(z80, memoryMap, memory, testOutput) &&
+        testDEC_E(z80, memoryMap, memory, testOutput) &&
+        testLD_E_d8(z80, memoryMap, memory, testOutput) &&
+        testRRA(z80, memoryMap, memory, testOutput) &&
         1
     ;
 }
