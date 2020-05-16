@@ -43,6 +43,9 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
 	src/test/z80_tests_1.c                \
 	src/test/z80_tests_2.c                \
 	src/test/z80_tests_3.c                \
+	src/test/z80_tests_4_7.c              \
+	src/test/z80_tests_8_9.c              \
+	src/test/z80_tests_A_B.c              \
 	src/z80.c 
 
 S_FILES = asm/CPU.s

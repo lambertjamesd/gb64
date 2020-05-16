@@ -40,7 +40,7 @@ int testJR_NZ(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
 
     return 
         testZ80State("JR NZ", testOutput, z80, &expected) &&
-        testInt("JR NZ run result", testOutput, run, 3) &&
+        testInt("JR NZ run result", testOutput, run, 2) &&
         1
     ;
 }
@@ -312,7 +312,7 @@ int testJR_Z(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
 
     return 
         testZ80State("JR NZ third", testOutput, z80, &expected) &&
-        testInt("JR NZ run result", testOutput, run, 3) &&
+        testInt("JR NZ run result", testOutput, run, 2) &&
         1
     ;
 }

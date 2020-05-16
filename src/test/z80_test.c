@@ -1,6 +1,9 @@
 #include "z80_test.h"
 #include "../memory_map.h"
 
+#define offsetof(st, m) \
+    ((int)&(((st *)0)->m))
+
 int testInt(
     char *testName,
     char *testOutput,
@@ -48,6 +51,40 @@ int testZ80State(
     return 1;
 }
 
+char* registerNames[] = {
+    "B",
+    "C",
+    "D",
+    "E",
+    "H",
+    "L",
+    "HL",
+    "A",
+};
+
+int registerOffset[] = {
+    offsetof(struct Z80State, b),
+    offsetof(struct Z80State, c),
+    offsetof(struct Z80State, d),
+    offsetof(struct Z80State, e),
+    offsetof(struct Z80State, h),
+    offsetof(struct Z80State, l),
+    0,
+    offsetof(struct Z80State, a),
+};
+
+unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, int registerIndex)
+{
+    if (registerIndex == HL_REGISTER_INDEX)
+    {
+        return hlTarget;
+    }
+    else
+    {
+        return (unsigned char*)z80 + registerOffset[registerIndex];
+    }
+}
+
 int runTests(char* testOutput) {
     struct Z80State z80;
     unsigned char memory[512];
@@ -68,6 +105,9 @@ int runTests(char* testOutput) {
         !run0x1Tests(&z80, memoryMap, memory, subTestOutput) ||
         !run0x2Tests(&z80, memoryMap, memory, subTestOutput) ||
         !run0x3Tests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0x4_7Tests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0x8_9Tests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0xA_BTests(&z80, memoryMap, memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

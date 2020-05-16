@@ -76,9 +76,9 @@ runZ80CPU:
     addi $sp, $sp, -STACK_SIZE
     sw $ra, ST_RA($sp) # save return address
     sw CycleCount, ST_CYCLES_REQUESTED($sp) # save the original cycles to run 
-    sw $s0, ST_S0($sp) # save whatever these are
-    sw $s1, ST_S1($sp) # save whatever these are
-    sw $s2, ST_S2($sp) # save whatever these are
+    sw $s0, ST_S0($sp) # save caller registers
+    sw $s1, ST_S1($sp) 
+    sw $s2, ST_S2($sp) 
 
     lbu GB_A, CPU_STATE_A(CPUState)
     lbu GB_F, CPU_STATE_F(CPUState)
@@ -188,10 +188,10 @@ GB_LD_A16_SP:
     jal READ_NEXT_INSTRUCTION # read immediate value
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 4 # update cycles run
     jal READ_NEXT_INSTRUCTION # read immediate value
-    sll GB_SP, $v0, 8 #store upper address
-    j DECODE_NEXT
-    or GB_SP, GB_SP, $v0 #store lower address
-    nop
+    sll Param0, $v0, 8 #store upper address
+    or ADDR, Param0, $v0 #store lower address
+    j GB_DO_WRITE_16
+    addi VAL, GB_SP, 0 # store value to write
     nop
 GB_ADD_HL_BC:
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
@@ -398,19 +398,20 @@ GB_RRA:
     j DECODE_NEXT
     addi GB_A, Param0, 0
     nop
-    nop
-    nop
-    nop
+_SKIP_JR:
+    addi GB_PC, GB_PC, 1
+    j DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
 ### 0x2X
 GB_JR_NZ:
-    jal READ_NEXT_INSTRUCTION
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
-    sll $v0, $v0, 24 # sign extend the bytes
     andi $at, GB_F, Z_FLAG # check z flag
-    bne $at, $zero, DECODE_NEXT # skip jump if not zero
-    sra $v0, $v0, 24 # second half of sign extend bits
-    j DECODE_NEXT
-    add GB_PC, GB_PC, $v0
+    bne $at, $zero, _SKIP_JR # skip jump if not zero
+    nop
+    j GB_JR
+    nop
+    nop
+    nop
+    nop
 GB_LD_HL_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
@@ -477,14 +478,14 @@ GB_DAA:
     nop
     nop
 GB_JR_Z:
-    jal READ_NEXT_INSTRUCTION
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
-    sll $v0, $v0, 24 # sign extend the bytes
     andi $at, GB_F, Z_FLAG # check z flag
-    beq $at, $zero, DECODE_NEXT # skip jump if zero
-    sra $v0, $v0, 24 # second half of sign extend bits
-    j DECODE_NEXT
-    add GB_PC, GB_PC, $v0
+    beq $at, $zero, _SKIP_JR # skip jump if not zero
+    nop
+    j GB_JR
+    nop
+    nop
+    nop
+    nop
 GB_ADD_HL_HL:
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     sll Param0, GB_H, 8 # load high order bits
@@ -551,14 +552,14 @@ GB_CPL:
     nop
 ### 0x3X
 GB_JR_NC:
-    jal READ_NEXT_INSTRUCTION
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
-    sll $v0, $v0, 24 # sign extend the bytes
-    andi $at, GB_F, C_FLAG # check c flag
-    bne $at, $zero, DECODE_NEXT # skip jump if not zero
-    sra $v0, $v0, 24 # second half of sign extend bits
-    j DECODE_NEXT
-    add GB_PC, GB_PC, $v0
+    andi $at, GB_F, C_FLAG # check z flag
+    bne $at, $zero, _SKIP_JR # skip jump if not zero
+    nop
+    j GB_JR
+    nop
+    nop
+    nop
+    nop
 GB_LD_SP_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
@@ -625,14 +626,14 @@ GB_SCF:
     nop
     nop
 GB_JR_C:
-    jal READ_NEXT_INSTRUCTION
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR  * 2 # update cycles run
-    sll $v0, $v0, 24 # sign extend the bytes
-    andi $at, GB_F, C_FLAG # check c flag
-    beq $at, $zero, DECODE_NEXT # skip jump if zero
-    sra $v0, $v0, 24 # second half of sign extend bits
-    j DECODE_NEXT
-    add GB_PC, GB_PC, $v0
+    andi $at, GB_F, C_FLAG # check z flag
+    beq $at, $zero, _SKIP_JR # skip jump if not zero
+    nop
+    j GB_JR
+    nop
+    nop
+    nop
+    nop
 GB_ADD_HL_SP:
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     j _ADD_TO_HL
@@ -696,6 +697,1198 @@ GB_CCF:
     nop
     nop
     nop
+### 0x4X
+GB_LD_B_B:
+    j DECODE_NEXT
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_B_C:
+    j DECODE_NEXT
+    addi GB_B, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_B_D:
+    j DECODE_NEXT
+    addi GB_B, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_B_E:
+    j DECODE_NEXT
+    addi GB_B, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_B_H:
+    j DECODE_NEXT
+    addi GB_B, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_B_L:
+    j DECODE_NEXT
+    addi GB_B, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_B_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_B, $v0, 0
+    nop
+    nop
+GB_LD_B_A:
+    j DECODE_NEXT
+    addi GB_B, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_B:
+    j DECODE_NEXT
+    addi GB_C, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_C:
+    j DECODE_NEXT
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_D:
+    j DECODE_NEXT
+    addi GB_C, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_E:
+    j DECODE_NEXT
+    addi GB_C, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_H:
+    j DECODE_NEXT
+    addi GB_C, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_L:
+    j DECODE_NEXT
+    addi GB_C, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_C_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_C, $v0, 0
+    nop
+    nop
+GB_LD_C_A:
+    j DECODE_NEXT
+    addi GB_C, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0x5X
+GB_LD_D_B:
+    j DECODE_NEXT
+    addi GB_D, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_C:
+    j DECODE_NEXT
+    addi GB_D, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_D:
+    j DECODE_NEXT
+    addi GB_D, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_E:
+    j DECODE_NEXT
+    addi GB_D, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_H:
+    j DECODE_NEXT
+    addi GB_D, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_L:
+    j DECODE_NEXT
+    addi GB_D, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_D_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_D, $v0, 0
+    nop
+    nop
+GB_LD_D_A:
+    j DECODE_NEXT
+    addi GB_D, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_B:
+    j DECODE_NEXT
+    addi GB_E, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_C:
+    j DECODE_NEXT
+    addi GB_E, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_D:
+    j DECODE_NEXT
+    addi GB_E, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_E:
+    j DECODE_NEXT
+    addi GB_E, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_H:
+    j DECODE_NEXT
+    addi GB_E, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_L:
+    j DECODE_NEXT
+    addi GB_E, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_E_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_E, $v0, 0
+    nop
+    nop
+GB_LD_E_A:
+    j DECODE_NEXT
+    addi GB_E, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0x6X
+GB_LD_H_B:
+    j DECODE_NEXT
+    addi GB_H, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_C:
+    j DECODE_NEXT
+    addi GB_H, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_D:
+    j DECODE_NEXT
+    addi GB_H, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_E:
+    j DECODE_NEXT
+    addi GB_H, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_H:
+    j DECODE_NEXT
+    addi GB_H, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_L:
+    j DECODE_NEXT
+    addi GB_H, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_H_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_H, $v0, 0
+    nop
+    nop
+GB_LD_H_A:
+    j DECODE_NEXT
+    addi GB_H, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_B:
+    j DECODE_NEXT
+    addi GB_L, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_C:
+    j DECODE_NEXT
+    addi GB_L, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_D:
+    j DECODE_NEXT
+    addi GB_L, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_E:
+    j DECODE_NEXT
+    addi GB_L, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_H:
+    j DECODE_NEXT
+    addi GB_L, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_L:
+    j DECODE_NEXT
+    addi GB_L, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_L_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_L, $v0, 0
+    nop
+    nop
+GB_LD_L_A:
+    j DECODE_NEXT
+    addi GB_L, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0x7X
+GB_LD_HL_B:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_B, 0
+    nop
+    nop
+    nop
+GB_LD_HL_C:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_C, 0
+    nop
+    nop
+    nop
+GB_LD_HL_D:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_D, 0
+    nop
+    nop
+    nop
+GB_LD_HL_E:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_E, 0
+    nop
+    nop
+    nop
+GB_LD_HL_H:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_H, 0
+    nop
+    nop
+    nop
+GB_LD_HL_L:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_L, 0
+    nop
+    nop
+    nop
+GB_LD_HALT:
+    addi $at, $zero, STOP_REASON_HALT
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_HL_A:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    or ADDR, ADDR, GB_L # load lower address
+    j GB_DO_WRITE # call read instruction
+    addi VAL, GB_A, 0
+    nop
+    nop
+    nop
+GB_LD_A_B:
+    j DECODE_NEXT
+    addi GB_A, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_C:
+    j DECODE_NEXT
+    addi GB_A, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_D:
+    j DECODE_NEXT
+    addi GB_A, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_E:
+    j DECODE_NEXT
+    addi GB_A, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_H:
+    j DECODE_NEXT
+    addi GB_A, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_L:
+    j DECODE_NEXT
+    addi GB_A, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j DECODE_NEXT
+    addi GB_A, $v0, 0
+    nop
+    nop
+GB_LD_A_A:
+    j DECODE_NEXT
+    addi GB_A, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0x8X
+GB_ADD_A_B:
+    j _ADD_TO_A
+    addi Param0, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADD_A_C:
+    j _ADD_TO_A
+    addi Param0, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADD_A_D:
+    j _ADD_TO_A
+    addi Param0, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADD_A_E:
+    j _ADD_TO_A
+    addi Param0, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADD_A_H:
+    j _ADD_TO_A
+    addi Param0, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADD_A_L:
+    j _ADD_TO_A
+    addi Param0, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADD_A_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j _ADD_TO_A
+    addi Param0, $v0, 0
+    nop
+    nop
+GB_ADD_A_A:
+    j _ADD_TO_A
+    addi Param0, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_B:
+    j _ADC_TO_A
+    addi Param0, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_C:
+    j _ADC_TO_A
+    addi Param0, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_D:
+    j _ADC_TO_A
+    addi Param0, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_E:
+    j _ADC_TO_A
+    addi Param0, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_H:
+    j _ADC_TO_A
+    addi Param0, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_L:
+    j _ADC_TO_A
+    addi Param0, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ADC_A_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j _ADC_TO_A
+    addi Param0, $v0, 0
+    nop
+    nop
+GB_ADC_A_A:
+    j _ADC_TO_A
+    addi Param0, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0x9X
+GB_SUB_B:
+    j _SUB_FROM_A
+    addi Param0, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SUB_C:
+    j _SUB_FROM_A
+    addi Param0, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SUB_D:
+    j _SUB_FROM_A
+    addi Param0, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SUB_E:
+    j _SUB_FROM_A
+    addi Param0, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SUB_H:
+    j _SUB_FROM_A
+    addi Param0, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SUB_L:
+    j _SUB_FROM_A
+    addi Param0, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SUB_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j _SUB_FROM_A
+    addi Param0, $v0, 0
+    nop
+    nop
+GB_SUB_A:
+    addi GB_A, $zero, 0
+    j DECODE_NEXT
+    addi GB_F, $zero, Z_FLAG | N_FLAG
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_B:
+    j _SBC_FROM_A
+    addi Param0, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_C:
+    j _SBC_FROM_A
+    addi Param0, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_D:
+    j _SBC_FROM_A
+    addi Param0, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_E:
+    j _SBC_FROM_A
+    addi Param0, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_H:
+    j _SBC_FROM_A
+    addi Param0, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_L:
+    j _SBC_FROM_A
+    addi Param0, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j _SBC_FROM_A
+    addi Param0, $v0, 0
+    nop
+    nop
+GB_SBC_A:
+    j _SBC_FROM_A
+    addi Param0, GB_A, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0xAX
+GB_AND_B:
+    and GB_A, GB_A, GB_B
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_AND_C:
+    and GB_A, GB_A, GB_C
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_AND_D:
+    and GB_A, GB_A, GB_D
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_AND_E:
+    and GB_A, GB_A, GB_E
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_AND_H:
+    and GB_A, GB_A, GB_H
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_AND_L:
+    and GB_A, GB_A, GB_L
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_AND_HL:
+    jal READ_HL
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    and GB_A, GB_A, $v0
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+GB_AND_A:
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+    nop
+GB_XOR_B:
+    xor GB_A, GB_A, GB_B
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_XOR_C:
+    xor GB_A, GB_A, GB_C
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_XOR_D:
+    xor GB_A, GB_A, GB_D
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_XOR_E:
+    xor GB_A, GB_A, GB_E
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_XOR_H:
+    xor GB_A, GB_A, GB_H
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_XOR_L:
+    xor GB_A, GB_A, GB_L
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_XOR_HL:
+    jal READ_HL
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    xor GB_A, GB_A, $v0
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+GB_XOR_A:
+    addi GB_A, $zero, 0
+    j DECODE_NEXT
+    addi GB_F, GB_F, Z_FLAG
+    nop
+    nop
+    nop
+    nop
+    nop
+# 0xBX
+GB_OR_B:
+    or GB_A, GB_A, GB_B
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_OR_C:
+    or GB_A, GB_A, GB_C
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_OR_D:
+    or GB_A, GB_A, GB_D
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_OR_E:
+    or GB_A, GB_A, GB_E
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_OR_H:
+    or GB_A, GB_A, GB_H
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_OR_L:
+    or GB_A, GB_A, GB_L
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+GB_OR_HL:
+    jal READ_HL
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    or GB_A, GB_A, $v0
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+GB_OR_A:
+    bne GB_A, $zero, DECODE_NEXT
+    addi GB_F, GB_F, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+    nop
+    nop
+    nop
+GB_CP_B:
+    j _CP_A
+    addi Param0, GB_B, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_C:
+    j _CP_A
+    addi Param0, GB_C, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_D:
+    j _CP_A
+    addi Param0, GB_D, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_E:
+    j _CP_A
+    addi Param0, GB_E, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_H:
+    j _CP_A
+    addi Param0, GB_H, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_L:
+    j _CP_A
+    addi Param0, GB_L, 0
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll ADDR, GB_H, 8 # load upper address
+    jal GB_DO_READ # call read instruction
+    or ADDR, ADDR, GB_L # load lower address
+    j _CP_A
+    addi Param0, $v0, 0
+    nop
+    nop
+GB_CP_A:
+    j DECODE_NEXT
+    addi GB_F, $zero, Z_FLAG | N_FLAG
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+### 0xCX
+GB_RET_NZ:
+    andi $at, GB_F, Z_FLAG
+    bne $at, $zero, DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _GB_RET
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    nop
+    nop
+    nop
+GB_POP_BC:
+    addi ADDR, GB_SP, 0
+    jal GB_DO_READ_16
+    addi GB_SP, GB_SP, 2
+    srl GB_B, $v0, 8 # store B
+    andi GB_C, $v0, 0xFF # store C
+    j DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    nop
+GB_JP_NZ:
+    andi $at, GB_F, Z_FLAG
+    beq $at, $zero, DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    jal GB_DO_READ_16
+    addi ADDR, GB_PC, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j DECODE_NEXT
+    addi GB_PC, $v0, 0
+
+
+
+
 
 ######################
 # Return instructions left to run
@@ -717,12 +1910,37 @@ _GB_EXIT_EARLY:
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
     
-    lw $s0, ST_S0($sp) # restore whatever these are
-    lw $s1, ST_S1($sp) # restore whatever these are
-    lw $s2, ST_S2($sp) # restore whatever these are
+    lw $s0, ST_S0($sp) # restore caller registers
+    lw $s1, ST_S1($sp) 
+    lw $s2, ST_S2($sp) 
     lw $ra, ST_RA($sp) # load return address
     jr $ra
     addi $sp, $sp, STACK_SIZE
+
+######################
+# Writes 16 bit VAL to ADDR
+######################
+
+GB_DO_WRITE_16:
+    addiu $at, $zero, 0x8000
+    sub $at, ADDR, $at
+    bgez $at, _GB_DO_WRITE_16 # if ADDR >= 0x8000 just write
+    nop 
+    # todo do bank switching
+    j DECODE_NEXT
+    nop
+_GB_DO_WRITE_16:
+    srl $at, ADDR, 9 # load bank in $at
+    andi ADDR, ADDR, 0x1FF # keep offset in ADDR
+    sll $at, $at, 2 # word align the memory map offset
+    add $at, $at, MemoryStart # lookup start of bank in array at MemoryStart
+    lw $at, 0($at) # load start of memory bank
+    add ADDR, ADDR, $at # use address relative to memory bank
+    sb VAL, 1(ADDR) # store low byte
+    srl VAL, VAL, 8 # shift high byte
+    j DECODE_NEXT
+    sb VAL, 0(ADDR) # store high byte
+
 
 ######################
 # Writes VAL to ADDR
@@ -750,6 +1968,23 @@ _GB_DO_WRITE:
 # Reads ADDR into $v0
 ######################
 
+GB_DO_READ_16:
+    srl $at, ADDR, 9 # load bank in $at
+    andi ADDR, ADDR, 0x1FF # keep offset in ADDR
+    sll $at, $at, 2 # word align the memory map offset
+    add $at, $at, MemoryStart # lookup start of bank in array at MemoryStart
+    lw $at, 0($at) # load start of memory bank
+    add ADDR, ADDR, $at # use address relative to memory bank
+    lbu $v0, 0(ADDR) # load high byte
+    sll $v0, $v0, 8
+    lbu $at, 1(ADDR) # load low byte
+    jr $ra
+    or $v0, $v0, $at # move low byte
+    
+######################
+# Reads ADDR into $v0
+######################
+
 GB_DO_READ:
     srl $at, ADDR, 9 # load bank in $at
     andi ADDR, ADDR, 0x1FF # keep offset in ADDR
@@ -759,6 +1994,28 @@ GB_DO_READ:
     add ADDR, ADDR, $at # use address relative to memory bank
     jr $ra
     lbu $v0, 0(ADDR) # load the byte
+
+#######################
+# Reads the byte at PC
+# increments the program counter
+# then returns the byte in register $v0
+#######################
+
+READ_NEXT_INSTRUCTION:
+    # read at PC, increment PC, return value
+    addi ADDR, GB_PC, 0
+    j GB_DO_READ
+    addi GB_PC, GB_PC, 1
+
+
+#######################
+# Reads the address HL into $v0
+#######################
+
+READ_HL:
+    sll ADDR, GB_H, 8 # load high order bits
+    j GB_DO_READ
+    or ADDR, ADDR, GB_L # load low order bits
 
 #######################
 # Increments the high byte of Param0
@@ -871,45 +2128,175 @@ _GB_RL_IMPL_IS_ZERO:
 #######################
 
 GB_RR_IMPL:
-    sll $at, GB_F, 4 # shift carry bit into position
-    or Param0, Param0, $at # set carry bit
-    sll $at, Param0, 4 # shift new carry bit into pos
-    andi GB_F, $at, 0x10 # set carry bit
+    sll $at, GB_F, 4                        # shift carry bit into position
+    or Param0, Param0, $at                  # set carry bit
+    sll $at, Param0, 4                      # shift new carry bit into pos
+    andi GB_F, $at, 0x10                    # set carry bit
 
-    srl Param0, Param0, 1 # shift the bit once
+    srl Param0, Param0, 1                   # shift the bit once
     beq Param0, $zero, _GB_RR_IMPL_IS_ZERO
-    andi Param0, Param0, 0xFF # set to 8 bits
+    andi Param0, Param0, 0xFF               # set to 8 bits
     jr $ra
     nop
 _GB_RR_IMPL_IS_ZERO:
     jr $ra
-    set_flags Z_FLAG # set Z_FLAG
+    set_flags Z_FLAG                        # set Z_FLAG
 
 #######################
 # Adds Param0 to HL
 #######################
 
 _ADD_TO_HL:
-    add GB_L, GB_L, Param0 # add to L
-    srl $at, GB_L, 8 # get upper bits
-    andi GB_L, GB_L, 0xFF # mask to 8 bits
-    add Param0, GB_H, $at # add upper bits to h
+    add GB_L, GB_L, Param0          # add to L
+    srl $at, GB_L, 8                # get upper bits
+    andi GB_L, GB_L, 0xFF           # mask to 8 bits
+    add Param0, GB_H, $at           # add upper bits to h
 
-    xor $at, Param0, $at # determine half carry bit
+    xor $at, Param0, $at            # determine half carry bit
     xor $at, GB_H, $at
 
-    addi GB_H, Param0, 0 # store final result into GB_H
+    addi GB_H, Param0, 0            # store final result into GB_H
 
-    andi $at, $at, 0x10 # mask carry bit
-    sll $at, $at, 1 # move carry bit into H flag position
+    andi $at, $at, 0x10             # mask carry bit
+    sll $at, $at, 1                 # move carry bit into H flag position
     clear_flags N_FLAG | H_FLAG | C_FLAG
-    or GB_F, GB_F, $at # set half bit
+    or GB_F, GB_F, $at              # set half bit
 
-    srl $at, GB_H, 4 # shift carry bit to C flag position
-    andi $at, $at, 0x10 # mask carry bit
-    or GB_F, GB_F, $at # set carry git
+    srl $at, GB_H, 4                # shift carry bit to C flag position
+    andi $at, $at, 0x10             # mask carry bit
+    or GB_F, GB_F, $at              # set carry git
     j DECODE_NEXT
-    andi GB_F, GB_F, 0xFF # mask to 8 bits
+    andi GB_F, GB_F, 0xFF           # mask to 8 bits
+
+    
+#######################
+# Add Param0 + C to A
+#######################
+
+_ADC_TO_A:
+    andi $at, GB_F, 0x10            # mask carry bit
+    srl $at, $at, 4                 # move carry bit into first bit
+    add TMP2, Param0, $at           # add carry bit
+    add $at, GB_A, TMP2             # add to A
+    xor Param0, Param0, GB_A
+    xor Param0, Param0, $at         # calculate half carry
+    andi GB_A, $at, 0xFF            # move result into A
+    andi GB_F, $at, 0x100           # mask carry bit
+    srl GB_F, GB_F, 4               # move carry bit into place
+    sll Param0, Param0, 1           # shift half flag into position
+    andi Param0, Param0, H_FLAG     # mask half carry bit
+    bne GB_A, $zero, DECODE_NEXT    # check if z flag should be set
+    or GB_F, GB_F, Param0           # set half carry bit
+    j DECODE_NEXT
+    set_flags Z_FLAG                # set z flag
+    
+#######################
+# Add Param0 to A
+#######################
+
+_ADD_TO_A:
+    add $at, GB_A, Param0           # add to A
+    xor Param0, Param0, GB_A
+    xor Param0, Param0, $at         # calculate half carry
+    andi GB_A, $at, 0xFF            # move result into A
+    andi GB_F, $at, 0x100           # mask carry bit
+    srl GB_F, GB_F, 4               # move carry bit into place
+    sll Param0, Param0, 1           # shift half flag into position
+    andi Param0, Param0, H_FLAG     # mask half carry bit
+    bne GB_A, $zero, DECODE_NEXT    # check if z flag should be set
+    or GB_F, GB_F, Param0           # set half carry bit
+    j DECODE_NEXT
+    set_flags Z_FLAG                # set z flag
+
+#######################
+# Subtract Param0 + C from A
+#######################
+
+_SBC_FROM_A:
+    andi $at, GB_F, 0x10            # mask carry bit
+    srl $at, $at, 4                 # move carry bit into first bit
+    add TMP2, Param0, $at           # add carry bit
+    addi GB_A, GB_A, (C_FLAG | N_FLAG) << 4  # add carry bit and N flag to A
+    sub $at, GB_A, TMP2
+    xor Param0, Param0, GB_A
+    xor Param0, Param0, $at
+    sll Param0, Param0, 1           # shift half flag into position
+    andi Param0, Param0, H_FLAG     # mask half carry bit
+    andi GB_A, $at, 0xFF            # store and mask result
+    andi $at, $at, 0xF00            # get the carry bit
+    srl GB_F, $at, 4                # move c and n bits into flags
+    xori GB_F, GB_F, C_FLAG         # negate C_FLAG
+    bne GB_A, $zero, DECODE_NEXT    # check if z flag should be set
+    or GB_F, GB_F, Param0           # set half carry bit
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    
+#######################
+# Subtract Param0 from A
+#######################
+
+_SUB_FROM_A:
+    addi GB_A, GB_A, (C_FLAG | N_FLAG) << 4  # add carry bit and N flag to A
+    sub $at, GB_A, Param0
+    xor Param0, Param0, GB_A
+    xor Param0, Param0, $at
+    sll Param0, Param0, 1           # shift half flag into position
+    andi Param0, Param0, H_FLAG     # mask half carry bit
+    andi GB_A, $at, 0xFF            # store and mask result
+    andi $at, $at, 0xF00            # get the carry bit
+    srl GB_F, $at, 4                # move c and n bits into flags
+    xori GB_F, GB_F, C_FLAG         # negate C_FLAG
+    bne GB_A, $zero, DECODE_NEXT    # check if z flag should be set
+    or GB_F, GB_F, Param0           # set half carry bit
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    
+    
+#######################
+# Subtract Param0 to A
+#######################
+
+_CP_A:
+    addi TMP2, GB_A, (C_FLAG | N_FLAG) << 4  # add carry bit and N flag to A
+    sub $at, TMP2, Param0
+    xor Param0, Param0, GB_A
+    xor Param0, Param0, $at
+    sll Param0, Param0, 1           # shift half flag into position
+    andi Param0, Param0, H_FLAG     # mask half carry bit
+    andi TMP2, $at, 0xFF            # store and mask result
+    andi $at, $at, 0xF00            # get the carry bit
+    srl GB_F, $at, 4                # move c and n bits into flags
+    xori GB_F, GB_F, C_FLAG         # negate C_FLAG
+    bne TMP2, $zero, DECODE_NEXT    # check if z flag should be set
+    or GB_F, GB_F, Param0           # set half carry bit
+    j DECODE_NEXT
+    set_flags Z_FLAG
+
+#######################
+# Pop top of stack and return to it
+#######################
+
+_GB_RET:
+    addi ADDR, GB_SP, 0
+    jal GB_DO_READ_16
+    addi GB_SP, GB_SP, 2
+
+    # TODO check for interrupt return
+
+    j DECODE_NEXT
+    addi GB_PC, $v0, 0
+    
+#######################
+# Subtract Param0 to A
+#######################
+
+_GB_JP:
+    jal READ_NEXT_INSTRUCTION
+    nop
+    jal READ_NEXT_INSTRUCTION
+    sll TMP2, $v0, 8
+    j DECODE_NEXT
+    or GB_PC, TMP2, $v0
 
 #######################
 # Decimal encodes Param0
@@ -919,16 +2306,3 @@ GB_DA:
     andi $at, Param0, 0x0F
     jr $ra
     nop
-
-
-#######################
-# Reads the byte at PC
-# increments the program counter
-# then returns the byte in register $v0
-#######################
-
-READ_NEXT_INSTRUCTION:
-    # read at PC, increment PC, return value
-    addi ADDR, GB_PC, 0
-    j GB_DO_READ
-    addi GB_PC, GB_PC, 1

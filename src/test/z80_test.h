@@ -15,12 +15,34 @@ int testInt(
     int expected
 );
 
+unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, int registerIndex);
+
+int testSingleADD(
+    struct Z80State* z80, 
+    void** memoryMap, 
+    unsigned char* memory, 
+    char* testOutput,
+    int srcRegister,
+    int baseInstruction,
+    int cFlag
+);
+
 int run0x0Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0x1Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0x2Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0x3Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0x4_7Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0x8_9Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0xA_BTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+
+extern char* registerNames[];
+extern int registerOffset[];
 
 int runTests(char* testOutput);
+
+#define REGISTER_COUNT 8
+#define HL_REGISTER_INDEX 6
+#define A_REGISTER_INDEX 7
 
 #define Z80_NOP         0x00
 #define Z80_LD_BC_d16   0x01
@@ -89,3 +111,82 @@ int runTests(char* testOutput);
 #define Z80_DEC_A       0x3D
 #define Z80_LD_A_d8     0x3E
 #define Z80_CCF         0x3F
+
+#define Z80_LD_B_B      0x40
+#define Z80_LD_B_C      0x41
+#define Z80_LD_B_D      0x42
+#define Z80_LD_B_E      0x43
+#define Z80_LD_B_H      0x44
+#define Z80_LD_B_L      0x45
+#define Z80_LD_B_HL     0x46
+#define Z80_LD_B_A      0x47
+#define Z80_LD_C_B      0x48
+#define Z80_LD_C_C      0x49
+#define Z80_LD_C_D      0x4A
+#define Z80_LD_C_E      0x4B
+#define Z80_LD_C_H      0x4C
+#define Z80_LD_C_L      0x4D
+#define Z80_LD_C_HL     0x4E
+#define Z80_LD_C_A      0x4F
+
+#define Z80_LD_D_B      0x50
+#define Z80_LD_D_C      0x51
+#define Z80_LD_D_D      0x52
+#define Z80_LD_D_E      0x53
+#define Z80_LD_D_H      0x54
+#define Z80_LD_D_L      0x55
+#define Z80_LD_D_HL     0x56
+#define Z80_LD_D_A      0x57
+#define Z80_LD_E_B      0x58
+#define Z80_LD_E_C      0x59
+#define Z80_LD_E_D      0x5A
+#define Z80_LD_E_E      0x5B
+#define Z80_LD_E_H      0x5C
+#define Z80_LD_E_L      0x5D
+#define Z80_LD_E_HL     0x5E
+#define Z80_LD_E_A      0x5F
+
+#define Z80_LD_H_B      0x60
+#define Z80_LD_H_C      0x61
+#define Z80_LD_H_D      0x62
+#define Z80_LD_H_E      0x63
+#define Z80_LD_H_H      0x64
+#define Z80_LD_H_L      0x65
+#define Z80_LD_H_HL     0x66
+#define Z80_LD_H_A      0x67
+#define Z80_LD_L_B      0x68
+#define Z80_LD_L_C      0x69
+#define Z80_LD_L_D      0x6A
+#define Z80_LD_L_E      0x6B
+#define Z80_LD_L_H      0x6C
+#define Z80_LD_L_L      0x6D
+#define Z80_LD_L_HL     0x6E
+#define Z80_LD_L_A      0x6F
+
+#define Z80_LD_HL_B     0x70
+#define Z80_LD_HL_C     0x71
+#define Z80_LD_HL_D     0x72
+#define Z80_LD_HL_E     0x73
+#define Z80_LD_HL_H     0x74
+#define Z80_LD_HL_L     0x75
+#define Z80_HALT        0x76
+#define Z80_LD_HL_A     0x77
+#define Z80_LD_A_B      0x78
+#define Z80_LD_A_C      0x79
+#define Z80_LD_A_D      0x7A
+#define Z80_LD_A_E      0x7B
+#define Z80_LD_A_H      0x7C
+#define Z80_LD_A_L      0x7D
+#define Z80_LD_A_HL     0x7E
+#define Z80_LD_A_A      0x7F
+
+#define Z80_ADD_A_B     0x80
+#define Z80_ADC_A_B     0x88
+
+#define Z80_SUB_A_B     0x90
+#define Z80_SBC_A_B     0x98
+
+#define Z80_AND_A_B     0xA0
+#define Z80_XOR_A_B     0xA8
+#define Z80_OR_A_B      0xB0
+#define Z80_CP_A_B      0xB8
