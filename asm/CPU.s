@@ -41,6 +41,7 @@
 .eqv CPU_STATE_SP, 0x8
 .eqv CPU_STATE_PC, 0xA
 .eqv CPU_STATE_STOP_REASON, 0xC
+.eqv CPU_STATE_INTERRUPTS, 0xD
 
 .eqv Z_FLAG, 0x80
 .eqv N_FLAG, 0x40
@@ -61,6 +62,13 @@
 .eqv STOP_REASON_HALT, 0x2
 .eqv STOP_REASON_INTERRUPT_RET, 0x3
 .eqv STOP_REASON_ERROR, 0x4
+
+.eqv INTERRUPTS_V_BLANK, 0x01;
+.eqv INTERRUPTS_LCDC, 0x02;
+.eqv INTERRUPTS_TIMER, 0x04;
+.eqv INTERRUPTS_SERIAL, 0x08;
+.eqv INTERRUPTS_INPUT, 0x10;
+.eqv INTERRUPTS_ENABLED, 0x80;
 
 .macro clear_flags flags
     andi GB_F, GB_F, %lo(~(\flags))
@@ -125,9 +133,9 @@ GB_LD_BC_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     jal READ_NEXT_INSTRUCTION
-    addi GB_B, $v0, 0 # store B
-    j DECODE_NEXT
     addi GB_C, $v0, 0 # store C
+    j DECODE_NEXT
+    addi GB_B, $v0, 0 # store B
     nop
     nop
 GB_LD_BC_A:
@@ -270,9 +278,9 @@ GB_LD_DE_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     jal READ_NEXT_INSTRUCTION
-    addi GB_D, $v0, 0 # store D
-    j DECODE_NEXT
     addi GB_E, $v0, 0 # store E
+    j DECODE_NEXT
+    addi GB_D, $v0, 0 # store D
     nop
     nop
 GB_LD_DE_A:
@@ -405,7 +413,7 @@ _SKIP_JR:
 ### 0x2X
 GB_JR_NZ:
     andi $at, GB_F, Z_FLAG # check z flag
-    bne $at, $zero, _SKIP_JR # skip jump if not zero
+    bne $at, $zero, _SKIP_JR # if Z_FLAG != 0 skip jump
     nop
     j GB_JR
     nop
@@ -416,9 +424,9 @@ GB_LD_HL_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     jal READ_NEXT_INSTRUCTION
-    addi GB_H, $v0, 0 # store H
+    addi GB_L, $v0, 0 # store H
     j DECODE_NEXT
-    addi GB_L, $v0, 0 # store L
+    addi GB_H, $v0, 0 # store L
     nop
     nop
 GB_LDI_HL_A:
@@ -564,10 +572,10 @@ GB_LD_SP_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     jal READ_NEXT_INSTRUCTION
-    sll GB_SP, $v0, 8 # store high bits
+    addi GB_SP, $v0, 0 # store low bits
+    sll $v0, $v0, 8
     j DECODE_NEXT
-    or GB_SP, GB_SP, $v0 # store low bits
-    nop
+    or GB_SP, GB_SP, $v0 # store high bits
     nop
 GB_LDD_HL_A:
     add VAL, GB_A, 0 # write the value to store
@@ -1861,7 +1869,7 @@ _SKIP_JP:
 ### 0xCX
 GB_RET_NZ:
     andi $at, GB_F, Z_FLAG
-    beq $at, $zero, DECODE_NEXT # if Z_FLAG == 0 skip return
+    bne $at, $zero, DECODE_NEXT # if Z_FLAG != 0 skip return
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     j _GB_RET
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
@@ -1879,7 +1887,7 @@ GB_POP_BC:
     nop
 GB_JP_NZ:
     andi $at, GB_F, Z_FLAG
-    beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip jump
+    bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip jump
     nop
     jal GB_JP
     nop
@@ -1897,7 +1905,7 @@ GB_JP:
     nop
 GB_CALL_NZ:
     andi $at, GB_F, Z_FLAG
-    beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip the call
+    bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip the call
     nop
     jal GB_CALL
     nop
@@ -1922,18 +1930,18 @@ GB_ADD_A_d8:
     nop
     nop
     nop
-GB_RSH_00H:
+GB_RST_00H:
     addi GB_SP, GB_SP, -2
     addi ADDR, GB_SP, 0
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
-    addi GB_PC, $zero, 0x0000
-    j GB_DO_WRITE_16
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0000
     nop
     nop
 GB_RET_Z:
     andi $at, GB_F, Z_FLAG
-    bne $at, $zero, DECODE_NEXT # if Z_FLAG != 0 skip RET
+    beq $at, $zero, DECODE_NEXT # if Z_FLAG == 0 skip RET
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     j _GB_RET
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
@@ -1951,7 +1959,7 @@ GB_RET:
     nop
 GB_JP_Z:
     andi $at, GB_F, Z_FLAG
-    bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip jump
+    beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip jump
     nop
     jal GB_JP
     nop
@@ -1969,7 +1977,7 @@ GB_PREFIX_CB:
     nop
 GB_CALL_Z:
     andi $at, GB_F, Z_FLAG
-    bne $at, $zero, _SKIP_JP
+    beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip call
     nop
     jal GB_CALL
     nop
@@ -1994,19 +2002,307 @@ GB_ADC_A_d8:
     nop
     nop
     nop
-GB_RSH_08H:
+GB_RST_08H:
     addi GB_SP, GB_SP, -2
     addi ADDR, GB_SP, 0
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
-    addi GB_PC, $zero, 0x0008
-    j GB_DO_WRITE_16
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0008
     nop
     nop
-
-
-
-
+### 0XDX
+GB_RET_NC:
+    andi $at, GB_F, C_FLAG
+    bne $at, $zero, DECODE_NEXT # if C_FLAG != 0 skip return
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _GB_RET
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    nop
+    nop
+    nop
+GB_POP_DE:
+    addi ADDR, GB_SP, 0
+    jal GB_DO_READ_16
+    addi GB_SP, GB_SP, 2
+    srl GB_D, $v0, 8 # store B
+    andi GB_E, $v0, 0xFF # store C
+    j DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    nop
+GB_JP_NC:
+    andi $at, GB_F, C_FLAG
+    bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip jump
+    nop
+    jal GB_JP
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_0:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CALL_NC:
+    andi $at, GB_F, C_FLAG
+    bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip the call
+    nop
+    jal GB_CALL
+    nop
+    nop
+    nop
+    nop
+GB_PUSH_DE:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    sll VAL, GB_D, 8
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
+    j GB_DO_WRITE_16
+    or VAL, VAL, GB_E
+    nop
+    nop
+GB_SUB_A_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _SUB_FROM_A
+    addi Param0, $v0, 0
+    nop
+    nop
+    nop
+    nop
+GB_RST_10H:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0010
+    nop
+    nop
+GB_RET_C:
+    andi $at, GB_F, C_FLAG
+    beq $at, $zero, DECODE_NEXT # if Z_FLAG == 0 skip RET
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _GB_RET
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    nop
+    nop
+    nop
+GB_RETI:
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    andi $at, $at, INTERRUPTS_ENABLED
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    j _GB_RET
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    nop
+    nop
+    nop
+GB_JP_C:
+    andi $at, GB_F, C_FLAG
+    beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip jump
+    nop
+    jal GB_JP
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_1:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CALL_C:
+    andi $at, GB_F, C_FLAG
+    beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip call
+    nop
+    jal GB_CALL
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_2:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_SBC_A_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _SBC_FROM_A
+    addi Param0, $v0, 0
+    nop
+    nop
+    nop
+    nop
+GB_RST_18H:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0018
+    nop
+    nop
+### 0xEX
+GB_LDH_a8_A:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    ori ADDR, $v0, 0xFF00
+    j GB_DO_WRITE
+    addi VAL, GB_A, 0
+    nop
+    nop
+    nop
+GB_POP_HL:
+    addi ADDR, GB_SP, 0
+    jal GB_DO_READ_16
+    addi GB_SP, GB_SP, 2
+    srl GB_H, $v0, 8 # store B
+    andi GB_L, $v0, 0xFF # store C
+    j DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    nop
+GB_LDH_C_A:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    addi ADDR, GB_C, 0
+    ori ADDR, $v0, 0xFF00
+    j GB_DO_WRITE
+    addi VAL, GB_A, 0
+    nop
+    nop
+    nop
+GB_ERROR_3:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_4:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_PUSH_HL:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    sll VAL, GB_H, 8
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
+    j GB_DO_WRITE_16
+    or VAL, VAL, GB_L
+    nop
+    nop
+GB_AND_A_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    and GB_A, GB_A, $v0
+    bne GB_A, $zero, DECODE_NEXT
+    andi GB_F, $zero, H_FLAG
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+GB_RST_20H:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0020
+    nop
+    nop
+GB_ADD_SP_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
+    srl $v0, $v0, 24 #sign extend
+    j _ADD_TO_SP
+    sra Param0, $v0, 24
+    nop
+    nop
+    nop
+GB_JP_HL:
+    sll GB_PC, GB_H, 8
+    j DECODE_NEXT
+    or GB_PC, GB_L, 8
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_LD_a16_A:
+    addi ADDR, GB_PC, 0
+    jal GB_DO_READ_16
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
+    addi GB_PC, GB_PC, 2
+    addi ADDR, $v0, 0
+    j GB_DO_WRITE
+    addi VAL, GB_A, 0
+    nop
+GB_ERROR_5:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_6:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_7:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_XOR_A_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    xor GB_A, GB_A, $v0
+    bne GB_A, $zero, DECODE_NEXT
+    andi GB_F, $zero, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+GB_RST_28H:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0028
+    nop
+    nop
+### 0xFX
+    
 
 
 ######################
@@ -2055,10 +2351,10 @@ _GB_DO_WRITE_16:
     add $at, $at, MemoryStart # lookup start of bank in array at MemoryStart
     lw $at, 0($at) # load start of memory bank
     add ADDR, ADDR, $at # use address relative to memory bank
-    sb VAL, 1(ADDR) # store low byte
+    sb VAL, 0(ADDR) # store low byte
     srl VAL, VAL, 8 # shift high byte
     j DECODE_NEXT
-    sb VAL, 0(ADDR) # store high byte
+    sb VAL, 1(ADDR) # store high byte
 
 
 ######################
@@ -2094,9 +2390,9 @@ GB_DO_READ_16:
     add $at, $at, MemoryStart # lookup start of bank in array at MemoryStart
     lw $at, 0($at) # load start of memory bank
     add ADDR, ADDR, $at # use address relative to memory bank
-    lbu $v0, 0(ADDR) # load high byte
+    lbu $v0, 1(ADDR) # load high byte
     sll $v0, $v0, 8
-    lbu $at, 1(ADDR) # load low byte
+    lbu $at, 0(ADDR) # load low byte
     jr $ra
     or $v0, $v0, $at # move low byte
     
@@ -2286,6 +2582,22 @@ _ADD_TO_HL:
     or GB_F, GB_F, $at              # set carry git
     j DECODE_NEXT
     andi GB_F, GB_F, 0xFF           # mask to 8 bits
+
+#######################
+# Adds Param0 to SP
+#######################
+
+_ADD_TO_SP:
+    add $at, Param0, GB_SP
+    xor Param0, $at, Param0
+    xor Param0, Param0, GB_SP # store half bit into Param0
+    andi GB_SP, $at, 0xFFFF # move result into SP
+    srl $at, $at, 12 # shift carry bit into position
+    andi GB_F, $at, C_FLAG # move carry bit into position 
+    srl Param0, Param0, 7 # move half flag into position
+    andi Param0, Param0, H_FLAG # mask half flag
+    j DECODE_NEXT
+    or GB_F, GB_F, Param0 # set half flag
 
     
 #######################

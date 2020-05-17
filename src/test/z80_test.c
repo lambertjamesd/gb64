@@ -115,6 +115,8 @@ int runTests(char* testOutput) {
         // !run0x8_9Tests(&z80, memoryMap, memory, subTestOutput) ||
         // !run0xA_BTests(&z80, memoryMap, memory, subTestOutput) ||
         !run0xCTests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0xDTests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0xETests(&z80, memoryMap, memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

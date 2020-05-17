@@ -32,8 +32,8 @@ int testLD_DE_d16(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected.e = 17;
 
     memory[0] = Z80_LD_DE_d16;
-    memory[1] = 13;
-    memory[2] = 17;
+    memory[1] = 17;
+    memory[2] = 13;
 
     run = runZ80CPU(z80, memoryMap, 1);
 

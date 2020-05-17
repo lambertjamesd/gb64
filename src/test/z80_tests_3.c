@@ -55,8 +55,8 @@ int testLD_SP_d16(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected.sp = 0xD011;
 
     memory[0] = Z80_LD_SP_d16;
-    memory[1] = 0xD0;
-    memory[2] = 0x11;
+    memory[1] = 0x11;
+    memory[2] = 0xD0;
 
     run = runZ80CPU(z80, memoryMap, 1);
 

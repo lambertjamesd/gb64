@@ -14,6 +14,15 @@ enum GB_FLAGS {
     GB_FLAGS_C = 0x10,
 };
 
+enum GB_INTERRUPTS {
+    GB_INTERRUPTS_V_BLANK   = 0x01,
+    GB_INTERRUPTS_LCDC      = 0x02,
+    GB_INTERRUPTS_TIMER     = 0x04,
+    GB_INTERRUPTS_SERIAL    = 0x08,
+    GB_INTERRUPTS_INPUT     = 0x10,
+    GB_INTERRUPTS_ENABLED   = 0x80,
+};
+
 struct Z80State {
     unsigned char a;
     unsigned char f;
@@ -26,7 +35,7 @@ struct Z80State {
     unsigned short sp;
     unsigned short pc;
     unsigned char stopReason;
-    unsigned char unused0;
+    unsigned char interrupts;
     unsigned short unused1;
 };
 

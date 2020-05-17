@@ -15,6 +15,8 @@ int testInt(
     int expected
 );
 
+int testRST(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput, int instruction, int targetAddress);
+
 unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, unsigned char* d8Target, int registerIndex);
 
 int testSingleADD(
@@ -35,6 +37,8 @@ int run0x4_7Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory,
 int run0x8_9Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0xA_BTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0xCTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0xDTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0xETests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 
 extern char* registerNames[];
 extern int registerOffset[];
@@ -213,7 +217,7 @@ int runTests(char* testOutput);
 
 #define Z80_RET_NC      0xD0
 #define Z80_POP_DE      0xD1
-#define Z80_NC_a16      0xD2
+#define Z80_JP_NC_a16   0xD2
 #define Z80_CALL_NC     0xD4
 #define Z80_PUSH_DE     0xD5
 #define Z80_SUB_A_d8    0xD6

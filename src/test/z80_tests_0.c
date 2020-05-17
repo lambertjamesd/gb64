@@ -30,8 +30,8 @@ int testLD_BC_d16(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected.c = 17;
 
     memory[0] = Z80_LD_BC_d16;
-    memory[1] = 13;
-    memory[2] = 17;
+    memory[1] = 17;
+    memory[2] = 13;
 
     run = runZ80CPU(z80, memoryMap, 1);
 
@@ -276,8 +276,8 @@ int testLD_A16_SP(struct Z80State* z80, void** memoryMap, unsigned char* memory,
 
     return testZ80State("LD a16 SP", testOutput, z80, &expected) &&
         testInt("LD a16 SP run result", testOutput, run, 5) &&
-        testInt("LD a16 SP high bits", testOutput, memory[0x140], 0xE8) &&
-        testInt("LD a16 SP low bits", testOutput, memory[0x141], 0x3C) &&
+        testInt("LD a16 SP low bits", testOutput, memory[0x140], 0x3C) &&
+        testInt("LD a16 SP high bits", testOutput, memory[0x141], 0xE8) &&
         1
     ;
 }

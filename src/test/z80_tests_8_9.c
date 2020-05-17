@@ -30,10 +30,6 @@ int testSingleADD(
 
             srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
 
-            sprintf(testOutput, "memory + 1 %X \nmemory %X \nsrcByte %X", memory + 1, memory, srcByte);
-
-            return 0;
-
             if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADC_A_B || 
                 baseInstruction == Z80_ADD_A_d8 || baseInstruction == Z80_ADC_A_d8)
             {
