@@ -1,7 +1,7 @@
 
 #include "z80_test.h"
 
-int testLD_X_Y(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     int expectedRunLength;
@@ -21,11 +21,11 @@ int testLD_X_Y(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
                 continue;
             }
             
-            srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
-            targetByte = getRegisterPointer(&expected, memory + 0x20, memory + 1, targetRegister);
+            srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
+            targetByte = getRegisterPointer(&expected, memory->internalRam + 0x20, memory->internalRam + 1, targetRegister);
 
             initializeZ80(z80);
-            memory[0x20] = 0x0;
+            memory->internalRam[0x20] = 0x0;
             z80->h = 0x80;
             z80->l = 0x20;
             *srcByte = 0x63;
@@ -34,9 +34,9 @@ int testLD_X_Y(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
             *targetByte = 0x63;
             expectedRunLength = (srcRegister == HL_REGISTER_INDEX || targetRegister == HL_REGISTER_INDEX) ? 2 : 1;
 
-            memory[0] = Z80_LD_B_B + REGISTER_COUNT * targetRegister + srcRegister;
+            memory->internalRam[0] = Z80_LD_B_B + REGISTER_COUNT * targetRegister + srcRegister;
 
-            run = runZ80CPU(z80, memoryMap, 1);
+            run = runZ80CPU(z80, memory, 1);
 
             sprintf(instructionName, "LD %s %s", registerNames[targetRegister], registerNames[srcRegister]);
 
@@ -54,7 +54,7 @@ int testLD_X_Y(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
     return 1;
 }
 
-int testHALT(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testHALT(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -63,9 +63,9 @@ int testHALT(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     expected.pc = 1;
     expected.stopReason = STOP_REASON_HALT;
 
-    memory[0] = Z80_HALT;
+    memory->internalRam[0] = Z80_HALT;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("HALT", testOutput, z80, &expected) &&
@@ -74,11 +74,11 @@ int testHALT(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     ;
 }
 
-int run0x4_7Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int run0x4_7Tests(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     return 
-        testLD_X_Y(z80, memoryMap, memory, testOutput) &&
-        testHALT(z80, memoryMap, memory, testOutput) &&
+        testLD_X_Y(z80, memory, testOutput) &&
+        testHALT(z80, memory, testOutput) &&
         1
     ;
 }

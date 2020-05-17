@@ -1,34 +1,31 @@
 
 #include "z80_test.h"
 
-int testLDH_a8_A(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLDH_a8_A(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
     initializeZ80(z80);
-    z80->f = GB_FLAGS_C;
-    z80->sp = 0x8020;
+    z80->a = 0x3E;
     expected = *z80;
-    expected.pc = 1;
+    expected.pc = 2;
 
-    memory[0] = Z80_LDH_a8_A;
-    memory[1] = 0x40;
+    memory->internalRam[0] = Z80_LDH_a8_A;
+    memory->internalRam[1] = 0xF0;
 
-    memory[0x20] = 0xE0;
-    memory[0x21] = 0x34;
+    run = runZ80CPU(z80, memory, 1);
 
-    run = runZ80CPU(z80, memoryMap, 1);
-
-    return testZ80State("RET NC branch", testOutput, z80, &expected) &&
-        testInt("RET NC branch run result", testOutput, run, 3) &&
+    return testZ80State("RET LDH a8 A branch", testOutput, z80, &expected) &&
+        testInt("RET LDH a8 A branch run result", testOutput, run, 3) &&
+        testInt("RET LDH a8 A store result", testOutput, memory->miscBytes[0x1F0], 0x3E) &&
         1
     ;
 }
 
-int run0xETests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int run0xETests(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     return 
-        testLDH_a8_A(z80, memoryMap, memory, testOutput) &&
+        testLDH_a8_A(z80, memory, testOutput) &&
         1
     ;
 }

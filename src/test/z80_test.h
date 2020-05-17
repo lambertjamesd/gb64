@@ -15,30 +15,29 @@ int testInt(
     int expected
 );
 
-int testRST(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput, int instruction, int targetAddress);
+int testRST(struct Z80State* z80, struct Memory* memory, char* testOutput, int instruction, int targetAddress);
 
 unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, unsigned char* d8Target, int registerIndex);
 
 int testSingleADD(
     struct Z80State* z80, 
-    void** memoryMap, 
-    unsigned char* memory, 
+    struct Memory* memory,
     char* testOutput,
     int srcRegister,
     int baseInstruction,
     int cFlag
 );
 
-int run0x0Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0x1Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0x2Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0x3Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0x4_7Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0x8_9Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0xA_BTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0xCTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0xDTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
-int run0xETests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0x0Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0x1Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0x2Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0x3Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0x4_7Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0x8_9Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0xA_BTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0xCTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0xDTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0xETests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 
 extern char* registerNames[];
 extern int registerOffset[];

@@ -1,12 +1,12 @@
 #include "z80.h"
 
 struct Z80State gZ80;
-// 16K memory map
-unsigned char gbMemory[GB_MEMORY_MAP_SIZE];
+struct Memory gMemory;
 
-void zeroMemory(unsigned char* memory, int size)
+void zeroMemory(void* memory, int size)
 {
     int* asInt;
+    unsigned char* asChar;
 
     asInt = (int*)memory;
 
@@ -16,11 +16,11 @@ void zeroMemory(unsigned char* memory, int size)
         size -= 4;
     }
 
-    memory = (unsigned char*)asInt;
+    asChar = (unsigned char*)asInt;
     
     while (size > 0) {
-        *memory = 0;
-        ++memory;
+        *asChar = 0;
+        ++asChar;
         --size;
     }
 }

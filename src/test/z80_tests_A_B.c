@@ -3,8 +3,7 @@
 
 int testSingleBitwise(
     struct Z80State* z80, 
-    void** memoryMap, 
-    unsigned char* memory, 
+    struct Memory* memory,
     char* testOutput,
     int srcRegister,
     int baseInstruction
@@ -27,7 +26,7 @@ int testSingleBitwise(
                 srcValue = aValue;
             }
 
-            srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
+            srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
 
             initializeZ80(z80);
             z80->a = aValue;
@@ -38,7 +37,7 @@ int testSingleBitwise(
             expected.pc = 1;
             expectedRunLength = (srcRegister == HL_REGISTER_INDEX) ? 2 : 1;
 
-            memory[0] = baseInstruction + srcRegister;
+            memory->internalRam[0] = baseInstruction + srcRegister;
             
             if (baseInstruction == Z80_AND_A_B)
             {
@@ -67,7 +66,7 @@ int testSingleBitwise(
                 expected.f |= GB_FLAGS_Z;
             }
 
-            run = runZ80CPU(z80, memoryMap, 1);
+            run = runZ80CPU(z80, memory, 1);
 
             if (
                 !testZ80State(instructionName, testOutput, z80, &expected) ||
@@ -87,16 +86,16 @@ int testSingleBitwise(
     return 1;
 }
 
-int testAND_XOR_OR(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testAND_XOR_OR(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleBitwise( z80, memoryMap, memory, testOutput, srcRegister, Z80_AND_A_B) ||
-            !testSingleBitwise( z80, memoryMap, memory, testOutput, srcRegister, Z80_XOR_A_B) ||
-            !testSingleBitwise( z80, memoryMap, memory, testOutput, srcRegister, Z80_OR_A_B) ||
+            !testSingleBitwise( z80, memory, testOutput, srcRegister, Z80_AND_A_B) ||
+            !testSingleBitwise( z80, memory, testOutput, srcRegister, Z80_XOR_A_B) ||
+            !testSingleBitwise( z80, memory, testOutput, srcRegister, Z80_OR_A_B) ||
             0
         )
         {
@@ -107,15 +106,15 @@ int testAND_XOR_OR(struct Z80State* z80, void** memoryMap, unsigned char* memory
     return 1;
 }
 
-int testCP(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testCP(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_CP_A_B, 0) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_CP_A_B, 1) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_CP_A_B, 0) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_CP_A_B, 1) ||
             0
         )
         {
@@ -126,11 +125,11 @@ int testCP(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* 
     return 1;
 }
 
-int run0xA_BTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int run0xA_BTests(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     return 
-        testCP(z80, memoryMap, memory, testOutput) &&
-        testAND_XOR_OR(z80, memoryMap, memory, testOutput) &&
+        testCP(z80, memory, testOutput) &&
+        testAND_XOR_OR(z80, memory, testOutput) &&
         1
     ;
 }

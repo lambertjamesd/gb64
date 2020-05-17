@@ -1,5 +1,4 @@
 #include "z80_test.h"
-#include "../memory_map.h"
 
 #define offsetof(st, m) \
     ((int)&(((st *)0)->m))
@@ -91,32 +90,51 @@ unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget,
     }
 }
 
+void DefaultRegisterWriter(struct Memory* memory, int addr, unsigned char value)
+{
+    if (addr >= MISC_START && addr < 0x10000)
+    {
+        memory->miscBytes[addr - MISC_START] = value;
+    }
+}
+
+void BankSwitchingWriter(struct Memory* memory, int addr, unsigned char value)
+{
+    
+}
+
 int runTests(char* testOutput) {
     struct Z80State z80;
-    unsigned char memory[512];
-    void* memoryMap[MEMORY_MAP_SIZE];
     int i;
     char subTestOutput[200];
 
+    zeroMemory(&gMemory, sizeof(struct Memory));
+
     for (i = 0; i < MEMORY_MAP_SIZE; ++i)
     {
-        memoryMap[i] = memory;
+        gMemory.memoryMap[i] = gMemory.internalRam;
     }
 
-    zeroMemory(memory, 512);
+    for (i = 0; i < REGISTER_WRITER_COUNT; ++i)
+    {
+        gMemory.registerWriters[i] = &DefaultRegisterWriter;
+    }
+
+    gMemory.bankSwitch = &BankSwitchingWriter;
+
     initializeZ80(&z80);
 
     if (
-        // !run0x0Tests(&z80, memoryMap, memory, subTestOutput) ||
-        // !run0x1Tests(&z80, memoryMap, memory, subTestOutput) ||
-        // !run0x2Tests(&z80, memoryMap, memory, subTestOutput) ||
-        // !run0x3Tests(&z80, memoryMap, memory, subTestOutput) ||
-        // !run0x4_7Tests(&z80, memoryMap, memory, subTestOutput) ||
-        // !run0x8_9Tests(&z80, memoryMap, memory, subTestOutput) ||
-        // !run0xA_BTests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0xCTests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0xDTests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0xETests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0x0Tests(&z80, &gMemory, subTestOutput) ||
+        !run0x1Tests(&z80, &gMemory, subTestOutput) ||
+        !run0x2Tests(&z80, &gMemory, subTestOutput) ||
+        !run0x3Tests(&z80, &gMemory, subTestOutput) ||
+        !run0x4_7Tests(&z80, &gMemory, subTestOutput) ||
+        !run0x8_9Tests(&z80, &gMemory, subTestOutput) ||
+        !run0xA_BTests(&z80, &gMemory, subTestOutput) ||
+        !run0xCTests(&z80, &gMemory, subTestOutput) ||
+        !run0xDTests(&z80, &gMemory, subTestOutput) ||
+        !run0xETests(&z80, &gMemory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

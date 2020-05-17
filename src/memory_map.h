@@ -1,9 +1,10 @@
 
 
-#define MEMORY_MAP_SIZE 128
+#define MEMORY_MAP_SIZE 16
 #define RAM_BANK_SIZE 8192
 #define MAX_RAM_BANKS 4
 #define VRAM_SIZE 8192
+#define MAX_VRAM_BANKS 2
 #define MISC_MEMORY_SIZE 512
 
 #define MM_ROM_0        0
@@ -21,6 +22,10 @@
 #define SPRITE_F_FLIPY    0x20
 #define SPRITE_F_PALLETE  0x10
 
+#define MISC_START              0xFE00
+#define REGISTERS_START         0xFF00
+#define REGISTER_WRITER_COUNT   0x08
+
 struct Sprite {
     unsigned char x;
     unsigned char y;
@@ -30,14 +35,24 @@ struct Sprite {
 
 struct MiscMemory {
     struct Sprite sprites[SPRITE_COUNT];
-    unsigned char ioPorts[224];
+    unsigned char unused[0x60];
+    unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };
 
+struct Memory;
+
+typedef void (*RegisterWriter)(struct Memory*, int addr, unsigned char value);
+
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
+    RegisterWriter registerWriters[REGISTER_WRITER_COUNT];
+    RegisterWriter bankSwitch;
+    union {
+        struct MiscMemory misc;
+        unsigned char miscBytes[512];
+    };
     unsigned char internalRam[RAM_BANK_SIZE];
-    unsigned char pagedRam[RAM_BANK_SIZE * MAX_RAM_BANKS];
-    unsigned char vram[VRAM_SIZE];
-    struct MiscMemory misc; 
+    unsigned char* pagedRam;
+    unsigned char vram[VRAM_SIZE * MAX_VRAM_BANKS];
 };

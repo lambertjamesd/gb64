@@ -1,4 +1,6 @@
 
+#include "memory_map.h"
+
 enum STOP_REASON {
     STOP_REASON_NONE,
     STOP_REASON_STOP,
@@ -39,11 +41,10 @@ struct Z80State {
     unsigned short unused1;
 };
 
-extern int runZ80CPU(struct Z80State* state, void** memoryMap, int cyclesToRun);
+extern int runZ80CPU(struct Z80State* state, struct Memory* memory, int cyclesToRun);
 
-#define GB_MEMORY_MAP_SIZE  0x10000
 extern struct Z80State gZ80;
-extern unsigned char gbMemory[GB_MEMORY_MAP_SIZE];
+extern struct Memory gMemory;
 
-extern void zeroMemory(unsigned char* memory, int size);
+extern void zeroMemory(void* memory, int size);
 extern void initializeZ80(struct Z80State* state);

@@ -3,8 +3,7 @@
 
 int testSingleADD(
     struct Z80State* z80, 
-    void** memoryMap, 
-    unsigned char* memory, 
+    struct Memory* memory, 
     char* testOutput,
     int srcRegister,
     int baseInstruction,
@@ -28,7 +27,7 @@ int testSingleADD(
                 srcValue = aValue;
             }
 
-            srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
+            srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
 
             if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADC_A_B || 
                 baseInstruction == Z80_ADD_A_d8 || baseInstruction == Z80_ADC_A_d8)
@@ -92,14 +91,14 @@ int testSingleADD(
 
             if (baseInstruction < 0xC0)
             {            
-                memory[0] = baseInstruction + srcRegister;
+                memory->internalRam[0] = baseInstruction + srcRegister;
             }
             else
             {
-                memory[0] = baseInstruction;
+                memory->internalRam[0] = baseInstruction;
             }
 
-            run = runZ80CPU(z80, memoryMap, 1);
+            run = runZ80CPU(z80, memory, 1);
 
             if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADD_A_d8) 
             {
@@ -145,17 +144,17 @@ int testSingleADD(
     return 1;
 }
 
-int testADD_ADC(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testADD_ADC(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_ADD_A_B, 0) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_ADD_A_B, 1) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_ADC_A_B, 0) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_ADC_A_B, 1) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADD_A_B, 0) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADD_A_B, 1) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADC_A_B, 0) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADC_A_B, 1) ||
             0
         )
         {
@@ -166,17 +165,17 @@ int testADD_ADC(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     return 1;
 }
 
-int testSUB_SBC(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testSUB_SBC(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_SUB_A_B, 0) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_SUB_A_B, 1) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_SBC_A_B, 0) ||
-            !testSingleADD( z80, memoryMap, memory, testOutput, srcRegister, Z80_SBC_A_B, 1) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SUB_A_B, 0) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SUB_A_B, 1) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SBC_A_B, 0) ||
+            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SBC_A_B, 1) ||
             0
         )
         {
@@ -187,11 +186,11 @@ int testSUB_SBC(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     return 1;
 }
 
-int run0x8_9Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int run0x8_9Tests(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     return 
-        testADD_ADC(z80, memoryMap, memory, testOutput) &&
-        testSUB_SBC(z80, memoryMap, memory, testOutput) &&
+        testADD_ADC(z80, memory, testOutput) &&
+        testSUB_SBC(z80, memory, testOutput) &&
         1
     ;
 }

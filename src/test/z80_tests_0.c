@@ -1,6 +1,6 @@
 #include "z80_test.h"
 
-int testNOP(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testNOP(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -8,9 +8,9 @@ int testNOP(struct Z80State* z80, void** memoryMap, unsigned char* memory, char*
     expected = *z80;
     expected.pc = 1;
 
-    memory[0] = Z80_NOP;
+    memory->internalRam[0] = Z80_NOP;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("NOP", testOutput, z80, &expected) &&
@@ -19,7 +19,7 @@ int testNOP(struct Z80State* z80, void** memoryMap, unsigned char* memory, char*
     ;
 }
 
-int testLD_BC_d16(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_BC_d16(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -29,11 +29,11 @@ int testLD_BC_d16(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected.b = 13;
     expected.c = 17;
 
-    memory[0] = Z80_LD_BC_d16;
-    memory[1] = 17;
-    memory[2] = 13;
+    memory->internalRam[0] = Z80_LD_BC_d16;
+    memory->internalRam[1] = 17;
+    memory->internalRam[2] = 13;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("LD BC d16", testOutput, z80, &expected) &&
@@ -42,7 +42,7 @@ int testLD_BC_d16(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     ;
 }
 
-int testLD_BC_A(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_BC_A(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -55,19 +55,19 @@ int testLD_BC_A(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     expected = *z80;
     expected.pc = 1;
 
-    memory[0] = Z80_LD_BC_A;
+    memory->internalRam[0] = Z80_LD_BC_A;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("LD BC A", testOutput, z80, &expected) &&
         testInt("LD BC A run result", testOutput, run, 2) &&
-        testInt("LD BC A stored value", testOutput, memory[0x105], 63) &&
+        testInt("LD BC A stored value", testOutput, memory->internalRam[0x105], 63) &&
         1
     ;
 }
 
-int testINC_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testINC_BC(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -81,10 +81,10 @@ int testINC_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
     expected.b = 1;
     expected.c = 4;
 
-    memory[0] = Z80_INC_BC;
-    memory[1] = Z80_INC_BC;
+    memory->internalRam[0] = Z80_INC_BC;
+    memory->internalRam[1] = Z80_INC_BC;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("INC BC", testOutput, z80, &expected) ||
         !testInt("INC BC run result", testOutput, run, 2))
@@ -97,12 +97,12 @@ int testINC_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
     expected.c = 0;
     expected.pc = 2;
     
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return testZ80State("INC BC rollover", testOutput, z80, &expected);
 }
 
-int testINC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testINC_B(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -111,11 +111,11 @@ int testINC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     expected.pc = 1;
     expected.b = 1;
 
-    memory[0] = Z80_INC_B;
-    memory[1] = Z80_INC_B;
-    memory[2] = Z80_INC_B;
+    memory->internalRam[0] = Z80_INC_B;
+    memory->internalRam[1] = Z80_INC_B;
+    memory->internalRam[2] = Z80_INC_B;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("INC B", testOutput, z80, &expected) ||
         !testInt("INC B run result", testOutput, run, 1))
@@ -129,7 +129,7 @@ int testINC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     expected.f = 0xA0;
     expected.pc = 2;
     expected.b = 0;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     
     if (!testZ80State("INC B overflow", testOutput, z80, &expected) ||
         !testInt("INC B run result", testOutput, run, 1))
@@ -143,7 +143,7 @@ int testINC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     expected.f = 0x20;
     expected.pc = 3;
     expected.b = 0x20;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     
     return 
         testZ80State("INC B half carry", testOutput, z80, &expected) &&
@@ -152,7 +152,7 @@ int testINC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     ;
 }
 
-int testDEC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testDEC_B(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -162,11 +162,11 @@ int testDEC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     expected.pc = 1;
     expected.b = 0xFF;
 
-    memory[0] = Z80_DEC_B;
-    memory[1] = Z80_DEC_B;
-    memory[2] = Z80_DEC_B;
+    memory->internalRam[0] = Z80_DEC_B;
+    memory->internalRam[1] = Z80_DEC_B;
+    memory->internalRam[2] = Z80_DEC_B;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("DEC B", testOutput, z80, &expected) ||
         !testInt("DEC B run result", testOutput, run, 1))
@@ -177,7 +177,7 @@ int testDEC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     // test setting zero flag
     z80->b = 0x1;
     z80->f = 0;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     expected.f = 0xC0;
     expected.pc = 2;
     expected.b = 0;
@@ -191,7 +191,7 @@ int testDEC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     // test setting half flag
     z80->b = 0x10;
     z80->f = 0;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     expected.f = 0x40;
     expected.pc = 3;
     expected.b = 0x0F;
@@ -203,7 +203,7 @@ int testDEC_B(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     ;
 }
 
-int testLD_B_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_B_d8(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -212,10 +212,10 @@ int testLD_B_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     expected.pc = 2;
     expected.b = 23;
 
-    memory[0] = Z80_LD_B_d8;
-    memory[1] = 23;
+    memory->internalRam[0] = Z80_LD_B_d8;
+    memory->internalRam[1] = 23;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("LD B d8", testOutput, z80, &expected) &&
@@ -224,7 +224,7 @@ int testLD_B_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     ;
 }
 
-int testRLCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testRLCA(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -235,10 +235,10 @@ int testRLCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     z80->a = 0x1;
     z80->f = 0xF0;
 
-    memory[0] = Z80_RLCA;
-    memory[1] = Z80_RLCA;
+    memory->internalRam[0] = Z80_RLCA;
+    memory->internalRam[1] = Z80_RLCA;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("RLCA", testOutput, z80, &expected) ||
         !testInt("RLCA run result", testOutput, run, 1))
@@ -250,7 +250,7 @@ int testRLCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     expected.pc = 2;
     expected.a = 0x01;
     expected.f = 0x10;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     
     return 
         testZ80State("RLCA set carry", testOutput, z80, &expected) &&
@@ -259,7 +259,7 @@ int testRLCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     ;
 }
 
-int testLD_A16_SP(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_A16_SP(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -268,21 +268,21 @@ int testLD_A16_SP(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected = *z80;
     expected.pc = 3;
 
-    memory[0] = Z80_LD_a16_SP;
-    memory[1] = 0x81;
-    memory[2] = 0x40;
+    memory->internalRam[0] = Z80_LD_a16_SP;
+    memory->internalRam[1] = 0x81;
+    memory->internalRam[2] = 0x40;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return testZ80State("LD a16 SP", testOutput, z80, &expected) &&
         testInt("LD a16 SP run result", testOutput, run, 5) &&
-        testInt("LD a16 SP low bits", testOutput, memory[0x140], 0x3C) &&
-        testInt("LD a16 SP high bits", testOutput, memory[0x141], 0xE8) &&
+        testInt("LD a16 SP low bits", testOutput, memory->internalRam[0x140], 0x3C) &&
+        testInt("LD a16 SP high bits", testOutput, memory->internalRam[0x141], 0xE8) &&
         1
     ;
 }
 
-int testADD_HL_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testADD_HL_BC(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -297,11 +297,11 @@ int testADD_HL_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected.l = 0x01;
     expected.f = 0x0;
 
-    memory[0] = Z80_ADD_HL_BC;
-    memory[1] = Z80_ADD_HL_BC;
-    memory[2] = Z80_ADD_HL_BC;
+    memory->internalRam[0] = Z80_ADD_HL_BC;
+    memory->internalRam[1] = Z80_ADD_HL_BC;
+    memory->internalRam[2] = Z80_ADD_HL_BC;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("HL BC", testOutput, z80, &expected) ||
         !testInt("HL BC run result", testOutput, run, 2))
@@ -318,7 +318,7 @@ int testADD_HL_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     expected.c = 0;
     expected.f = 0x20;
     
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("HL BC", testOutput, z80, &expected) ||
         !testInt("HL BC run result", testOutput, run, 2))
@@ -327,7 +327,7 @@ int testADD_HL_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     }
 
     z80->b = 0x70;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     expected.pc = 3;
     expected.h = 0x00;
     expected.l = 0x01;
@@ -341,7 +341,7 @@ int testADD_HL_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory,
     ;
 }
 
-int testLD_A_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_A_BC(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -352,11 +352,11 @@ int testLD_A_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     expected.pc = 1;
     expected.a = 0xA3;
 
-    memory[0] = Z80_LD_A_BC;
-    memory[1] = 23;
-    memory[0x130] = 0xA3;
+    memory->internalRam[0] = Z80_LD_A_BC;
+    memory->internalRam[1] = 23;
+    memory->internalRam[0x130] = 0xA3;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("LD A BC", testOutput, z80, &expected) &&
@@ -366,7 +366,7 @@ int testLD_A_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
 }
 
 
-int testDEC_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testDEC_BC(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -380,10 +380,10 @@ int testDEC_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
     expected.b = 1;
     expected.c = 2;
 
-    memory[0] = Z80_DEC_BC;
-    memory[1] = Z80_DEC_BC;
+    memory->internalRam[0] = Z80_DEC_BC;
+    memory->internalRam[1] = Z80_DEC_BC;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("DEC BC", testOutput, z80, &expected) ||
         !testInt("DEC BC run result", testOutput, run, 2))
@@ -396,13 +396,13 @@ int testDEC_BC(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
     expected.c = 0xFF;
     expected.pc = 2;
     
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return testZ80State("DEC BC rollover", testOutput, z80, &expected);
 }
 
 
-int testINC_C(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testINC_C(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -411,9 +411,9 @@ int testINC_C(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     expected.pc = 1;
     expected.c = 1;
 
-    memory[0] = Z80_INC_C;
+    memory->internalRam[0] = Z80_INC_C;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     
     return 
         testZ80State("INC C", testOutput, z80, &expected) &&
@@ -422,7 +422,7 @@ int testINC_C(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     ;
 }
 
-int testDEC_C(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testDEC_C(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -432,9 +432,9 @@ int testDEC_C(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
     expected.pc = 1;
     expected.c = 0xFF;
 
-    memory[0] = Z80_DEC_C;
+    memory->internalRam[0] = Z80_DEC_C;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
     
     return 
         testZ80State("DEC C", testOutput, z80, &expected) &
@@ -444,7 +444,7 @@ int testDEC_C(struct Z80State* z80, void** memoryMap, unsigned char* memory, cha
 }
 
 
-int testLD_C_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testLD_C_d8(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -453,10 +453,10 @@ int testLD_C_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     expected.pc = 2;
     expected.c = 23;
 
-    memory[0] = Z80_LD_C_d8;
-    memory[1] = 23;
+    memory->internalRam[0] = Z80_LD_C_d8;
+    memory->internalRam[1] = 23;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("LD C d8", testOutput, z80, &expected) &&
@@ -465,7 +465,7 @@ int testLD_C_d8(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
     ;
 }
 
-int testRRCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int testRRCA(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     struct Z80State expected;
@@ -477,10 +477,10 @@ int testRRCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     expected.f = 0x10;
     expected.a = 0x80;
 
-    memory[0] = Z80_RRCA;
-    memory[1] = Z80_RRCA;
+    memory->internalRam[0] = Z80_RRCA;
+    memory->internalRam[1] = Z80_RRCA;
 
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     if (!testZ80State("RRCA", testOutput, z80, &expected) ||
         !testInt("RRCA run result", testOutput, run, 1))
@@ -492,7 +492,7 @@ int testRRCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     expected.pc = 2;
     expected.f = 0;
     expected.a = 0x40;
-    run = runZ80CPU(z80, memoryMap, 1);
+    run = runZ80CPU(z80, memory, 1);
 
     return 
         testZ80State("RRCA no carry", testOutput, z80, &expected) &&
@@ -501,25 +501,25 @@ int testRRCA(struct Z80State* z80, void** memoryMap, unsigned char* memory, char
     ;
 }
 
-int run0x0Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput)
+int run0x0Tests(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     return 
-        testNOP(z80, memoryMap, memory, testOutput) &&
-        testLD_BC_d16(z80, memoryMap, memory, testOutput) &&
-        testLD_BC_A(z80, memoryMap, memory, testOutput) &&
-        testINC_BC(z80, memoryMap, memory, testOutput) &&
-        testINC_B(z80, memoryMap, memory, testOutput) &&
-        testDEC_B(z80, memoryMap, memory, testOutput) &&
-        testLD_B_d8(z80, memoryMap, memory, testOutput) &&
-        testRLCA(z80, memoryMap, memory, testOutput) &&
-        testLD_A16_SP(z80, memoryMap, memory, testOutput) &&
-        testADD_HL_BC(z80, memoryMap, memory, testOutput) &&
-        testLD_A_BC(z80, memoryMap, memory, testOutput) &&
-        testDEC_BC(z80, memoryMap, memory, testOutput) &&
-        testINC_C(z80, memoryMap, memory, testOutput) &&
-        testDEC_C(z80, memoryMap, memory, testOutput) &&
-        testLD_C_d8(z80, memoryMap, memory, testOutput) &&
-        testRRCA(z80, memoryMap, memory, testOutput) &&
+        testNOP(z80, memory, testOutput) &&
+        testLD_BC_d16(z80, memory, testOutput) &&
+        testLD_BC_A(z80, memory, testOutput) &&
+        testINC_BC(z80, memory, testOutput) &&
+        testINC_B(z80, memory, testOutput) &&
+        testDEC_B(z80, memory, testOutput) &&
+        testLD_B_d8(z80, memory, testOutput) &&
+        testRLCA(z80, memory, testOutput) &&
+        testLD_A16_SP(z80, memory, testOutput) &&
+        testADD_HL_BC(z80, memory, testOutput) &&
+        testLD_A_BC(z80, memory, testOutput) &&
+        testDEC_BC(z80, memory, testOutput) &&
+        testINC_C(z80, memory, testOutput) &&
+        testDEC_C(z80, memory, testOutput) &&
+        testLD_C_d8(z80, memory, testOutput) &&
+        testRRCA(z80, memory, testOutput) &&
         1
     ;
 }
