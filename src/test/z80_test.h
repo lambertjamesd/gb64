@@ -15,7 +15,7 @@ int testInt(
     int expected
 );
 
-unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, int registerIndex);
+unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, unsigned char* d8Target, int registerIndex);
 
 int testSingleADD(
     struct Z80State* z80, 
@@ -34,6 +34,7 @@ int run0x3Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, c
 int run0x4_7Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0x8_9Tests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 int run0xA_BTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
+int run0xCTests(struct Z80State* z80, void** memoryMap, unsigned char* memory, char* testOutput);
 
 extern char* registerNames[];
 extern int registerOffset[];
@@ -43,6 +44,7 @@ int runTests(char* testOutput);
 #define REGISTER_COUNT 8
 #define HL_REGISTER_INDEX 6
 #define A_REGISTER_INDEX 7
+#define d8_REGISTER_INDEX 8
 
 #define Z80_NOP         0x00
 #define Z80_LD_BC_d16   0x01
@@ -188,5 +190,63 @@ int runTests(char* testOutput);
 
 #define Z80_AND_A_B     0xA0
 #define Z80_XOR_A_B     0xA8
+
 #define Z80_OR_A_B      0xB0
 #define Z80_CP_A_B      0xB8
+
+#define Z80_RET_NZ      0xC0
+#define Z80_POP_BC      0xC1
+#define Z80_JP_NZ_a16   0xC2
+#define Z80_JP_a16      0xC3
+#define Z80_CALL_NZ     0xC4
+#define Z80_PUSH_BC     0xC5
+#define Z80_ADD_A_d8    0xC6
+#define Z80_RST_00H     0xC7
+#define Z80_RET_Z       0xC8
+#define Z80_RET         0xC9
+#define Z80_JP_Z_a16    0xCA
+#define Z80_PREFIX_CB   0xCB
+#define Z80_CALL_Z      0xCC
+#define Z80_CALL        0xCD
+#define Z80_ADC_A_d8    0xCE
+#define Z80_RST_08H     0xCF
+
+#define Z80_RET_NC      0xD0
+#define Z80_POP_DE      0xD1
+#define Z80_NC_a16      0xD2
+#define Z80_CALL_NC     0xD4
+#define Z80_PUSH_DE     0xD5
+#define Z80_SUB_A_d8    0xD6
+#define Z80_RST_10H     0xD7
+#define Z80_RET_C       0xD8
+#define Z80_RETI        0xD9
+#define Z80_JP_C_a16    0xDA
+#define Z80_CALL_C      0xDC
+#define Z80_SBC_A_d8    0xDE
+#define Z80_RST_18H     0xDF
+
+#define Z80_LDH_a8_A    0xE0
+#define Z80_POP_HL      0xE1
+#define Z80_LD_C_ADDR_A 0xE2
+#define Z80_PUSH_HL     0xE5
+#define Z80_AND_A_d8    0xE6
+#define Z80_RST_20H     0xE7
+#define Z80_ADD_SP_r8   0xE8
+#define Z80_JP_HL       0xE9
+#define Z80_a16_A       0xEA
+#define Z80_XOR_A_d8    0xEE
+#define Z80_RST_28H     0xEF
+
+#define Z80_LDH_A_a8    0xF0
+#define Z80_POP_AF      0xF1
+#define Z80_LD_A_C_ADDR 0xF2
+#define Z80_DI          0xF3
+#define Z80_PUSH_AF     0xF5
+#define Z80_OR_A_d8     0xF6
+#define Z80_RST_30H     0xF7
+#define Z80_HL_SP_r8    0xF8
+#define Z80_SP_HL       0xF9
+#define Z80_A_a16       0xFA
+#define Z80_EI          0xFB
+#define Z80_CP_A_d8     0xFE
+#define Z80_RST_38H     0xFF

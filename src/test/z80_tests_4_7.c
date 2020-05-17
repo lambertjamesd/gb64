@@ -21,8 +21,8 @@ int testLD_X_Y(struct Z80State* z80, void** memoryMap, unsigned char* memory, ch
                 continue;
             }
             
-            srcByte = getRegisterPointer(z80, memory + 0x20, srcRegister);
-            targetByte = getRegisterPointer(&expected, memory + 0x20, targetRegister);
+            srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
+            targetByte = getRegisterPointer(&expected, memory + 0x20, memory + 1, targetRegister);
 
             initializeZ80(z80);
             memory[0x20] = 0x0;

@@ -60,6 +60,7 @@ char* registerNames[] = {
     "L",
     "HL",
     "A",
+    "d8",
 };
 
 int registerOffset[] = {
@@ -71,13 +72,18 @@ int registerOffset[] = {
     offsetof(struct Z80State, l),
     0,
     offsetof(struct Z80State, a),
+    0,
 };
 
-unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, int registerIndex)
+unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, unsigned char* d8Target, int registerIndex)
 {
     if (registerIndex == HL_REGISTER_INDEX)
     {
         return hlTarget;
+    }
+    else if (registerIndex == d8_REGISTER_INDEX)
+    {
+        return d8Target;
     }
     else
     {
@@ -101,13 +107,14 @@ int runTests(char* testOutput) {
     initializeZ80(&z80);
 
     if (
-        !run0x0Tests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0x1Tests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0x2Tests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0x3Tests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0x4_7Tests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0x8_9Tests(&z80, memoryMap, memory, subTestOutput) ||
-        !run0xA_BTests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0x0Tests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0x1Tests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0x2Tests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0x3Tests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0x4_7Tests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0x8_9Tests(&z80, memoryMap, memory, subTestOutput) ||
+        // !run0xA_BTests(&z80, memoryMap, memory, subTestOutput) ||
+        !run0xCTests(&z80, memoryMap, memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

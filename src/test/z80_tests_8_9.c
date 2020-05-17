@@ -28,9 +28,14 @@ int testSingleADD(
                 srcValue = aValue;
             }
 
-            srcByte = getRegisterPointer(z80, memory + 0x20, srcRegister);
+            srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
 
-            if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADC_A_B)
+            sprintf(testOutput, "memory + 1 %X \nmemory %X \nsrcByte %X", memory + 1, memory, srcByte);
+
+            return 0;
+
+            if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADC_A_B || 
+                baseInstruction == Z80_ADD_A_d8 || baseInstruction == Z80_ADC_A_d8)
             {
                 aResult = aValue + srcValue;
             }
@@ -39,11 +44,11 @@ int testSingleADD(
                 aResult = aValue - srcValue;
             }
 
-            if (baseInstruction == Z80_ADC_A_B && cFlag)
+            if ((baseInstruction == Z80_ADC_A_B || baseInstruction == Z80_ADC_A_d8) && cFlag)
             {
                 ++aResult;
             }
-            else if (baseInstruction == Z80_SBC_A_B && cFlag)
+            else if ((baseInstruction == Z80_SBC_A_B || (baseInstruction == Z80_SBC_A_d8)) && cFlag)
             {
                 --aResult;
             }
@@ -60,13 +65,13 @@ int testSingleADD(
             }
 
             expected = *z80;
-            expected.pc = 1;
-            if (baseInstruction != Z80_CP_A_B)
+            expected.pc = (srcRegister == d8_REGISTER_INDEX) ? 2 : 1;
+            if (baseInstruction != Z80_CP_A_B && baseInstruction != Z80_CP_A_d8)
             {
                 expected.a = 0xFF & aResult;
             }
             expected.f = 0;
-            expectedRunLength = (srcRegister == HL_REGISTER_INDEX) ? 2 : 1;
+            expectedRunLength = (srcRegister == HL_REGISTER_INDEX || srcRegister == d8_REGISTER_INDEX) ? 2 : 1;
 
             if (aResult & 0x100)
             {
@@ -83,32 +88,40 @@ int testSingleADD(
                 expected.f |= GB_FLAGS_H;
             }
 
-            if (baseInstruction == Z80_SUB_A_B || baseInstruction == Z80_SBC_A_B || baseInstruction == Z80_CP_A_B)
+            if (baseInstruction == Z80_SUB_A_B || baseInstruction == Z80_SBC_A_B || baseInstruction == Z80_CP_A_B ||
+                baseInstruction == Z80_SUB_A_d8 || baseInstruction == Z80_SBC_A_d8 || baseInstruction == Z80_CP_A_d8)
             {
                 expected.f |= GB_FLAGS_N;
             }
 
-            memory[0] = baseInstruction + srcRegister;
+            if (baseInstruction < 0xC0)
+            {            
+                memory[0] = baseInstruction + srcRegister;
+            }
+            else
+            {
+                memory[0] = baseInstruction;
+            }
 
             run = runZ80CPU(z80, memoryMap, 1);
 
-            if (baseInstruction == Z80_ADD_A_B) 
+            if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADD_A_d8) 
             {
                 sprintf(instructionName, "ADD A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_ADC_A_B) 
+            else if (baseInstruction == Z80_ADC_A_B || baseInstruction == Z80_ADC_A_d8) 
             {
                 sprintf(instructionName, "ADC A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_SUB_A_B) 
+            else if (baseInstruction == Z80_SUB_A_B || baseInstruction == Z80_SUB_A_d8) 
             {
                 sprintf(instructionName, "SUB A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_SBC_A_B) 
+            else if (baseInstruction == Z80_SBC_A_B || baseInstruction == Z80_SBC_A_d8) 
             {
                 sprintf(instructionName, "SBC A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_CP_A_B) 
+            else if (baseInstruction == Z80_CP_A_B || baseInstruction == Z80_CP_A_d8) 
             {
                 sprintf(instructionName, "CP A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 

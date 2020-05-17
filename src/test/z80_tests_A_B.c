@@ -27,7 +27,7 @@ int testSingleBitwise(
                 srcValue = aValue;
             }
 
-            srcByte = getRegisterPointer(z80, memory + 0x20, srcRegister);
+            srcByte = getRegisterPointer(z80, memory + 0x20, memory + 1, srcRegister);
 
             initializeZ80(z80);
             z80->a = aValue;
