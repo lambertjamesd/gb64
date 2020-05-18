@@ -35,22 +35,30 @@ int testSingleBitwise(
             *srcByte = srcValue;
             expected = *z80;
             expected.pc = 1;
-            expectedRunLength = (srcRegister == HL_REGISTER_INDEX) ? 2 : 1;
+            expectedRunLength = (srcRegister == HL_REGISTER_INDEX || srcRegister == d8_REGISTER_INDEX) ? 2 : 1;
 
-            memory->internalRam[0] = baseInstruction + srcRegister;
+            if (baseInstruction >= 0xC0)
+            {
+                expected.pc = 2;
+                memory->internalRam[0] = baseInstruction;
+            }
+            else
+            {
+                memory->internalRam[0] = baseInstruction + srcRegister;
+            }
             
-            if (baseInstruction == Z80_AND_A_B)
+            if (baseInstruction == Z80_AND_A_B || baseInstruction == Z80_AND_A_d8)
             {
                 expected.a = aValue & srcValue;
                 expected.f = GB_FLAGS_H;
                 sprintf(instructionName, "AND A (%X) %s (%X)", aValue, registerNames[srcRegister], srcValue);
             } 
-            else if (baseInstruction == Z80_XOR_A_B)
+            else if (baseInstruction == Z80_XOR_A_B || baseInstruction == Z80_XOR_A_d8)
             {
                 expected.a = aValue ^ srcValue;
                 sprintf(instructionName, "XOR A (%X) %s (%X)", aValue, registerNames[srcRegister], srcValue);
             } 
-            else if (baseInstruction == Z80_OR_A_B) 
+            else if (baseInstruction == Z80_OR_A_B || baseInstruction == Z80_OR_A_d8) 
             {
                 expected.a = aValue | srcValue;
                 sprintf(instructionName, "OR A (%X) %s (%X)", aValue, registerNames[srcRegister], srcValue);

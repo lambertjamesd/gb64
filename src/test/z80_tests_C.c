@@ -385,6 +385,7 @@ int run0xCTests(struct Z80State* z80, struct Memory* memory, char* testOutput)
         testRET_Z(z80, memory, testOutput) &&
         testRET(z80, memory, testOutput) &&
         testJP_Z(z80, memory, testOutput) &&
+        runPrefixCBTests(z80, memory, testOutput) &&
         testCB(z80, memory, testOutput) &&
         testCALL_Z(z80, memory, testOutput) &&
         testCALL(z80, memory, testOutput) &&

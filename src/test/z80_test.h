@@ -28,6 +28,14 @@ int testSingleADD(
     int cFlag
 );
 
+int testSingleBitwise(
+    struct Z80State* z80, 
+    struct Memory* memory,
+    char* testOutput,
+    int srcRegister,
+    int baseInstruction
+);
+
 int run0x0Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0x1Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0x2Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
@@ -35,9 +43,11 @@ int run0x3Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0x4_7Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0x8_9Tests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xA_BTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int runPrefixCBTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xCTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xDTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xETests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int run0xFTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 
 extern char* registerNames[];
 extern int registerOffset[];
@@ -236,7 +246,7 @@ int runTests(char* testOutput);
 #define Z80_RST_20H     0xE7
 #define Z80_ADD_SP_r8   0xE8
 #define Z80_JP_HL       0xE9
-#define Z80_a16_A       0xEA
+#define Z80_LD_a16_A    0xEA
 #define Z80_XOR_A_d8    0xEE
 #define Z80_RST_28H     0xEF
 
@@ -247,9 +257,9 @@ int runTests(char* testOutput);
 #define Z80_PUSH_AF     0xF5
 #define Z80_OR_A_d8     0xF6
 #define Z80_RST_30H     0xF7
-#define Z80_HL_SP_r8    0xF8
+#define Z80_LD_HL_SP_r8 0xF8
 #define Z80_SP_HL       0xF9
-#define Z80_A_a16       0xFA
+#define Z80_LD_A_a16    0xFA
 #define Z80_EI          0xFB
 #define Z80_CP_A_d8     0xFE
 #define Z80_RST_38H     0xFF

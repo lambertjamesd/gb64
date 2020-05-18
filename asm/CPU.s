@@ -23,6 +23,8 @@
 .set ADDR, $t2
 .set VAL,  $t3
 .set TMP2,  $t4
+.set TMP3,  $t5
+.set TMP4,  $t6
 
 .set CPUState, $a0
 .set Memory, $a1
@@ -496,7 +498,7 @@ GB_LD_H_D8:
     nop
     nop
 GB_DAA:
-    j DECODE_NEXT
+    j _GB_DAA
     nop
     nop
     nop
@@ -2114,7 +2116,7 @@ GB_RET_C:
     nop
 GB_RETI:
     lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    andi $at, $at, INTERRUPTS_ENABLED
+    ori $at, $at, INTERRUPTS_ENABLED
     sb $at, CPU_STATE_INTERRUPTS(CPUState)
     j _GB_RET
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
@@ -2197,7 +2199,7 @@ GB_POP_HL:
 GB_LDH_C_A:
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     addi ADDR, GB_C, 0
-    ori ADDR, $v0, 0xFF00
+    ori ADDR, ADDR, 0xFF00
     j GB_DO_WRITE_REGISTERS
     addi VAL, GB_A, 0
     nop
@@ -2235,7 +2237,7 @@ GB_AND_A_d8:
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
     and GB_A, GB_A, $v0
     bne GB_A, $zero, DECODE_NEXT
-    andi GB_F, $zero, H_FLAG
+    ori GB_F, $zero, H_FLAG
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -2251,7 +2253,7 @@ GB_RST_20H:
 GB_ADD_SP_d8:
     jal READ_NEXT_INSTRUCTION
     addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
-    srl $v0, $v0, 24 #sign extend
+    sll $v0, $v0, 24 #sign extend
     j _ADD_TO_SP
     sra Param0, $v0, 24
     nop
@@ -2260,7 +2262,7 @@ GB_ADD_SP_d8:
 GB_JP_HL:
     sll GB_PC, GB_H, 8
     j DECODE_NEXT
-    or GB_PC, GB_L, 8
+    or GB_PC, GB_PC, GB_L
     nop
     nop
     nop
@@ -2321,8 +2323,150 @@ GB_RST_28H:
     nop
     nop
 ### 0xFX
-    
-
+GB_LDH_A_a8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    jal GB_DO_READ_REGISTERS
+    ori ADDR, $v0, 0xFF00
+    j DECODE_NEXT
+    move GB_A, $v0
+    nop
+    nop
+GB_POP_AF:
+    addi ADDR, GB_SP, 0
+    jal GB_DO_READ_16
+    addi GB_SP, GB_SP, 2
+    srl GB_A, $v0, 8 # store A
+    andi GB_F, $v0, 0xF0 # store F
+    j DECODE_NEXT
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    nop
+GB_LDH_A_C:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    jal GB_DO_READ_REGISTERS
+    ori ADDR, GB_C, 0xFF00
+    j DECODE_NEXT
+    move GB_A, $v0
+    nop
+    nop
+    nop
+GB_DI:
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    andi $at, $at, %lo(~INTERRUPTS_ENABLED)
+    j DECODE_NEXT
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_8:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_PUSH_AF:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    sll VAL, GB_A, 8
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
+    j GB_DO_WRITE_16
+    or VAL, VAL, GB_F
+    nop
+    nop
+GB_OR_A_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    or GB_A, GB_A, $v0
+    bne GB_A, $zero, DECODE_NEXT
+    ori GB_F, $zero, 0
+    j DECODE_NEXT
+    set_flags Z_FLAG
+    nop
+GB_RST_30H:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0030
+    nop
+    nop
+GB_LD_HL_SP_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    sll $v0, $v0, 24 #sign extend
+    sra $v0, $v0, 24
+    add GB_L, GB_SP, $v0
+    j _MASK_HL
+    srl GB_H, GB_L, 8
+    nop
+GB_LD_SP_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    sll GB_SP, GB_H, 8
+    j DECODE_NEXT
+    or GB_SP, GB_SP, GB_L
+    nop
+    nop
+    nop
+    nop
+GB_LD_A_a16:
+    move ADDR, GB_PC
+    jal GB_DO_READ_16
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 3 # update cycles run
+    move ADDR, $v0
+    jal GB_DO_READ
+    addi GB_PC, GB_PC, 2
+    move GB_A, $v0
+    j DECODE_NEXT
+GB_EI:
+    nop
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    ori $at, $at, INTERRUPTS_ENABLED
+    j DECODE_NEXT
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    nop
+    nop
+    nop
+GB_ERROR_9:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_ERROR_10:
+    addi $at, $zero, STOP_REASON_ERROR
+    j GB_BREAK_LOOP # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    nop
+    nop
+    nop
+    nop
+    nop
+GB_CP_A_d8:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    j _CP_A
+    addi Param0, $v0, 0
+    nop
+    nop
+    nop
+    nop
+GB_RST_38H:
+    addi GB_SP, GB_SP, -2
+    addi ADDR, GB_SP, 0
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    addi VAL, GB_PC, 0
+    j GB_DO_WRITE_16
+    addi GB_PC, $zero, 0x0038
+    nop
+    nop
 
 ######################
 # Return instructions left to run
@@ -2502,7 +2646,7 @@ GB_DO_READ_REGISTERS:
     add ADDR, $at, ADDR # ADDR relative to MISC memory
     add ADDR, Memory, ADDR # Relative to memory
     jr $ra
-    sb $v0, 0(ADDR)
+    lbu $v0, 0(ADDR)
 
 #######################
 # Reads the byte at PC
@@ -2650,6 +2794,75 @@ GB_RR_IMPL:
 _GB_RR_IMPL_IS_ZERO:
     jr $ra
     set_flags Z_FLAG                        # set Z_FLAG
+
+#######################
+# Shifts param left one bit
+#######################
+
+GB_SLA_IMPL:
+    sll Param0, Param0, 1
+    srl GB_F, Param0, 4 # move carry bit into position
+    andi Param0, Param0, 0xFF # mask result
+    andi GB_F, GB_F, 0x10 # mask carry bit
+    beqz Param0, _GB_SLA_IMPL_ZERO # if zero set Z_FLAG
+    clear_flags Z_FLAG | N_FLAG | H_FLAG
+    jr $ra
+    nop
+_GB_SLA_IMPL_ZERO:
+    jr $ra
+    set_flags Z_FLAG
+    
+#######################
+# Shifts param right 1 bit
+#######################
+
+GB_SRA_IMPL:
+    sll GB_F, Param0, 4 # move carry bit into position
+    sll Param0, Param0, 24 # shift left so right shift sign extends
+    sra Param0, Param0, 25
+    andi Param0, Param0, 0xFF # mask result
+    andi GB_F, GB_F, 0x10 # mask carry bit
+    beqz Param0, _GB_SRA_IMPL_ZERO # if zero set Z_FLAG
+    clear_flags Z_FLAG | N_FLAG | H_FLAG
+    jr $ra
+    nop
+_GB_SRA_IMPL_ZERO:
+    jr $ra
+    set_flags Z_FLAG
+    
+#######################
+# Shifts param right 1 bit
+#######################
+
+GB_SRL_IMPL:
+    sll GB_F, Param0, 4 # move carry bit into position
+    srl Param0, Param0, 1
+    andi Param0, Param0, 0xFF # mask result
+    andi GB_F, GB_F, 0x10 # mask carry bit
+    beqz Param0, _GB_SRL_IMPL_ZERO # if zero set Z_FLAG
+    clear_flags Z_FLAG | N_FLAG | H_FLAG
+    jr $ra
+    nop
+_GB_SRL_IMPL_ZERO:
+    jr $ra
+    set_flags Z_FLAG
+    
+#######################
+# Swap nibbles Param0
+#######################
+
+GB_SWAP_IMPL:
+    sll Param0, Param0, 4 # move lower nibble up
+    srl $at, Param0, 8 # move upper nibble down
+    or Param0, Param0, $at
+    andi Param0, Param0, 0xFF # mask result
+    beqz Param0, _GB_SWAP_IMPL_ZERO # if zero set Z_FLAG
+    clear_flags Z_FLAG | N_FLAG | H_FLAG | C_FLAG
+    jr $ra
+    nop
+_GB_SWAP_IMPL_ZERO:
+    jr $ra
+    set_flags Z_FLAG
 
 #######################
 # Adds Param0 to HL
@@ -2824,10 +3037,205 @@ _GB_JP:
     or GB_PC, TMP2, $v0
 
 #######################
-# Decimal encodes Param0
+# Decimal encodes GB_A
 #######################
 
-GB_DA:
-    andi $at, Param0, 0x0F
-    jr $ra
+_GB_DAA:
+    move TMP2, GB_A
+    clear_flags C_FLAG | Z_FLAG
+    andi $at, GB_F, H_FLAG 
+    bnez $at, _GB_DAA_ADJUST_LOW # if H_FLAG then adjust lower
+    andi $at, GB_A, 0xF
+    addi $at, $at, -9
+    blez $at, _GB_DAA_HIGH_NIBBLE # if (A & 0xF <= 9) goto _GB_DAA_HIGH_NIBBLE 
     nop
+_GB_DAA_ADJUST_LOW:
+    set_flags H_FLAG
+    addi GB_A, GB_A, 6
+_GB_DAA_HIGH_NIBBLE:
+    andi $at, GB_F, C_FLAG
+    bnez $at, _GB_DAA_ADJUST_HIGH # if C_FLAG then adjust upper
+    addi $at, TMP2, -99
+    blez $at, DECODE_NEXT # if (A <= 99) goto next instruction
+    nop
+_GB_DAA_ADJUST_HIGH:
+    set_flags C_FLAG
+    j DECODE_NEXT
+    addi GB_A, GB_A, 0x60
+
+#######################
+# Handle the CB_PREFIX command
+#######################
+
+_GB_PREFIX_CB:
+    jal READ_NEXT_INSTRUCTION
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR # update cycles run
+    move TMP2, $v0
+    andi $at, $v0, 0x7
+    sll $at, $at, 4
+    la $ra, _GB_PREFIX_DECODE_REGISTER # load jump table address
+    add $ra, $ra, $at # calculate jump offset
+    jr $ra # jump to instruction decode
+    nop
+_GB_PREFIX_DECODE_REGISTER:
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_B
+    j DECODE_NEXT
+    move GB_B, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_C
+    j DECODE_NEXT
+    move GB_C, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_D
+    j DECODE_NEXT
+    move GB_D, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_E
+    j DECODE_NEXT
+    move GB_E, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_H
+    j DECODE_NEXT
+    move GB_H, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_L
+    j DECODE_NEXT
+    move GB_L, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_C
+    j DECODE_NEXT
+    move GB_C, Param0
+    
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, GB_A
+    j DECODE_NEXT
+    move GB_A, Param0
+
+_GB_PREFIX_DECODE_HL:
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    sll ADDR, GB_H, 8
+    jal GB_DO_READ
+    or ADDR, ADDR, GB_L
+    jal _GB_PREFIX_DECODE_INSTRUCTION
+    move Param0, $v0
+    j GB_DO_WRITE_16
+    move VAL, Param0
+
+_GB_PREFIX_DECODE_INSTRUCTION:
+    andi $at, TMP2, 0xF8 # calculate instruction
+    la TMP3, _GB_PREFIX_RLC
+    add TMP3, TMP3, $at # calculate relative jump
+    jr TMP3 #jump in table
+    nop
+_GB_PREFIX_RLC:
+    j GB_RLC_IMPL
+    nop
+_GB_PREFIX_RRC:
+    j GB_RRC_IMPL
+    nop
+_GB_PREFIX_RL:
+    j GB_RL_IMPL
+    nop
+_GB_PREFIX_RR:
+    j GB_RR_IMPL
+    nop
+_GB_PREFIX_SLA:
+    j GB_SLA_IMPL
+    nop
+_GB_PREFIX_SRA:
+    j GB_SRA_IMPL
+    nop
+_GB_PREFIX_SWAP:
+    j GB_SWAP_IMPL
+    nop
+_GB_PREFIX_SRL:
+    j GB_SRL_IMPL
+    nop
+_GB_PREFIX_BIT_0:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 7
+_GB_PREFIX_BIT_1:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 6
+_GB_PREFIX_BIT_2:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 5
+_GB_PREFIX_BIT_3:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 4
+_GB_PREFIX_BIT_4:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 3
+_GB_PREFIX_BIT_5:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 2
+_GB_PREFIX_BIT_6:
+    j _GB_PREFIX_FINISH_BIT
+    sll Param0, Param0, 1
+_GB_PREFIX_BIT_7:
+    j _GB_PREFIX_FINISH_BIT
+    nop
+_GB_RES_BIT_0:
+    jr TMP3
+    andi Param0, Param0, 0xFE
+_GB_RES_BIT_1:
+    jr TMP3
+    andi Param0, Param0, 0xFD
+_GB_RES_BIT_2:
+    jr TMP3
+    andi Param0, Param0, 0xFB
+_GB_RES_BIT_3:
+    jr TMP3
+    andi Param0, Param0, 0xF7
+_GB_RES_BIT_4:
+    jr TMP3
+    andi Param0, Param0, 0xEF
+_GB_RES_BIT_5:
+    jr TMP3
+    andi Param0, Param0, 0xDF
+_GB_RES_BIT_6:
+    jr TMP3
+    andi Param0, Param0, 0xBF
+_GB_RES_BIT_7:
+    jr TMP3
+    andi Param0, Param0, 0x7F
+_GB_SET_BIT_0:
+    jr TMP3
+    ori Param0, Param0, 0x01
+_GB_SET_BIT_1:
+    jr TMP3
+    ori Param0, Param0, 0x02
+_GB_SET_BIT_2:
+    jr TMP3
+    ori Param0, Param0, 0x04
+_GB_SET_BIT_3:
+    jr TMP3
+    ori Param0, Param0, 0x08
+_GB_SET_BIT_4:
+    jr TMP3
+    ori Param0, Param0, 0x10
+_GB_SET_BIT_5:
+    jr TMP3
+    ori Param0, Param0, 0x20
+_GB_SET_BIT_6:
+    jr TMP3
+    ori Param0, Param0, 0x40
+_GB_SET_BIT_7:
+    jr TMP3
+    ori Param0, Param0, 0x80
+
+_GB_PREFIX_FINISH_BIT:
+    clear_flags Z_FLAG | N_FLAG | H_FLAG # clear all but the carry flag
+    xor GB_F, GB_F, Param0 # set the z flag
+    j DECODE_NEXT # don't jr since bit checks don't need to store back
+    set_flags H_FLAG # set h flag
+
+
+

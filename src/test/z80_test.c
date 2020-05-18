@@ -26,14 +26,15 @@ int testZ80State(
 ) {
     if (actual->a != expected->a || actual->f != expected->f || actual->b != expected->b || actual->c != expected->c ||
         actual->d != expected->d || actual->e != expected->e || actual->h != expected->h || actual->l != expected->l ||
-        actual->pc != expected->pc || actual->sp != expected->sp || actual->stopReason != expected->stopReason)
+        actual->pc != expected->pc || actual->sp != expected->sp || actual->stopReason != expected->stopReason ||
+        actual->interrupts != expected->interrupts)
     {
         sprintf(testOutput, 
             "Failed z80: %s\n"
             "   A  F  B  C  D  E  H  L  PC   SP\n"
             " E %02X %02X %02X %02X %02X %02X %02X %02X %04X %04X\n"
             " A %02X %02X %02X %02X %02X %02X %02X %02X %04X %04X\n"
-            " ASR %d ESR %d",
+            " ASR %d ESR %d AI %X EI %X",
             testName, 
             expected->a, expected->f, expected->b, expected->c, 
             expected->d, expected->e, expected->h, expected->l, 
@@ -41,7 +42,8 @@ int testZ80State(
             actual->a, actual->f, actual->b, actual->c, 
             actual->d, actual->e, actual->h, actual->l, 
             actual->pc, actual->sp,
-            actual->stopReason, expected->stopReason
+            actual->stopReason, expected->stopReason,
+            actual->interrupts, expected->interrupts
         );
 
         return 0;
@@ -135,6 +137,7 @@ int runTests(char* testOutput) {
         !run0xCTests(&z80, &gMemory, subTestOutput) ||
         !run0xDTests(&z80, &gMemory, subTestOutput) ||
         !run0xETests(&z80, &gMemory, subTestOutput) ||
+        !run0xFTests(&z80, &gMemory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

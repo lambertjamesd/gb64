@@ -216,8 +216,8 @@ int testRETI(struct Z80State* z80, struct Memory* memory, char* testOutput)
 
     run = runZ80CPU(z80, memory, 1);
 
-    return testZ80State("RETI branch", testOutput, z80, &expected) &&
-        testInt("RETI branch run result", testOutput, run, 3) &&
+    return testZ80State("RETI", testOutput, z80, &expected) &&
+        testInt("RETI run result", testOutput, run, 3) &&
         1
     ;
 }
