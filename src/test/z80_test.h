@@ -263,3 +263,15 @@ int runTests(char* testOutput);
 #define Z80_EI          0xFB
 #define Z80_CP_A_d8     0xFE
 #define Z80_RST_38H     0xFF
+
+#define Z80_CB_RLC      0x00
+#define Z80_CB_RRC      0x08
+#define Z80_CB_RL       0x10
+#define Z80_CB_RR       0x18
+#define Z80_CB_SLA      0x20
+#define Z80_CB_SRA      0x28
+#define Z80_CB_SWAP     0x30
+#define Z80_CB_SRL      0x38
+#define Z80_CB_BIT      0x40
+#define Z80_CB_RES      0x80
+#define Z80_CB_SET      0xC0

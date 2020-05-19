@@ -16,6 +16,7 @@ beginseg
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.xbus.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.fifo.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.xbus.o"
+	include "memory.o"
 endseg
 
 beginseg

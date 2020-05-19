@@ -2725,16 +2725,17 @@ _GB_DEC_DONE:
 #######################
 
 GB_RLC_IMPL:
-    beq Param0, $zero, _GB_RLC_IMPL_IS_ZERO
+    beq Param0, $zero, _GB_BITWISE_IMPL_IS_ZERO
     sll Param0, Param0, 1 # shift the bit once
     srl $at, Param0, 8 # shift carry bit back
     or Param0, Param0, $at # put rotated bit back
     andi Param0, Param0, 0xFF # keep param 8 bits
-    jr $ra
     sll GB_F, $at, 4 # shift carry bit into C_FLAG position
-_GB_RLC_IMPL_IS_ZERO:
     jr $ra
-    andi GB_F, $zero, Z_FLAG # set Z_FLAG
+    andi GB_F, GB_F, C_FLAG # mask c flag
+_GB_BITWISE_IMPL_IS_ZERO:
+    jr $ra
+    ori GB_F, $zero, Z_FLAG # set Z_FLAG
 
 #######################
 # Rotates Param0 1 bit left and 
@@ -2742,18 +2743,15 @@ _GB_RLC_IMPL_IS_ZERO:
 #######################
 
 GB_RRC_IMPL:
-    beq Param0, $zero, _GB_RRC_IMPL_IS_ZERO
+    beq Param0, $zero, _GB_BITWISE_IMPL_IS_ZERO
     sll $at, Param0, 7 # shift carry bit back
     srl Param0, Param0, 1 # shift bit once
     or Param0, Param0, $at # put rotated bit back
     andi Param0, Param0, 0xFF # keep param 8 bits
     andi $at, $at, 0x80 # mask carry bit
-    jr $ra
     srl GB_F, $at, 3 # move carry bit into C_FLAG
-
-_GB_RRC_IMPL_IS_ZERO:
     jr $ra
-    andi GB_F, $zero, Z_FLAG # set Z_FLAG
+    andi GB_F, GB_F, C_FLAG # mask c flag
     
 #######################
 # Rotates Param0 1 bit left through carry and 
@@ -2767,11 +2765,11 @@ GB_RL_IMPL:
     or Param0, Param0, $at # set carry bit
     andi $at, Param0, 0x100 # read new carry bit
     andi Param0, Param0, 0xFF # set to 8 bits
-    beq Param0, $zero, _GB_RL_IMPL_IS_ZERO
+    beq Param0, $zero, _GB_BITWISE_ADD_Z
     srl GB_F, $at, 4 # shift new carry bit into carry flag 
     jr $ra
     nop
-_GB_RL_IMPL_IS_ZERO:
+_GB_BITWISE_ADD_Z:
     jr $ra
     set_flags Z_FLAG # set Z_FLAG
     
@@ -2787,13 +2785,10 @@ GB_RR_IMPL:
     andi GB_F, $at, 0x10                    # set carry bit
 
     srl Param0, Param0, 1                   # shift the bit once
-    beq Param0, $zero, _GB_RR_IMPL_IS_ZERO
+    beq Param0, $zero, _GB_BITWISE_ADD_Z
     andi Param0, Param0, 0xFF               # set to 8 bits
     jr $ra
     nop
-_GB_RR_IMPL_IS_ZERO:
-    jr $ra
-    set_flags Z_FLAG                        # set Z_FLAG
 
 #######################
 # Shifts param left one bit
@@ -2803,14 +2798,10 @@ GB_SLA_IMPL:
     sll Param0, Param0, 1
     srl GB_F, Param0, 4 # move carry bit into position
     andi Param0, Param0, 0xFF # mask result
-    andi GB_F, GB_F, 0x10 # mask carry bit
-    beqz Param0, _GB_SLA_IMPL_ZERO # if zero set Z_FLAG
-    clear_flags Z_FLAG | N_FLAG | H_FLAG
+    beqz Param0, _GB_BITWISE_ADD_Z # if zero set Z_FLAG
+    andi GB_F, GB_F, C_FLAG # mask carry bit
     jr $ra
     nop
-_GB_SLA_IMPL_ZERO:
-    jr $ra
-    set_flags Z_FLAG
     
 #######################
 # Shifts param right 1 bit
@@ -2821,14 +2812,10 @@ GB_SRA_IMPL:
     sll Param0, Param0, 24 # shift left so right shift sign extends
     sra Param0, Param0, 25
     andi Param0, Param0, 0xFF # mask result
+    beqz Param0, _GB_BITWISE_ADD_Z # if zero set Z_FLAG
     andi GB_F, GB_F, 0x10 # mask carry bit
-    beqz Param0, _GB_SRA_IMPL_ZERO # if zero set Z_FLAG
-    clear_flags Z_FLAG | N_FLAG | H_FLAG
     jr $ra
     nop
-_GB_SRA_IMPL_ZERO:
-    jr $ra
-    set_flags Z_FLAG
     
 #######################
 # Shifts param right 1 bit
@@ -2838,31 +2825,24 @@ GB_SRL_IMPL:
     sll GB_F, Param0, 4 # move carry bit into position
     srl Param0, Param0, 1
     andi Param0, Param0, 0xFF # mask result
+    beqz Param0, _GB_BITWISE_ADD_Z # if zero set Z_FLAG
     andi GB_F, GB_F, 0x10 # mask carry bit
-    beqz Param0, _GB_SRL_IMPL_ZERO # if zero set Z_FLAG
-    clear_flags Z_FLAG | N_FLAG | H_FLAG
     jr $ra
     nop
-_GB_SRL_IMPL_ZERO:
-    jr $ra
-    set_flags Z_FLAG
     
 #######################
 # Swap nibbles Param0
 #######################
 
 GB_SWAP_IMPL:
+    srl $at, Param0, 4 # move upper nibble down
     sll Param0, Param0, 4 # move lower nibble up
-    srl $at, Param0, 8 # move upper nibble down
     or Param0, Param0, $at
     andi Param0, Param0, 0xFF # mask result
-    beqz Param0, _GB_SWAP_IMPL_ZERO # if zero set Z_FLAG
+    beqz Param0, _GB_BITWISE_IMPL_IS_ZERO # if zero set Z_FLAG
     clear_flags Z_FLAG | N_FLAG | H_FLAG | C_FLAG
     jr $ra
     nop
-_GB_SWAP_IMPL_ZERO:
-    jr $ra
-    set_flags Z_FLAG
 
 #######################
 # Adds Param0 to HL
@@ -3041,7 +3021,6 @@ _GB_JP:
 #######################
 
 _GB_DAA:
-    move TMP2, GB_A
     clear_flags C_FLAG | Z_FLAG
     andi $at, GB_F, H_FLAG 
     bnez $at, _GB_DAA_ADJUST_LOW # if H_FLAG then adjust lower
@@ -3055,8 +3034,8 @@ _GB_DAA_ADJUST_LOW:
 _GB_DAA_HIGH_NIBBLE:
     andi $at, GB_F, C_FLAG
     bnez $at, _GB_DAA_ADJUST_HIGH # if C_FLAG then adjust upper
-    addi $at, TMP2, -99
-    blez $at, DECODE_NEXT # if (A <= 99) goto next instruction
+    addi $at, GB_A, -0x99
+    blez $at, DECODE_NEXT # if (A <= 0x99) goto next instruction
     nop
 _GB_DAA_ADJUST_HIGH:
     set_flags C_FLAG
@@ -3108,10 +3087,10 @@ _GB_PREFIX_DECODE_REGISTER:
     j DECODE_NEXT
     move GB_L, Param0
     
-    jal _GB_PREFIX_DECODE_INSTRUCTION
-    move Param0, GB_C
-    j DECODE_NEXT
-    move GB_C, Param0
+    j _GB_PREFIX_DECODE_HL
+    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
+    nop
+    nop
     
     jal _GB_PREFIX_DECODE_INSTRUCTION
     move Param0, GB_A
@@ -3119,13 +3098,14 @@ _GB_PREFIX_DECODE_REGISTER:
     move GB_A, Param0
 
 _GB_PREFIX_DECODE_HL:
-    addi CycleCount, CycleCount, -CYCLES_PER_INSTR * 2 # update cycles run
     sll ADDR, GB_H, 8
     jal GB_DO_READ
     or ADDR, ADDR, GB_L
     jal _GB_PREFIX_DECODE_INSTRUCTION
     move Param0, $v0
-    j GB_DO_WRITE_16
+    sll ADDR, GB_H, 8
+    or ADDR, ADDR, GB_L
+    j GB_DO_WRITE
     move VAL, Param0
 
 _GB_PREFIX_DECODE_INSTRUCTION:
@@ -3183,57 +3163,57 @@ _GB_PREFIX_BIT_7:
     j _GB_PREFIX_FINISH_BIT
     nop
 _GB_RES_BIT_0:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xFE
 _GB_RES_BIT_1:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xFD
 _GB_RES_BIT_2:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xFB
 _GB_RES_BIT_3:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xF7
 _GB_RES_BIT_4:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xEF
 _GB_RES_BIT_5:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xDF
 _GB_RES_BIT_6:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0xBF
 _GB_RES_BIT_7:
-    jr TMP3
+    jr $ra
     andi Param0, Param0, 0x7F
 _GB_SET_BIT_0:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x01
 _GB_SET_BIT_1:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x02
 _GB_SET_BIT_2:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x04
 _GB_SET_BIT_3:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x08
 _GB_SET_BIT_4:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x10
 _GB_SET_BIT_5:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x20
 _GB_SET_BIT_6:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x40
 _GB_SET_BIT_7:
-    jr TMP3
+    jr $ra
     ori Param0, Param0, 0x80
 
 _GB_PREFIX_FINISH_BIT:
-    clear_flags Z_FLAG | N_FLAG | H_FLAG # clear all but the carry flag
-    xor GB_F, GB_F, Param0 # set the z flag
+    andi Param0, Param0, Z_FLAG # clear all but the z flag position
+    xori GB_F, Param0, Z_FLAG # set the z flag
     j DECODE_NEXT # don't jr since bit checks don't need to store back
     set_flags H_FLAG # set h flag
 

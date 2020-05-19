@@ -83,6 +83,8 @@ int		fontcol[4];	/* color for shadowed fonts */
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
+extern unsigned int memoryStart;
+
 /*
  * This is the main routine of the app.
  */
@@ -98,7 +100,7 @@ game(void)
     int		oldbut;
 	int     y;
 
-	runTests(str);
+	//runTests(str);
 
     /*
      * Main game loop
@@ -154,6 +156,7 @@ game(void)
 
 			FONTCOL(55, 255, 155, 255);
 			cstring = str;
+			sprintf(cstring, "%X", (int)osMemSize - (int)&memoryStart - 0x80000000);
 
 			y = 18;
 

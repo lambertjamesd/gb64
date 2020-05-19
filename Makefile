@@ -58,7 +58,7 @@ S_FILES = asm/CPU.s
 
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
-DATAFILES   =	gfxinit.c gfxstatic.c cfb.c rsp_cfb.c zbuffer.c
+DATAFILES   =	gfxinit.c gfxstatic.c cfb.c rsp_cfb.c zbuffer.c memory.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 
