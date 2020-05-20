@@ -16,7 +16,6 @@ beginseg
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.xbus.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.fifo.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.xbus.o"
-	include "memory_start.o"
 endseg
 
 beginseg
@@ -38,7 +37,13 @@ beginseg
 	flags OBJECT
 	number STATIC_SEGMENT
 	include "gfxinit.o"
-	include "gfxstatic.o"
+endseg
+
+beginseg
+	name "texture"
+	flags OBJECT
+	number TEXTURE_SEGMENT
+	include "texture.o"
 endseg
 
 beginseg
@@ -52,6 +57,7 @@ beginwave
 	name "game"
 	include "code"
 	include "static"
+	include "texture"
 	include "cfb"
 	include "rsp_cfb"
 	include "zbuffer"

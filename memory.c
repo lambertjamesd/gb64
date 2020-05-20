@@ -14,6 +14,12 @@ void _checkInitHeap()
     }
 }
 
+
+void *cacheFreePointer(void* target)
+{
+    return (void*)((int)target & 0x0FFFFFFF | 0xA0000000);
+}
+
 void *malloc(unsigned int size)
 {
     void *result;

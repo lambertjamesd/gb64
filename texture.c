@@ -12,12 +12,20 @@
  *************************************************************************/
 
 /*
- * File:	gfxstatic.c
+ * File:	gfxtexture.c
  *
- * This file holds display list segments that are 'static' data.
+ * This file holds textures
  *
  */
 
 #include <ultra64.h>
-#include "boot.h"
-#include "game.h"
+
+/*
+ * TEXTURES
+ */
+#include "RGBA16foliageMM.h"
+// #include "RGBA16graniteMM.h"
+// #include "RGBA16grass2MM.h"
+// #include "RGBA16sandMM.h"
+// #include "RGBA16sidewalkMM.h"
+

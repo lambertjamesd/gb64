@@ -30,7 +30,7 @@ APP =		bin/gb.out
 
 TARGETS =	bin/gb.n64
 
-TEXHFILES =	
+TEXHFILES =	RGBA16foliageMM.h
 
 HFILES =	$(TEXHFILES) boot.h game.h controller.h font.h font_ext.h \
 		letters_img.h static.h \
@@ -39,27 +39,27 @@ HFILES =	$(TEXHFILES) boot.h game.h controller.h font.h font_ext.h \
 		src/memory_map.h
 
 CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
-	src/test/z80_test.c                   \
-	src/test/z80_tests_0.c                \
-	src/test/z80_tests_1.c                \
-	src/test/z80_tests_2.c                \
-	src/test/z80_tests_3.c                \
-	src/test/z80_tests_4_7.c              \
-	src/test/z80_tests_8_9.c              \
-	src/test/z80_tests_A_B.c              \
-	src/test/z80_tests_C.c                \
-	src/test/z80_tests_D.c                \
-	src/test/z80_tests_E.c                \
-	src/test/z80_tests_F.c                \
-	src/test/z80_tests_prefix_cb.c        \
-	src/z80.c                             \
-	memory.c
+       src/test/z80_test.c                   \
+       src/test/z80_tests_0.c                \
+       src/test/z80_tests_1.c                \
+       src/test/z80_tests_2.c                \
+       src/test/z80_tests_3.c                \
+       src/test/z80_tests_4_7.c              \
+       src/test/z80_tests_8_9.c              \
+       src/test/z80_tests_A_B.c              \
+       src/test/z80_tests_C.c                \
+       src/test/z80_tests_D.c                \
+       src/test/z80_tests_E.c                \
+       src/test/z80_tests_F.c                \
+       src/test/z80_tests_prefix_cb.c        \
+       src/z80.c                             \
+       memory.c
 
 S_FILES = asm/CPU.s
 
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
-DATAFILES   =	gfxinit.c gfxstatic.c cfb.c rsp_cfb.c zbuffer.c memory_start.c
+DATAFILES   =	gfxinit.c texture.c cfb.c rsp_cfb.c zbuffer.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 
@@ -77,8 +77,6 @@ LDIRT  =	$(APP)
 default:	$(TARGETS)
 
 include $(COMMONRULES)
-
-gfxstatic.o:	$(TEXHFILES)
 
 $(CODESEGMENT):	$(CODEOBJECTS)
 		$(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LDFLAGS)

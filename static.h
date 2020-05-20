@@ -20,10 +20,6 @@
 /*
  * static display lists
  */
+extern Gfx 	init_dl[];
 extern Gfx	clearcfb_dl[];
 extern Gfx	clearzbuffer_dl[];
-
-// extern Gfx	setrend_light[];
-// extern Gfx	setrend_light_fog[];
-// extern Gfx	setrend_line[];
-// extern Gfx	setrend_line_fog[];

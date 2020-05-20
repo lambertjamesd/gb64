@@ -84,6 +84,15 @@ int		fontcol[4];	/* color for shadowed fonts */
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
+void initGraphics()
+{
+	void* allocChunk;
+
+	// allocChunk = malloc(sizeof(u16) * SCREEN_WD * SCREEN_HT * 2);
+	// cfb[0] = allocChunk;
+	// cfb[1] = (u16*)allocChunk + SCREEN_WD * SCREEN_WD;
+}
+
 /*
  * This is the main routine of the app.
  */
@@ -95,22 +104,29 @@ game(void)
     OSContPad	**pad;
     char 	*cstring;
     char	str[200];
-	char    line[50];
-    int		oldbut;
-	int     x, y;
+	int x, y;
+	int loop, offset, color;
 
 	x = 18;
 	y = 18;
+	loop = 0;
+	offset = 0;
+	color = 0;
 
-	//runTests(str);
+	initGraphics();
+
+	sprintf(str, "Didn't run tests");
+	// runTests(str);
 
     /*
      * Main game loop
      */
     /*osSyncPrintf("Use the L button and crosshair for menu options.\n");*/
-    oldbut = 0;
     while (1) {
 		pad = ReadController(0);
+
+		cstring=str;
+
 
 		/*
 		* pointers to build the display list.
@@ -135,9 +151,23 @@ game(void)
 		*/
 		gSPDisplayList(glistp++, clearzbuffer_dl);
 
-		gDPSetFillColor(glistp++, 0xFF);
+		gDPSetFillColor(glistp++, GPACK_RGBA5551(
+				(int)25,
+				(int)65,
+				(int)65,
+				1) << 16 |
+				GPACK_RGBA5551(
+				(int)25,
+				(int)65,
+				(int)65,
+				1));
 		gSPDisplayList(glistp++, clearcfb_dl);
-		
+
+		/*
+		* Initialize RCP state.
+		*/
+		gSPDisplayList(glistp++, init_dl);
+
 		gDPPipeSync(glistp++);
 		gDPSetCycleType(glistp++, G_CYC_1CYCLE);
 
@@ -157,41 +187,47 @@ game(void)
 			font_set_win( 200, 1 );
 
 			FONTCOL(55, 255, 155, 255);
+		
 			cstring = str;
-			sprintf(cstring, "%X", &rsp_cfb);
 
-			//y = (y + 1) % 100;
-			y = y & 0xFF;
-			x = (x + 1) & 0xFF;
+			y = 18;
 
 			while (*cstring)
 			{
-				SHOWFONT(&glistp,cstring,x,y);
+					SHOWFONT(&glistp,cstring,x,y);
 
-				while (*cstring && *cstring != '\n')
-				{
-					++cstring;
-				}
+					while (*cstring && *cstring != '\n')
+					{
+							++cstring;
+					}
 
-				if (*cstring)
-				{
-					++cstring;
-				}
+					if (*cstring)
+					{
+							++cstring;
+					}
 
-				y += 20;
+					y += 20;
 			}
 		}
+
+		for (offset = loop + 100; loop < offset; ++loop)
+		{
+			((short*)cacheFreePointer(cfb[draw_buffer]))[loop % (SCREEN_WD*SCREEN_HT)] = color++;
+		}
+
+		loop = offset % (SCREEN_WD*SCREEN_HT);
+
 		font_finish( &glistp );
 
 
 		gDPFullSync(glistp++);
 		gSPEndDisplayList(glistp++);
 
-#ifdef DEBUG
-#ifndef __MWERKS__
+	#ifdef DEBUG
+	#ifndef __MWERKS__
 		assert((glistp - dynamicp->glist) < GLIST_LEN);
-#endif
-#endif
+	#endif
+	#endif
 
 		/*
 		* Build graphics task:
@@ -202,37 +238,10 @@ game(void)
 				(u32) rspbootTextEnd - (u32) rspbootTextStart;
 
 		/*
-		* choose which ucode to run:
-		*/
-		theadp->t.ucode = (u64 *) gspL3DEX2_fifoTextStart;
-		theadp->t.ucode_data = (u64 *) gspL3DEX2_fifoDataStart;
-		// if (rdp_flag) {
-		// 	/*
-		// 	* RSP output over FIFO to RDP: 
-		// 	*/
-		// 	if (viewmenu[VM_WIRE].val == 1.0) {
-		// 	} else if (viewmenu[VM_NEARCLIP].val == 1.0) {
-		// 		theadp->t.ucode = (u64 *) gspF3DEX2_fifoTextStart;
-		// 		theadp->t.ucode_data = (u64 *) gspF3DEX2_fifoDataStart;
-		// 	} else {
-		// 		theadp->t.ucode = (u64 *) gspF3DEX2_NoN_fifoTextStart;
-		// 		theadp->t.ucode_data = (u64 *) gspF3DEX2_NoN_fifoDataStart;
-		// 	}
-		// } else {
-		// 	/*
-		// 	* RSP output over XBUS to RDP: 
-		// 	*/
-		// 	if (viewmenu[VM_WIRE].val == 1.0) {
-		// 		theadp->t.ucode = (u64 *) gspL3DEX2_xbusTextStart;
-		// 		theadp->t.ucode_data = (u64 *) gspL3DEX2_xbusDataStart;
-		// 	} else if (viewmenu[VM_NEARCLIP].val == 1.0) {
-		// 		theadp->t.ucode = (u64 *) gspF3DEX2_xbusTextStart;
-		// 		theadp->t.ucode_data = (u64 *) gspF3DEX2_xbusDataStart;
-		// 	} else {
-		// 		theadp->t.ucode = (u64 *) gspF3DEX2_NoN_xbusTextStart;
-		// 		theadp->t.ucode_data = (u64 *) gspF3DEX2_NoN_xbusDataStart;
-		// 	}
-		// }
+			* RSP output over FIFO to RDP: 
+			*/
+		theadp->t.ucode = (u64 *) gspF3DEX2_fifoTextStart;
+		theadp->t.ucode_data = (u64 *) gspF3DEX2_fifoDataStart;
 
 		/*
 		* initial display list: 
@@ -275,7 +284,5 @@ game(void)
 		(void) osRecvMesg(&retraceMessageQ, NULL, OS_MESG_BLOCK);
 
 		draw_buffer ^= 1;
-		oldbut=pad[0]->button;
-
     }
 }
