@@ -28,6 +28,7 @@
 #include <PR/ramrom.h>		/* needed for argument passing into the app */
 #include <assert.h>
 
+#include "memory.h"
 #include "game.h"
 #include "static.h"
 #include "controller.h"
@@ -83,8 +84,6 @@ int		fontcol[4];	/* color for shadowed fonts */
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
-extern unsigned int memoryStart;
-
 /*
  * This is the main routine of the app.
  */
@@ -98,7 +97,10 @@ game(void)
     char	str[200];
 	char    line[50];
     int		oldbut;
-	int     y;
+	int     x, y;
+
+	x = 18;
+	y = 18;
 
 	//runTests(str);
 
@@ -133,7 +135,7 @@ game(void)
 		*/
 		gSPDisplayList(glistp++, clearzbuffer_dl);
 
-		gDPSetFillColor(glistp++, 0);
+		gDPSetFillColor(glistp++, 0xFF);
 		gSPDisplayList(glistp++, clearcfb_dl);
 		
 		gDPPipeSync(glistp++);
@@ -156,13 +158,15 @@ game(void)
 
 			FONTCOL(55, 255, 155, 255);
 			cstring = str;
-			sprintf(cstring, "%X", (int)osMemSize - (int)&memoryStart - 0x80000000);
+			sprintf(cstring, "%X", &rsp_cfb);
 
-			y = 18;
+			//y = (y + 1) % 100;
+			y = y & 0xFF;
+			x = (x + 1) & 0xFF;
 
 			while (*cstring)
 			{
-				SHOWFONT(&glistp,cstring,18,y);
+				SHOWFONT(&glistp,cstring,x,y);
 
 				while (*cstring && *cstring != '\n')
 				{

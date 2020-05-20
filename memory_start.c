@@ -1,0 +1,2 @@
+
+unsigned int _gMemoryStart;
