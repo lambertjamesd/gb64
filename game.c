@@ -88,7 +88,7 @@ void initGraphics()
 {
 	void* allocChunk;
 
-	// allocChunk = malloc(sizeof(u16) * SCREEN_WD * SCREEN_HT * 2);
+	allocChunk = malloc(sizeof(u16) * SCREEN_WD * SCREEN_HT * 2);
 	// cfb[0] = allocChunk;
 	// cfb[1] = (u16*)allocChunk + SCREEN_WD * SCREEN_WD;
 }
@@ -115,7 +115,7 @@ game(void)
 
 	initGraphics();
 
-	sprintf(str, "Didn't run tests");
+	sprintf(str, "Didn't run tests %X %d", &_gMemoryStart, getFreeBytes());
 	// runTests(str);
 
     /*
