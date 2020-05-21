@@ -1,4 +1,7 @@
 
+#ifndef _Z80_H
+#define _Z80_H
+
 #include "memory_map.h"
 
 enum STOP_REASON {
@@ -48,3 +51,5 @@ extern struct Memory gMemory;
 
 extern void zeroMemory(void* memory, int size);
 extern void initializeZ80(struct Z80State* state);
+
+#endif

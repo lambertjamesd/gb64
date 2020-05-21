@@ -3,3 +3,5 @@
 *.n64
 .vscode/*
 bin/*
+data/game.gb
+data/game.hex

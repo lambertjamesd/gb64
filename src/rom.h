@@ -1,9 +1,39 @@
 
-#define ROM_BANK_SIZE 16384
-#define VIRTUAL_BANK_COUNT 
+#ifndef _ROM_H
+#define _ROM_H
 
-struct ROMLayout {
-    unsigned char mainBank[16384];
-    int virtualBankCount;
-    unsigned char* virtualBanks;
+#define ROM_BANK_SIZE   0x4000
+#define ROM_BANKS       128
+
+#define GB_ROM_H_CART_TYPE  0x147
+#define GB_ROM_H_SIZE       0x148
+#define GB_ROM_H_RAM_SIZE   0x149
+
+struct VirtualBank
+{
+    unsigned char bankMemory[ROM_BANK_SIZE];
+    struct VirtualBank* nextBank;
+    struct VirtualBank* prevBank;
 };
+
+struct ROMLayout
+{
+    unsigned char mainBank[ROM_BANK_SIZE];
+    struct VirtualBank* firstVirtualBank;
+    struct VirtualBank* lastVirtualBank;
+    struct VirtualBank** romBankToVirtualBank;
+    int romBankCount;
+    void* romLocation;
+};
+
+extern struct ROMLayout gGBRom;
+
+void initRomLayout(struct ROMLayout* romLayout, void *romLocation);
+
+void finishRomLoad(struct ROMLayout* romLayout);
+
+int getROMBankCount(struct ROMLayout* romLayout);
+int getRAMBankCount(struct ROMLayout* romLayout);
+int getCartType(struct ROMLayout* romLayout);
+
+#endif

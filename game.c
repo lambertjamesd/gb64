@@ -33,6 +33,7 @@
 #include "static.h"
 #include "controller.h"
 #include "font_ext.h"
+#include "src/gameboy.h"
 #include "src/test/z80_test.h"
 
 /*
@@ -65,6 +66,10 @@ Gfx		*glistp;	/* RSP display list pointer */
 Dynamic		dynamic;	/* dynamic data */
 int		draw_buffer=0;	/* frame buffer being updated (0 or 1) */
 int		fontcol[4];	/* color for shadowed fonts */
+
+
+extern char     _gbromSegmentRomStart[];
+extern char     _gbromSegmentRomEnd[];
 				
 /*
  * macros 
@@ -84,15 +89,6 @@ int		fontcol[4];	/* color for shadowed fonts */
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
-void initGraphics()
-{
-	void* allocChunk;
-
-	allocChunk = malloc(sizeof(u16) * SCREEN_WD * SCREEN_HT * 2);
-	// cfb[0] = allocChunk;
-	// cfb[1] = (u16*)allocChunk + SCREEN_WD * SCREEN_WD;
-}
-
 /*
  * This is the main routine of the app.
  */
@@ -106,17 +102,17 @@ game(void)
     char	str[200];
 	int x, y;
 	int loop, offset, color;
+	int lastButton;
 
 	x = 18;
 	y = 18;
 	loop = 0;
 	offset = 0;
 	color = 0;
+	lastButton = 0;
 
-	initGraphics();
-
-	sprintf(str, "Didn't run tests %X %d", &_gMemoryStart, getFreeBytes());
-	// runTests(str);
+	sprintf(str, "Didn't run tests %X\n%X %X", &gGBRom.mainBank, _gbromSegmentRomStart, _gbromSegmentRomEnd);
+	//runTests(str);
 
     /*
      * Main game loop
@@ -124,6 +120,8 @@ game(void)
     /*osSyncPrintf("Use the L button and crosshair for menu options.\n");*/
     while (1) {
 		pad = ReadController(0);
+
+		lastButton = pad[0]->button;
 
 		cstring=str;
 
@@ -212,7 +210,8 @@ game(void)
 
 		for (offset = loop + 100; loop < offset; ++loop)
 		{
-			((short*)cacheFreePointer(cfb[draw_buffer]))[loop % (SCREEN_WD*SCREEN_HT)] = color++;
+			cfb[draw_buffer][loop % (SCREEN_WD*SCREEN_HT)] = color++;
+			osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 		}
 
 		loop = offset % (SCREEN_WD*SCREEN_HT);

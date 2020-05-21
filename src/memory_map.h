@@ -1,4 +1,6 @@
 
+#ifndef _MEMORY_MAP_H
+#define _MEMORY_MAP_H
 
 #define MEMORY_MAP_SIZE 16
 #define RAM_BANK_SIZE 8192
@@ -56,3 +58,5 @@ struct Memory {
     unsigned char* pagedRam;
     unsigned char vram[VRAM_SIZE * MAX_VRAM_BANKS];
 };
+
+#endif

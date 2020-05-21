@@ -2,18 +2,32 @@
 #include <ultra64.h>
 #include "memory.h"
 
-char* gCurrentHeapPosition;
+struct HeapSegment* gFirstHeapSegment;
 
-void _checkInitHeap()
+/*
+ * Symbol genererated by "makerom" (RAM)
+ */
+extern char     _codeSegmentEnd[];
+extern char     _zbufferSegmentStart[];
+extern char    *_gEndSegments;
+
+extern char     _cfbSegmentStart[];
+extern char     _cfbSegmentEnd[];
+
+void initHeap()
 {
-    if (gCurrentHeapPosition == 0)
-    {
-        gCurrentHeapPosition = (char*)&_gMemoryStart;
-        // word align the heap
-        gCurrentHeapPosition = (char*)((int)(gCurrentHeapPosition + 3) & ~0x3);
-    }
-}
+    gFirstHeapSegment = (struct HeapSegment*)(((int)_codeSegmentEnd + 3) & ~0x3);
 
+    gFirstHeapSegment->nextSegment = 0;
+    gFirstHeapSegment->segmentEnd = (void*)(osGetMemSize() | 0x80000000);
+
+    markAllocated(_zbufferSegmentStart, 
+        (int)_gEndSegments - (int)_zbufferSegmentStart
+    );
+    markAllocated(_cfbSegmentStart,
+        (int)_cfbSegmentEnd - (int)_cfbSegmentStart
+    );
+}
 
 void *cacheFreePointer(void* target)
 {
@@ -23,24 +37,168 @@ void *cacheFreePointer(void* target)
 void *malloc(unsigned int size)
 {
     void *result;
-    _checkInitHeap();
+    struct HeapSegment* prevSegment;
+    struct HeapSegment* currentSegment;
+    struct HeapSegment* nextSegment;
+    int segmentSize;
     // word align
     size = (size + 3) & (~0x3);
-    
-    if (getFreeBytes() < size)
+
+    if (size < sizeof(struct HeapSegment))
     {
-        return 0;
+        size = sizeof(struct HeapSegment);
     }
-    else
+
+    prevSegment = 0;
+    currentSegment = gFirstHeapSegment;
+
+    while (currentSegment)
     {
-        result = gCurrentHeapPosition;
-        gCurrentHeapPosition += size;
-        return result;
+        segmentSize = (int)currentSegment->segmentEnd - (int)currentSegment;
+
+        if (segmentSize >= size)
+        {
+            if (segmentSize >= size + sizeof(struct HeapSegment))
+            {
+                nextSegment = (struct HeapSegment*)((char*)currentSegment + size);
+                nextSegment->nextSegment = currentSegment->nextSegment;
+                nextSegment->segmentEnd = currentSegment->segmentEnd;
+
+                if (prevSegment)
+                {
+                    prevSegment->nextSegment = nextSegment;
+                }
+                else
+                {
+                    gFirstHeapSegment = nextSegment;
+                }
+            }
+            else
+            {
+                if (prevSegment)
+                {
+                    prevSegment->nextSegment = currentSegment->nextSegment;
+                }
+                else
+                {
+                    gFirstHeapSegment = currentSegment->nextSegment;
+                }
+            }
+
+            return currentSegment;
+        }
+
+        prevSegment = currentSegment;
+        currentSegment = currentSegment->nextSegment;
+    }
+    
+    return 0;
+}
+
+void markAllocated(void* addr, int length)
+{
+    struct HeapSegment* prevSegment;
+    struct HeapSegment* currentSegment; 
+    struct HeapSegment* nextSegment;
+    void* addrEnd;
+
+    prevSegment = 0;
+    currentSegment = gFirstHeapSegment;
+    addrEnd = (void*)((int)addr + length);
+
+    while (currentSegment != 0)
+    {
+        if ((int)addr >= (int)currentSegment &&
+            (int)addr < (int)currentSegment->segmentEnd
+        )
+        {
+            int newCurrentSize;
+            int newNextSize;
+
+            newCurrentSize = (int)addr - (int)currentSegment;
+            newNextSize = (int)currentSegment->segmentEnd - (int)addrEnd;
+
+            if (newCurrentSize >= sizeof(struct HeapSegment))
+            {
+                if (newNextSize >= sizeof(struct HeapSegment))
+                {
+                    nextSegment = (struct HeapSegment*)addrEnd;
+                    nextSegment->nextSegment = currentSegment->nextSegment;
+                    nextSegment->segmentEnd = currentSegment->segmentEnd;
+                    currentSegment->nextSegment = nextSegment;
+                    currentSegment->segmentEnd = addr;
+                }
+                else
+                {
+                    currentSegment->segmentEnd = addr;
+                }
+            }
+            else
+            {
+                if (newNextSize >= sizeof(struct HeapSegment))
+                {
+                    nextSegment = (struct HeapSegment*)addrEnd;
+                    nextSegment->nextSegment = currentSegment->nextSegment;
+                    nextSegment->segmentEnd = currentSegment->segmentEnd;
+                }
+                else
+                {
+                    nextSegment = currentSegment->nextSegment;
+                }
+
+                if (prevSegment)
+                {
+                    prevSegment->nextSegment = nextSegment;
+                }
+                else
+                {
+                    gFirstHeapSegment = nextSegment;
+                }
+            }
+
+            return;
+        }
+
+        prevSegment = currentSegment;
+        currentSegment = currentSegment->nextSegment;
     }
 }
 
-int getFreeBytes()
+int calculateBytesFree()
 {
-    _checkInitHeap();
-    return (osGetMemSize() - ((int)gCurrentHeapPosition & 0xFFFFFFF)) & ~3;
+    int result;
+    struct HeapSegment* currentSegment; 
+
+    currentSegment = gFirstHeapSegment;
+    result = 0;
+
+    while (currentSegment != 0) {
+        result += (int)currentSegment->segmentEnd - (int)currentSegment;
+        currentSegment = currentSegment->nextSegment;
+    }
+
+    return result;
+}
+
+int calculateLargestFreeChunk()
+{
+    int result;
+    int current;
+    struct HeapSegment* currentSegment; 
+
+    currentSegment = gFirstHeapSegment;
+    result = 0;
+
+    while (currentSegment != 0) {
+        current = (int)currentSegment->segmentEnd - (int)currentSegment;
+
+        if (current > result)
+        {
+            result = current;
+        }
+
+        currentSegment = currentSegment->nextSegment;
+    }
+
+    return result;
 }

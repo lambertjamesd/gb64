@@ -53,13 +53,18 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/test/z80_tests_F.c                \
        src/test/z80_tests_prefix_cb.c        \
        src/z80.c                             \
+       src/rom.c                             \
        memory.c
 
 S_FILES = asm/CPU.s
 
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
-DATAFILES   =	gfxinit.c texture.c cfb.c rsp_cfb.c zbuffer.c memory_start.c
+DATAFILES   =	gfxinit.c \
+		rsp_cfb.c \
+		texture.c \
+		cfb.c \
+		zbuffer.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 

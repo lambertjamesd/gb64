@@ -30,6 +30,8 @@
 
 #include "game.h"
 #include "controller.h"
+#include "memory.h"
+#include "src/rom.h"
 
 /*
  * Symbol genererated by "makerom" (RAM)
@@ -46,6 +48,7 @@ extern char     _staticSegmentRomStart[],
                 _staticSegmentRomEnd[];
 extern char     _textureSegmentRomStart[],
                 _textureSegmentRomEnd[];
+extern char     _gbromSegmentRomStart[];
 
 /*
  * Stacks for the threads as well as message queues for synchronization
@@ -90,7 +93,7 @@ OSIoMesg        dmaIOMessageBuf;	/* * see man page to understand this */
 int		rdp_flag = 0;
 char		*staticSegment;
 char		*textureSegment;
-
+char        *_gEndSegments;
 
 
 
@@ -243,6 +246,13 @@ mainproc(void *arg)
 	 * Wait for DMA to finish
 	 */
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+
+	_gEndSegments = textureSegment + 
+		(u32) _textureSegmentRomEnd - (u32) _textureSegmentRomStart;
+
+	initHeap();
+
+	initRomLayout(&gGBRom, _gbromSegmentRomStart);
 
 	initControllers(MAXCONTROLLERS);
 

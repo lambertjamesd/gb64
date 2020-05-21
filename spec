@@ -16,7 +16,6 @@ beginseg
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.xbus.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.fifo.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.xbus.o"
-	include "memory_start.o"
 endseg
 
 beginseg
@@ -54,11 +53,18 @@ beginseg
 	include "rsp_cfb.o"
 endseg
 
+beginseg
+	name "gbrom"
+	flags RAW
+	include "data/game.gb"
+endseg
+
 beginwave
 	name "game"
 	include "code"
 	include "static"
 	include "texture"
+	include "gbrom"
 	include "cfb"
 	include "rsp_cfb"
 	include "zbuffer"
