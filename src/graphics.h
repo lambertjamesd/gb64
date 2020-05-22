@@ -10,7 +10,7 @@
 #define RENDER_TO_X 80
 #define RENDER_TO_Y 48
 
-#define READ_PIXEL_INDEX(pixel, x) ((((pixel) >> 8) & (0x80 >> x)) | (((pixel) & (0x80 >> x)) << 1))
+#define READ_PIXEL_INDEX(pixel, x) (x == 7) ? ((((pixel) >> 8) & 0x1) | (((pixel) << 1) & 0x2)) : ((((pixel) >> (15 - x)) & 0x1) | (((pixel) >> (6 - x)) & 0x2))
 
 void renderPixelRow(
     struct Memory* memory,

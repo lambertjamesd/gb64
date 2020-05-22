@@ -4,6 +4,13 @@
 #include "graphics.h"
 #include "../boot.h"
 
+#define WRITE_PIXEL(spriteRow, pallete, x, targetMemory, pixel)     \
+    *targetMemory = pallete[READ_PIXEL_INDEX(spriteRow, pixel)];    \
+    ++x;                                                            \
+    ++targetMemory;                                                 \
+    if (x == GB_SCREEN_W)                                           \
+        break;
+
 void renderPixelRow(
     struct Memory* memory,
     u16* memoryBuffer, 
@@ -15,10 +22,9 @@ void renderPixelRow(
     int windowX;
     int windowY;
     int tilemapRow;
-    int tile;
-    int tileRow;
-    int xMask;
+    u32 tileRow;
     int palleteIndex;
+    int subLoop;
     u16* targetMemory;
     u16* pallete;
     u16 spriteRow;
@@ -31,13 +37,34 @@ void renderPixelRow(
 
     pallete = (u16*)memory->misc.unused;
 
-    for (x = 0; x < GB_SCREEN_W; ++x)
+    for (x = 0; x < GB_SCREEN_W;)
     {
         windowX = (x + offsetX) & 0xFF;
-        tile = memory->vram.tilemap0[(windowX >> 3) + tilemapRow];
-        palleteIndex = READ_PIXEL_INDEX(memory->vram.tiles[tile].rows[windowY & 0x7], windowX & 0x7);
-        *targetMemory = pallete[palleteIndex];
+        if ((x & 0x3) == 0) {
+            tileRow = *((u32*)(memory->vram.tilemap0 + tilemapRow + (windowX >> 3)));
+        }
+        spriteRow = memory->vram.tiles[tileRow >> 24].rows[windowY & 0x7];
 
-        ++targetMemory;
+        tileRow <<= 8;
+        
+        switch (windowX & 0x7)
+        {
+            case 0:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0);
+            case 1:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1);
+            case 2:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2);
+            case 3:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3);
+            case 4:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4);
+            case 5:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5);
+            case 6:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6);
+            case 7:
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7);
+        }
     }
 }

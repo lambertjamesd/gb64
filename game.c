@@ -135,14 +135,31 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
-	gGameboy.memory.misc.unused[0] = 0x00;
-	gGameboy.memory.misc.unused[1] = 0x00;
-	gGameboy.memory.misc.unused[2] = 0x40;
-	gGameboy.memory.misc.unused[3] = 0x40;
-	gGameboy.memory.misc.unused[4] = 0x80;
-	gGameboy.memory.misc.unused[5] = 0x80;
-	gGameboy.memory.misc.unused[6] = 0xC0;
-	gGameboy.memory.misc.unused[7] = 0xC0;
+	gGameboy.memory.misc.unused[0] = 0x08;
+	gGameboy.memory.misc.unused[1] = 0x42;
+	gGameboy.memory.misc.unused[2] = 0x10;
+	gGameboy.memory.misc.unused[3] = 0x84;
+	gGameboy.memory.misc.unused[4] = 0x21;
+	gGameboy.memory.misc.unused[5] = 0x08;
+	gGameboy.memory.misc.unused[6] = 0x42;
+	gGameboy.memory.misc.unused[7] = 0x10;
+
+	gGameboy.memory.vram.tiles[1].rows[0] = 0xFFFF;
+	gGameboy.memory.vram.tiles[1].rows[1] = 0x8181;
+	gGameboy.memory.vram.tiles[1].rows[2] = 0x8181;
+	gGameboy.memory.vram.tiles[1].rows[3] = 0x8181;
+	gGameboy.memory.vram.tiles[1].rows[4] = 0x8181;
+	gGameboy.memory.vram.tiles[1].rows[5] = 0x8181;
+	gGameboy.memory.vram.tiles[1].rows[6] = 0x8181;
+	gGameboy.memory.vram.tiles[1].rows[7] = 0xFFFF;
+	
+	WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_SCX, 0);
+	WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_SCY, 0);
+
+	for (loop = 0; loop < 256; ++loop)
+	{
+		gGameboy.memory.vram.tilemap0[loop] = loop;
+	}
 
 	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
@@ -158,10 +175,10 @@ game(void)
 
 		frameTime = lastTime - frameTime;
 
-		// if (frameTime && !offset)
-		// {
-		// 	sprintf(str, "Render Time: %d%% %lld", (int)(100 * lastDrawTime / frameTime), frameTime);
-		// }
+		if (frameTime && !offset)
+		{
+			sprintf(str, "Render Time: %d%% %lld", (int)(100 * lastDrawTime / frameTime), frameTime);
+		}
 
 		offset = (offset + 1) & 0x20;
 
@@ -279,17 +296,6 @@ game(void)
 
 		for (loop = 0; loop < GB_SCREEN_H; ++loop)
 		{
-			// if (((loop >> 3) / 9) % 2)
-			// {	
-				gGameboy.memory.misc.unused[0] = palleteColors[(loop >> 3) % (sizeof(palleteColors) / sizeof(u16))] & 0xFF;
-				gGameboy.memory.misc.unused[1] = palleteColors[(loop >> 3) % (sizeof(palleteColors) / sizeof(u16))] >> 8;
-			// }
-			// else
-			// {
-			// 	gGameboy.memory.misc.unused[0] = palleteColors[(loop >> 3) % 9] >> 8;
-			// 	gGameboy.memory.misc.unused[1] = palleteColors[(loop >> 3) % 9] & 0xFF;
-			// }
-
 			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop);
 		}
 
