@@ -8,9 +8,12 @@
 
 struct GameBoy
 {
-    struct ROMLayout* rom;
-    struct Memory* memory;
+    struct Memory memory;
     struct Z80State cpu;
 };
+
+extern struct GameBoy gGameboy;
+
+void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 
 #endif

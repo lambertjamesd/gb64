@@ -46,10 +46,6 @@ struct Z80State {
 
 extern int runZ80CPU(struct Z80State* state, struct Memory* memory, int cyclesToRun);
 
-extern struct Z80State gZ80;
-extern struct Memory gMemory;
-
-extern void zeroMemory(void* memory, int size);
 extern void initializeZ80(struct Z80State* state);
 
 #endif

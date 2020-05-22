@@ -15,7 +15,7 @@ struct ROMLayout gGBRom;
 #define EXTENDED_BANK_ID        0x52
 
 int _romBankSizes[] = {
-    1,
+    2,
     4,
     8,
     16,
@@ -70,6 +70,7 @@ void finishRomLoad(struct ROMLayout* romLayout)
         if (currentBank)
         {
             currentBank->nextBank = 0;
+            currentBank->bankIndex = bankIndex;
 
             if (!romLayout->firstVirtualBank)
             {
@@ -93,6 +94,65 @@ void finishRomLoad(struct ROMLayout* romLayout)
 
         romLayout->romBankToVirtualBank[bankIndex-1] = currentBank;
     }
+
+    if (bankIndex-1 == romLayout->lastVirtualBank->bankIndex)
+    {
+        // if all banks were loaded set romLocation to null
+        // to indicate that there is no need to load from
+        // the rom
+        romLayout->romLocation = 0;
+    }
+}
+
+char* getROMBank(struct ROMLayout* romLayout, int bankIndex)
+{
+    struct VirtualBank *useBank;
+
+    if (bankIndex < 1)
+    {
+        bankIndex = 1;
+    }
+    else if (bankIndex >= romLayout->romBankCount)
+    {
+        bankIndex = romLayout->romBankCount - 1;
+    }
+
+    useBank = romLayout->romBankToVirtualBank[bankIndex-1];
+
+    if (romLayout->romLocation)
+    {
+        if (!useBank)
+        {
+            // if no memory bank is available grab the last used bank
+            useBank = romLayout->lastVirtualBank;
+            romLayout->romBankToVirtualBank[useBank->bankIndex-1] = 0;
+            romLayout->romBankToVirtualBank[bankIndex-1] = useBank;
+            useBank->bankIndex = bankIndex;
+            loadRomSegment(useBank->bankMemory, romLayout->romLocation, bankIndex);
+        }
+
+        // move the bank to the front of the queue
+        if (useBank != romLayout->firstVirtualBank)
+        {
+            if (useBank == romLayout->lastVirtualBank)
+            {
+                romLayout->lastVirtualBank = useBank->prevBank;
+            }
+
+            // remove from doubly linked list
+            if (useBank->nextBank)
+            {
+                useBank->nextBank->prevBank = useBank->prevBank;
+            }
+            useBank->prevBank->nextBank = useBank->nextBank;
+
+            romLayout->firstVirtualBank->prevBank = useBank;
+            useBank->nextBank = romLayout->firstVirtualBank;
+            romLayout->firstVirtualBank = useBank;
+        }
+    }
+
+    return useBank->bankMemory;
 }
 
 int getROMBankCount(struct ROMLayout* romLayout)

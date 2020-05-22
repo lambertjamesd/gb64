@@ -14,3 +14,4 @@ void *malloc(unsigned int size);
 void markAllocated(void* addr, int length);
 int calculateBytesFree();
 int calculateLargestFreeChunk();
+extern void zeroMemory(void* memory, int size);

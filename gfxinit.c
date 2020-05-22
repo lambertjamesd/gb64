@@ -107,7 +107,7 @@ Gfx clearcfb_dl[] = {
     gsDPSetFillColor(GPACK_RGBA5551(64,64,255,1) << 16 | 
 		     GPACK_RGBA5551(64,64,255,1)),
 #endif
-    // gsDPFillRectangle(0, 0, SCREEN_WD-1, SCREEN_HT-1),
+    gsDPFillRectangle(0, 0, SCREEN_WD-1, 48),
     gsSPEndDisplayList(),
 };
 

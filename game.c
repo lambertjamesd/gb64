@@ -34,6 +34,7 @@
 #include "controller.h"
 #include "font_ext.h"
 #include "src/gameboy.h"
+#include "src/graphics.h"
 #include "src/test/z80_test.h"
 
 /*
@@ -89,6 +90,13 @@ extern char     _gbromSegmentRomEnd[];
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
+u16 palleteColors[] = {
+	0x7C00,
+	0x3E0,
+	0x1F,
+	0x00,
+};
+
 /*
  * This is the main routine of the app.
  */
@@ -103,6 +111,11 @@ game(void)
 	int x, y;
 	int loop, offset, color;
 	int lastButton;
+	int cyclesToRun;
+	int totalCycles;
+	OSTime lastTime;
+	OSTime lastDrawTime;
+	OSTime frameTime;
 
 	x = 18;
 	y = 18;
@@ -111,8 +124,27 @@ game(void)
 	color = 0;
 	lastButton = 0;
 
-	sprintf(str, "Didn't run tests %X\n%X %X", &gGBRom.mainBank, _gbromSegmentRomStart, _gbromSegmentRomEnd);
+	frameTime = 0;
+	lastDrawTime = 0;
+	lastTime = 0;
+	cyclesToRun = 0;
+	totalCycles = 0;
+
+	sprintf(str, "Didn't run tests %X", &gGameboy);
 	//runTests(str);
+
+	initGameboy(&gGameboy, &gGBRom);
+
+	gGameboy.memory.misc.unused[0] = 0x00;
+	gGameboy.memory.misc.unused[1] = 0x00;
+	gGameboy.memory.misc.unused[2] = 0x40;
+	gGameboy.memory.misc.unused[3] = 0x40;
+	gGameboy.memory.misc.unused[4] = 0x80;
+	gGameboy.memory.misc.unused[5] = 0x80;
+	gGameboy.memory.misc.unused[6] = 0xC0;
+	gGameboy.memory.misc.unused[7] = 0xC0;
+
+	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
     /*
      * Main game loop
@@ -121,10 +153,45 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
+		frameTime = lastTime;
+		lastTime = osGetTime();
+
+		frameTime = lastTime - frameTime;
+
+		// if (frameTime && !offset)
+		// {
+		// 	sprintf(str, "Render Time: %d%% %lld", (int)(100 * lastDrawTime / frameTime), frameTime);
+		// }
+
+		offset = (offset + 1) & 0x20;
+
 		lastButton = pad[0]->button;
 
 		cstring=str;
+		
 
+		// cyclesToRun += 1024 * 1024 / 60;
+
+		
+		// lastDrawTime = -osGetTime();
+
+		// while (cyclesToRun > 0)
+		// {
+		// 	int cyclesRun = runZ80CPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
+		// 	totalCycles += cyclesRun;
+
+		// 	cyclesToRun -= cyclesRun;
+
+		// 	if (!cyclesRun)
+		// 	{
+		// 		break;
+		// 	}
+		// }
+
+		// lastDrawTime += osGetTime();
+
+
+		// sprintf(cstring, "Cycles run %X", cyclesToRun);
 
 		/*
 		* pointers to build the display list.
@@ -150,14 +217,14 @@ game(void)
 		gSPDisplayList(glistp++, clearzbuffer_dl);
 
 		gDPSetFillColor(glistp++, GPACK_RGBA5551(
-				(int)25,
-				(int)65,
-				(int)65,
+				(int)1,
+				(int)1,
+				(int)1,
 				1) << 16 |
 				GPACK_RGBA5551(
-				(int)25,
-				(int)65,
-				(int)65,
+				(int)1,
+				(int)1,
+				(int)1,
 				1));
 		gSPDisplayList(glistp++, clearcfb_dl);
 
@@ -208,13 +275,27 @@ game(void)
 			}
 		}
 
-		for (offset = loop + 100; loop < offset; ++loop)
+		lastDrawTime = -osGetTime();
+
+		for (loop = 0; loop < GB_SCREEN_H; ++loop)
 		{
-			cfb[draw_buffer][loop % (SCREEN_WD*SCREEN_HT)] = color++;
-			osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
+			// if (((loop >> 3) / 9) % 2)
+			// {	
+				gGameboy.memory.misc.unused[0] = palleteColors[(loop >> 3) % (sizeof(palleteColors) / sizeof(u16))] & 0xFF;
+				gGameboy.memory.misc.unused[1] = palleteColors[(loop >> 3) % (sizeof(palleteColors) / sizeof(u16))] >> 8;
+			// }
+			// else
+			// {
+			// 	gGameboy.memory.misc.unused[0] = palleteColors[(loop >> 3) % 9] >> 8;
+			// 	gGameboy.memory.misc.unused[1] = palleteColors[(loop >> 3) % 9] & 0xFF;
+			// }
+
+			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop);
 		}
 
-		loop = offset % (SCREEN_WD*SCREEN_HT);
+		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
+
+		lastDrawTime += osGetTime();
 
 		font_finish( &glistp );
 

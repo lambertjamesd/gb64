@@ -202,3 +202,25 @@ int calculateLargestFreeChunk()
 
     return result;
 }
+
+void zeroMemory(void* memory, int size)
+{
+    int* asInt;
+    unsigned char* asChar;
+
+    asInt = (int*)memory;
+
+    while (size > 3) {
+        *asInt = 0;
+        ++asInt;
+        size -= 4;
+    }
+
+    asChar = (unsigned char*)asInt;
+    
+    while (size > 0) {
+        *asChar = 0;
+        ++asChar;
+        --size;
+    }
+}

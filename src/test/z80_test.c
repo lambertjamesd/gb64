@@ -1,4 +1,5 @@
 #include "z80_test.h"
+#include "../gameboy.h"
 
 #define offsetof(st, m) \
     ((int)&(((st *)0)->m))
@@ -110,34 +111,34 @@ int runTests(char* testOutput) {
     int i;
     char subTestOutput[200];
 
-    zeroMemory(&gMemory, sizeof(struct Memory));
+    zeroMemory(&gGameboy.memory, sizeof(struct Memory));
 
     for (i = 0; i < MEMORY_MAP_SIZE; ++i)
     {
-        gMemory.memoryMap[i] = gMemory.internalRam;
+        gGameboy.memory.memoryMap[i] = gGameboy.memory.internalRam;
     }
 
     for (i = 0; i < REGISTER_WRITER_COUNT; ++i)
     {
-        gMemory.registerWriters[i] = &DefaultRegisterWriter;
+        gGameboy.memory.registerWriters[i] = &DefaultRegisterWriter;
     }
 
-    gMemory.bankSwitch = &BankSwitchingWriter;
+    gGameboy.memory.bankSwitch = &BankSwitchingWriter;
 
     initializeZ80(&z80);
 
     if (
-        !run0x0Tests(&z80, &gMemory, subTestOutput) ||
-        !run0x1Tests(&z80, &gMemory, subTestOutput) ||
-        !run0x2Tests(&z80, &gMemory, subTestOutput) ||
-        !run0x3Tests(&z80, &gMemory, subTestOutput) ||
-        !run0x4_7Tests(&z80, &gMemory, subTestOutput) ||
-        !run0x8_9Tests(&z80, &gMemory, subTestOutput) ||
-        !run0xA_BTests(&z80, &gMemory, subTestOutput) ||
-        !run0xCTests(&z80, &gMemory, subTestOutput) ||
-        !run0xDTests(&z80, &gMemory, subTestOutput) ||
-        !run0xETests(&z80, &gMemory, subTestOutput) ||
-        !run0xFTests(&z80, &gMemory, subTestOutput) ||
+        !run0x0Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x1Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x2Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x3Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x4_7Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x8_9Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xA_BTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xCTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xDTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xETests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xFTests(&z80, &gGameboy.memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

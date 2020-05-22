@@ -2,20 +2,13 @@
 #ifndef _MEMORY_MAP_H
 #define _MEMORY_MAP_H
 
-#define MEMORY_MAP_SIZE 16
-#define RAM_BANK_SIZE 8192
-#define MAX_RAM_BANKS 4
-#define VRAM_SIZE 8192
-#define MAX_VRAM_BANKS 2
-#define MISC_MEMORY_SIZE 512
+#include "rom.h"
 
-#define MM_ROM_0        0
-#define MM_ROM_SWITCH   4
-#define MM_VRAM         8
-#define MM_RAM_SWITCH   10
-#define MM_RAM          12
-#define MM_RAM_ECHO     14
-#define MM_MISC         15
+#define MEMORY_MAP_SIZE 16
+#define MEMORY_MAP_SEGMENT_SIZE 0x1000
+#define MAX_RAM_SIZE 0x8000
+#define RAM_BANK_SIZE 0x2000
+#define MISC_MEMORY_SIZE 512
 
 #define SPRITE_COUNT      40
 
@@ -27,6 +20,15 @@
 #define MISC_START              0xFE00
 #define REGISTERS_START         0xFF00
 #define REGISTER_WRITER_COUNT   0x08
+
+#define REG_SCY 0xFF42
+#define REG_SCX 0xFF43
+
+#define TILEMAP_W   32
+#define TILEMAP_H   32
+
+#define WRITE_REGISTER_DIRECT(mm, addr, val) (mm)->miscBytes[(addr) - MISC_START] = (val)
+#define READ_REGISTER_DIRECT(mm, addr) ((mm)->miscBytes[(addr) - MISC_START])
 
 struct Sprite {
     unsigned char x;
@@ -42,6 +44,20 @@ struct MiscMemory {
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };
 
+struct Tile {
+    unsigned short rows[8];
+};
+
+struct GraphicsMemory {
+    struct Tile tiles[384];
+    unsigned char tilemap0[1024];
+    unsigned char tilemap1[1024];
+
+    struct Tile gbcTiles[384];
+    unsigned char tilemap0Atts[1024];
+    unsigned char tilemap1Atts[1024];
+};
+
 struct Memory;
 
 typedef void (*RegisterWriter)(struct Memory*, int addr, unsigned char value);
@@ -54,9 +70,15 @@ struct Memory {
         struct MiscMemory misc;
         unsigned char miscBytes[512];
     };
-    unsigned char internalRam[RAM_BANK_SIZE];
-    unsigned char* pagedRam;
-    unsigned char vram[VRAM_SIZE * MAX_VRAM_BANKS];
+    unsigned char internalRam[MAX_RAM_SIZE];
+    unsigned char* cartRam;
+    union {
+        struct GraphicsMemory vram;
+        unsigned char vramBytes[sizeof(struct GraphicsMemory)];
+    };
+    struct ROMLayout* rom;
 };
+
+void initMemory(struct Memory* memory, struct ROMLayout* rom);
 
 #endif

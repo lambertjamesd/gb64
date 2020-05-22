@@ -54,6 +54,9 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/test/z80_tests_prefix_cb.c        \
        src/z80.c                             \
        src/rom.c                             \
+       src/memory_map.c                      \
+       src/gameboy.c                         \
+       src/graphics.c                        \
        memory.c
 
 S_FILES = asm/CPU.s
