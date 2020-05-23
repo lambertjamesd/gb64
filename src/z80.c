@@ -7,4 +7,5 @@ void initializeZ80(struct Z80State* state)
     state->sp = 0; state->pc = 0;
     state->stopReason = STOP_REASON_NONE;
     state->interrupts = 0;
+    state->cyclesRun = 0;
 }

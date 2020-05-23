@@ -71,6 +71,8 @@ int		fontcol[4];	/* color for shadowed fonts */
 
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
+
+#define RUN_TESTS 0
 				
 /*
  * macros 
@@ -112,7 +114,6 @@ game(void)
 	int loop, offset, color;
 	int lastButton;
 	int cyclesToRun;
-	int totalCycles;
 	int cycleStep;
 	OSTime lastTime;
 	OSTime lastDrawTime;
@@ -129,11 +130,13 @@ game(void)
 	lastDrawTime = 0;
 	lastTime = 0;
 	cyclesToRun = 0;
-	totalCycles = 0;
+	gGameboy.cpu.cyclesRun = 0;
 	cycleStep = 0;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
+#if RUN_TESTS
 	runTests(str);
+#endif
 
 	initGameboy(&gGameboy, &gGBRom);
 
@@ -174,21 +177,14 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-		if (totalCycles == 112001 || totalCycles == 112047)
+		if (gGameboy.cpu.cyclesRun > 400000)
 		{
 			cycleStep = 0;
 		}
 
 		if (pad[0]->button && !lastButton)
 		{
-			if (totalCycles == 0)
-			{
-				cycleStep = 1000;
-			}
-			else if (totalCycles == 112001 || totalCycles == 112047)
-			{
-				cycleStep = 1;
-			}
+			cycleStep = 100;
 		}
 
 		lastButton = pad[0]->button;
@@ -208,16 +204,14 @@ game(void)
 		lastButton = pad[0]->button;
 
 		cstring=str;
-		
 
 		cyclesToRun += cycleStep;
 
 		lastDrawTime = -osGetTime();
 
-		while (cyclesToRun > 0)
+		while (cyclesToRun > 0 && gGameboy.cpu.stopReason != STOP_REASON_STOP)
 		{
 			int cyclesRun = runZ80CPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
-			totalCycles += cyclesRun;
 
 			cyclesToRun -= cyclesRun;
 
@@ -229,7 +223,7 @@ game(void)
 
 		lastDrawTime += osGetTime();
 
-		// sprintf(cstring, "Cycles run %d Time %d %X", totalCycles, (int)(100 * lastDrawTime / frameTime), runZ80CPU);
+		sprintf(cstring, "Cycles run %d Time %d %X", gGameboy.cpu.cyclesRun, (int)(100 * lastDrawTime / frameTime), runZ80CPU);
 
 		/*
 		* pointers to build the display list.
