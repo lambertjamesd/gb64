@@ -1,4 +1,7 @@
 
+#ifndef _MEMORY_H
+#define _MEMORY_H
+
 extern struct HeapSegment* gFirstHeapSegment;
 
 struct HeapSegment
@@ -15,3 +18,5 @@ void markAllocated(void* addr, int length);
 int calculateBytesFree();
 int calculateLargestFreeChunk();
 extern void zeroMemory(void* memory, int size);
+
+#endif

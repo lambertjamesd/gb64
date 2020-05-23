@@ -113,6 +113,7 @@ game(void)
 	int lastButton;
 	int cyclesToRun;
 	int totalCycles;
+	int cycleStep;
 	OSTime lastTime;
 	OSTime lastDrawTime;
 	OSTime frameTime;
@@ -129,20 +130,17 @@ game(void)
 	lastTime = 0;
 	cyclesToRun = 0;
 	totalCycles = 0;
+	cycleStep = 0;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
-	//runTests(str);
+	runTests(str);
 
 	initGameboy(&gGameboy, &gGBRom);
 
-	gGameboy.memory.misc.unused[0] = 0x08;
-	gGameboy.memory.misc.unused[1] = 0x42;
-	gGameboy.memory.misc.unused[2] = 0x10;
-	gGameboy.memory.misc.unused[3] = 0x84;
-	gGameboy.memory.misc.unused[4] = 0x21;
-	gGameboy.memory.misc.unused[5] = 0x08;
-	gGameboy.memory.misc.unused[6] = 0x42;
-	gGameboy.memory.misc.unused[7] = 0x10;
+	gGameboy.memory.misc.colorPalletes[0] = 0x0842;
+	gGameboy.memory.misc.colorPalletes[1] = 0x1084;
+	gGameboy.memory.misc.colorPalletes[2] = 0x2108;
+	gGameboy.memory.misc.colorPalletes[3] = 0x4210;
 
 	gGameboy.memory.vram.tiles[1].rows[0] = 0xFFFF;
 	gGameboy.memory.vram.tiles[1].rows[1] = 0x8181;
@@ -152,9 +150,15 @@ game(void)
 	gGameboy.memory.vram.tiles[1].rows[5] = 0x8181;
 	gGameboy.memory.vram.tiles[1].rows[6] = 0x8181;
 	gGameboy.memory.vram.tiles[1].rows[7] = 0xFFFF;
-	
-	WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_SCX, 0);
-	WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_SCY, 0);
+
+	gGameboy.memory.vram.tiles[32].rows[0] = 0x5555;
+	gGameboy.memory.vram.tiles[32].rows[1] = 0xAAAA;
+	gGameboy.memory.vram.tiles[32].rows[2] = 0x5555;
+	gGameboy.memory.vram.tiles[32].rows[3] = 0xAAAA;
+	gGameboy.memory.vram.tiles[32].rows[4] = 0x5555;
+	gGameboy.memory.vram.tiles[32].rows[5] = 0xAAAA;
+	gGameboy.memory.vram.tiles[32].rows[6] = 0x5555;
+	gGameboy.memory.vram.tiles[32].rows[7] = 0xAAAA;
 
 	for (loop = 0; loop < 256; ++loop)
 	{
@@ -170,6 +174,25 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
+		if (totalCycles == 112001 || totalCycles == 112047)
+		{
+			cycleStep = 0;
+		}
+
+		if (pad[0]->button && !lastButton)
+		{
+			if (totalCycles == 0)
+			{
+				cycleStep = 1000;
+			}
+			else if (totalCycles == 112001 || totalCycles == 112047)
+			{
+				cycleStep = 1;
+			}
+		}
+
+		lastButton = pad[0]->button;
+
 		frameTime = lastTime;
 		lastTime = osGetTime();
 
@@ -177,7 +200,7 @@ game(void)
 
 		if (frameTime && !offset)
 		{
-			sprintf(str, "Render Time: %d%% %lld", (int)(100 * lastDrawTime / frameTime), frameTime);
+			// sprintf(str, "Render Time: %d%% %lld\n%X", (int)(100 * lastDrawTime / frameTime), frameTime, renderPixelRow);
 		}
 
 		offset = (offset + 1) & 0x20;
@@ -187,28 +210,26 @@ game(void)
 		cstring=str;
 		
 
-		// cyclesToRun += 1024 * 1024 / 60;
+		cyclesToRun += cycleStep;
 
-		
-		// lastDrawTime = -osGetTime();
+		lastDrawTime = -osGetTime();
 
-		// while (cyclesToRun > 0)
-		// {
-		// 	int cyclesRun = runZ80CPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
-		// 	totalCycles += cyclesRun;
+		while (cyclesToRun > 0)
+		{
+			int cyclesRun = runZ80CPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
+			totalCycles += cyclesRun;
 
-		// 	cyclesToRun -= cyclesRun;
+			cyclesToRun -= cyclesRun;
 
-		// 	if (!cyclesRun)
-		// 	{
-		// 		break;
-		// 	}
-		// }
+			if (!cyclesRun)
+			{
+				break;
+			}
+		}
 
-		// lastDrawTime += osGetTime();
+		lastDrawTime += osGetTime();
 
-
-		// sprintf(cstring, "Cycles run %X", cyclesToRun);
+		// sprintf(cstring, "Cycles run %d Time %d %X", totalCycles, (int)(100 * lastDrawTime / frameTime), runZ80CPU);
 
 		/*
 		* pointers to build the display list.

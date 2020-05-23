@@ -35,17 +35,13 @@ void renderPixelRow(
 
     tilemapRow = (windowY >> 3) * TILEMAP_W;
 
-    pallete = (u16*)memory->misc.unused;
+    pallete = (u16*)memory->misc.colorPalletes;
 
     for (x = 0; x < GB_SCREEN_W;)
     {
         windowX = (x + offsetX) & 0xFF;
-        if ((x & 0x3) == 0) {
-            tileRow = *((u32*)(memory->vram.tilemap0 + tilemapRow + (windowX >> 3)));
-        }
-        spriteRow = memory->vram.tiles[tileRow >> 24].rows[windowY & 0x7];
-
-        tileRow <<= 8;
+        tileRow = memory->vram.tilemap0[tilemapRow + (windowX >> 3)];
+        spriteRow = memory->vram.tiles[tileRow].rows[windowY & 0x7];
         
         switch (windowX & 0x7)
         {

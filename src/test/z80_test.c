@@ -145,7 +145,7 @@ int runTests(char* testOutput) {
         return 0;
     }
 
-	sprintf(testOutput, "Tests Passed");
+	sprintf(testOutput, "Tests Passed %X", &runZ80CPU);
 
     return 1;
 }

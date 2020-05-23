@@ -2,6 +2,7 @@
 #ifndef _MEMORY_MAP_H
 #define _MEMORY_MAP_H
 
+#include <ultra64.h>
 #include "rom.h"
 
 #define MEMORY_MAP_SIZE 16
@@ -39,7 +40,8 @@ struct Sprite {
 
 struct MiscMemory {
     struct Sprite sprites[SPRITE_COUNT];
-    unsigned char unused[0x60];
+    u16 colorPalletes[64];
+    unsigned char unused[0x58];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };
