@@ -3,94 +3,7 @@
 .set noreorder # don't insert nops after branches
 
 .include "asm/registers.inc"
-
-#######################
-# A0 CPUState
-# A1 RAMPointer
-# A2 InstructionCount
-#
-#######################
-
-.set GB_A, $s0
-.set GB_F, $s1
-.set GB_B, $s2
-.set GB_C, $s3
-.set GB_D, $s4
-.set GB_E, $s5
-.set GB_H, $s6
-.set GB_L, $s7
-.set GB_SP, $t0
-.set GB_PC, $t1
-.set CYCLES_RUN, $t2
-.set NEXT_TIMER_INTERRUPT, $t3
-.set INTERRUPT_STATE, $t4
-
-.set ADDR, $t5
-.set VAL,  $t6
-.set TMP2,  $t7
-.set TMP3,  $t8
-.set TMP4,  $t9
-
-.set CPUState, $a0
-.set Memory, $a1
-.set CycleTo, $a2
-
-.set Param0, $a3
-
-.eqv CPU_STATE_A, 0x0
-.eqv CPU_STATE_F, 0x1
-.eqv CPU_STATE_B, 0x2
-.eqv CPU_STATE_C, 0x3
-.eqv CPU_STATE_D, 0x4
-.eqv CPU_STATE_E, 0x5
-.eqv CPU_STATE_H, 0x6
-.eqv CPU_STATE_L, 0x7
-.eqv CPU_STATE_SP, 0x8
-.eqv CPU_STATE_PC, 0xA
-.eqv CPU_STATE_STOP_REASON, 0xC
-.eqv CPU_STATE_INTERRUPTS, 0xD
-.eqv CPU_STATE_CYCLES_RUN, 0x10
-
-.eqv MEMORY_ADDR_TABLE, 0x00
-.eqv MEMORY_REGISTER_TABLE, 0x40
-.eqv MEMORY_BANK_SWITCHING, 0x60
-.eqv MEMORY_MISC_START, 0x64
-
-.eqv MM_REGISTER_START, 0xFE00
-
-.eqv Z_FLAG, 0x80
-.eqv N_FLAG, 0x40
-.eqv H_FLAG, 0x20
-.eqv C_FLAG, 0x10
-
-.eqv STACK_SIZE, 0x28
-.eqv ST_RA, 0x0
-# hole here
-.eqv ST_S0, 0x8
-.eqv ST_S1, 0xC
-.eqv ST_S2, 0x10
-.eqv ST_S3, 0x14
-.eqv ST_S4, 0x18
-.eqv ST_S5, 0x1C
-.eqv ST_S6, 0x20
-.eqv ST_S7, 0x24
-
-.eqv SAVE_TMP_SIZE, 0x28
-
-.eqv CYCLES_PER_INSTR, 0x1
-
-.eqv STOP_REASON_NONE, 0x0
-.eqv STOP_REASON_STOP, 0x1
-.eqv STOP_REASON_HALT, 0x2
-.eqv STOP_REASON_INTERRUPT_RET, 0x3
-.eqv STOP_REASON_ERROR, 0x4
-
-.eqv INTERRUPTS_V_BLANK, 0x01;
-.eqv INTERRUPTS_LCDC, 0x02;
-.eqv INTERRUPTS_TIMER, 0x04;
-.eqv INTERRUPTS_SERIAL, 0x08;
-.eqv INTERRUPTS_INPUT, 0x10;
-.eqv INTERRUPTS_ENABLED, 0x80;
+.include "asm/memory.inc"
 
 .macro clear_flags flags
     andi GB_F, GB_F, %lo(~(\flags))
@@ -2484,7 +2397,7 @@ GB_LD_A_a16:
     j DECODE_NEXT
 GB_EI:
     nop
-    addi $at, $zero, INTERRUPTS_ENABLED
+    ori $at, $zero, INTERRUPTS_ENABLED
     sll $at, $at, 16
     j DECODE_NEXT
     or INTERRUPT_STATE, INTERRUPT_STATE, $at
@@ -3183,8 +3096,7 @@ _GB_PREFIX_FINISH_BIT:
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
-# memory TODO move to memory.s
-
+# Memory section
 
 ######################
 # Writes 16 bit VAL to ADDR

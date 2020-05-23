@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 1
+#define RUN_TESTS 0
 				
 /*
  * macros 
@@ -177,14 +177,14 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-		if (gGameboy.cpu.cyclesRun > 400000)
-		{
-			cycleStep = 0;
-		}
+		// if (gGameboy.cpu.cyclesRun > 400000)
+		// {
+		// 	cycleStep = 0;
+		// }
 
 		if (pad[0]->button && !lastButton)
 		{
-			cycleStep = 100;
+			cycleStep = 1024 * 1024 / 30;
 		}
 
 		lastButton = pad[0]->button;

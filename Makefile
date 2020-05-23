@@ -59,7 +59,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/graphics.c                        \
        memory.c
 
-S_FILES = asm/CPU.s
+S_FILES = asm/cpu.s
 
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
