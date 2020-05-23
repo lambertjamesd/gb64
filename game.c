@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 0
+#define RUN_TESTS 1
 				
 /*
  * macros 
@@ -194,7 +194,7 @@ game(void)
 
 		frameTime = lastTime - frameTime;
 
-		if (frameTime && !offset)
+		if (frameTime && !offset && RUN_TESTS)
 		{
 			// sprintf(str, "Render Time: %d%% %lld\n%X", (int)(100 * lastDrawTime / frameTime), frameTime, renderPixelRow);
 		}
@@ -222,8 +222,10 @@ game(void)
 		}
 
 		lastDrawTime += osGetTime();
-
+		
+#if !RUN_TESTS
 		sprintf(cstring, "Cycles run %d Time %d %X", gGameboy.cpu.cyclesRun, (int)(100 * lastDrawTime / frameTime), runZ80CPU);
+#endif
 
 		/*
 		* pointers to build the display list.

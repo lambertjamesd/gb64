@@ -23,12 +23,13 @@
 .set GB_PC, $t1
 .set CYCLES_RUN, $t2
 .set NEXT_TIMER_INTERRUPT, $t3
+.set INTERRUPT_STATE, $t4
 
-.set ADDR, $t4
-.set VAL,  $t5
-.set TMP2,  $t6
-.set TMP3,  $t7
-.set TMP4,  $t8
+.set ADDR, $t5
+.set VAL,  $t6
+.set TMP2,  $t7
+.set TMP3,  $t8
+.set TMP4,  $t9
 
 .set CPUState, $a0
 .set Memory, $a1
@@ -99,6 +100,10 @@
     ori GB_F, GB_F, \flags
 .endm
 
+.macro request_interrupt interrupt
+    ori INTERRUPT_STATE, INTERRUPT_STATE, interrupt
+.endm
+
 .global runZ80CPU 
 .balign 4 
 runZ80CPU:
@@ -125,17 +130,31 @@ runZ80CPU:
 
     lhu GB_SP, CPU_STATE_SP(CPUState)
     lhu GB_PC, CPU_STATE_PC(CPUState)
+
+    # load interrupt state
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    andi INTERRUPT_STATE, $at, INTERRUPTS_ENABLED
+    sll INTERRUPT_STATE, INTERRUPT_STATE, 16
+
+    read_register_direct $at, REG_INTERRUPTS_ENABLED
+    sll $at, $at, 8
+    or INTERRUPT_STATE, INTERRUPT_STATE, $at 
+
+    read_register_direct $at, REG_INTERRUPTS_REQUESTED
+    or INTERRUPT_STATE, INTERRUPT_STATE, $at
     
+    # load stop reason
     addi $at, $zero, STOP_REASON_NONE
     sb $at, CPU_STATE_STOP_REASON(CPUState)
 
+    # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
     la $at, 0x7FFFFFFF                  # mask last bit so overflow happens one bit sooner
     and CYCLES_RUN, CYCLES_RUN, $at     #     so the upper bound, CycleTo, wont wrap back around
 
     add CycleTo, CycleTo, CYCLES_RUN    # calculate upper bound of execution
     
-    jal CALCULATE_NEXT_INTERRUPT
+    jal CALCULATE_NEXT_TIMER_INTERRUPT
     nop
 
 DECODE_NEXT:
@@ -143,16 +162,30 @@ DECODE_NEXT:
     beq $at, $zero, GB_BREAK_LOOP
     nop
 
+    # check if timer interrupt has happened
     sltu $at, CYCLES_RUN, NEXT_TIMER_INTERRUPT
-    beq $at, $zero, _READ_NEXT_INSTRUCTION
+    beq $at, $zero, _CHECK_INTERRUPTS
 
     read_register_direct TMP2, REG_TMA
     write_register_direct TMP2, REG_TIMA
 
     read_register_direct TMP2, INTERRUPTS_REQUESTED
 
-    jal CALCULATE_NEXT_INTERRUPT
-    ori TMP2, TMP2, INTERRUPT_TIMER
+    jal CALCULATE_NEXT_TIMER_INTERRUPT
+    request_interrupt INTERRUPTS_TIMER
+
+_CHECK_INTERRUPTS:
+    # check if interrupts are enabled
+    srl $at, INTERRUPT_STATE, 16
+    beq $at, $zero, _READ_NEXT_INSTRUCTION
+    # check any enabled interrupts are set
+    srl $at, INTERRUPT_STATE, 8
+    and $at, INTERRUPT_STATE, $at
+    andi $at, $at, 0xFF
+    beq $at, $zero, _READ_NEXT_INSTRUCTION
+    nop
+
+    # todo handle interrupt
 
 _READ_NEXT_INSTRUCTION:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
@@ -2142,9 +2175,9 @@ GB_RET_C:
     nop
     nop
 GB_RETI:
-    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    ori $at, $at, INTERRUPTS_ENABLED
-    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    addi $at, $zero, INTERRUPTS_ENABLED
+    sll $at, $at, 16
+    or INTERRUPT_STATE, INTERRUPT_STATE, $at
     j _GB_RET
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     nop
@@ -2378,10 +2411,10 @@ GB_LDH_A_C:
     nop
     nop
 GB_DI:
-    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    andi $at, $at, %lo(~INTERRUPTS_ENABLED)
+    lui $at, %lo(~INTERRUPTS_ENABLED)
+    ori $at, $at, 0xFFFF
     j DECODE_NEXT
-    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    and INTERRUPT_STATE, INTERRUPT_STATE, $at
     nop
     nop
     nop
@@ -2451,10 +2484,10 @@ GB_LD_A_a16:
     j DECODE_NEXT
 GB_EI:
     nop
-    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    ori $at, $at, INTERRUPTS_ENABLED
+    addi $at, $zero, INTERRUPTS_ENABLED
+    sll $at, $at, 16
     j DECODE_NEXT
-    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    or INTERRUPT_STATE, INTERRUPT_STATE, $at
     nop
     nop
     nop
@@ -2519,6 +2552,16 @@ _GB_EXIT_EARLY:
 
     sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
     
+    srl $at, INTERRUPT_STATE, 16
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+
+    srl $at, INTERRUPT_STATE, 8
+    andi $at, $at, 0xFF 
+    write_register_direct $at, REG_INTERRUPTS_ENABLED
+
+    andi $at, INTERRUPT_STATE, 0xFF
+    write_register_direct $at, REG_INTERRUPTS_REQUESTED
+    
     lw $s0, ST_S0($sp) # restore caller registers
     lw $s1, ST_S1($sp) 
     lw $s2, ST_S2($sp) 
@@ -2530,149 +2573,7 @@ _GB_EXIT_EARLY:
     lw $ra, ST_RA($sp) # load return address
     jr $ra
     addi $sp, $sp, STACK_SIZE
-
-######################
-# Writes 16 bit VAL to ADDR
-######################
-
-GB_DO_WRITE_16:
-    move TMP2, VAL
-    move TMP3, ADDR
-    jal GB_DO_WRITE_CALL
-    andi VAL, VAL, 0xFF
-    srl VAL, TMP2, 8
-    addi ADDR, TMP3, 1
-    j GB_DO_WRITE
-    andi ADDR, ADDR, 0xFFFF
-
-######################
-# Writes VAL to ADDR
-######################
-
-GB_DO_WRITE:
-    la $ra, DECODE_NEXT
-GB_DO_WRITE_CALL:
-    ori $at, $zero, MM_REGISTER_START
-    sub $at, ADDR, $at 
-    bgez $at, GB_DO_WRITE_REGISTERS_CALL # if ADDR >= 0xFE00 do register logic
-
-    addiu $at, $zero, 0x8000
-    sub $at, ADDR, $at
-    bgez $at, _GB_DO_WRITE # if ADDR >= 0x8000 just write
-    nop 
-    j _GB_CALL_WRITE_CALLBACK # call bank switching callback
-    sw $at, MEMORY_BANK_SWITCHING(CPUState)
-_GB_DO_WRITE:
-    srl $at, ADDR, 12 # load bank in $at
-    andi ADDR, ADDR, 0xFFF # keep offset in ADDR
-    sll $at, $at, 2 # word align the memory map offset
-    add $at, $at, Memory # lookup start of bank in array at Memory
-    lw $at, 0($at) # load start of memory bank
-    add ADDR, ADDR, $at # use address relative to memory bank
-    jr $ra
-    sb VAL, 0(ADDR) # store the byte
     
-######################
-# Writes VAL to ADDR in the range 0xFE00-0xFFFF
-######################
-
-GB_DO_WRITE_REGISTERS:
-    la $ra, DECODE_NEXT
-GB_DO_WRITE_REGISTERS_CALL:
-    li $at, -0xFF00
-    add $at, $at, ADDR # ADDR relative to MISC memory
-    bltz $at, _GB_BASIC_REGISTER_WRITE # just write the sprite memory bank
-    addi $at, $at, -0x80
-    bgez $at, _GB_BASIC_REGISTER_WRITE # just write memory above interrupt table
-
-    addi $at, $at, 0x80 # move $at back into range 0x00 - 0x80
-    srl $at, $at, 2 # get the upper nibble and multiply it by 4
-    andi $at, $at, 0x3C # mask upper nibble to get jump offset
-    add $at, $at, Memory # move jump relative to memory
-    lw $at, MEMORY_REGISTER_TABLE($at) # load memory callback
-_GB_CALL_WRITE_CALLBACK: # $at points to the funcation to call
-    addi $sp, $sp, -0x28 # save temporary registers
-    sw $t0, 0x00($sp)
-    sw $t1, 0x04($sp)
-    sw $t2, 0x08($sp)
-    sw $t3, 0x0C($sp)
-    sw $t4, 0x10($sp)
-    sw $a0, 0x14($sp)
-    sw $a1, 0x18($sp)
-    sw $a2, 0x1C($sp)
-    sw $a3, 0x20($sp)
-    sw $ra, 0x24($sp)
-
-    move $a0, Memory
-    move $a1, ADDR
-    jalr $ra, $at # call register handler
-    addi $a2, VAL, 0
-
-    lw $t0, 0x00($sp) # restore temporary registers
-    lw $t1, 0x04($sp)
-    lw $t2, 0x08($sp)
-    lw $t3, 0x0C($sp)
-    lw $t4, 0x10($sp)
-    lw $a0, 0x14($sp)
-    lw $a1, 0x18($sp)
-    lw $a2, 0x1C($sp)
-    lw $a3, 0x20($sp)
-    lw $ra, 0x24($sp)
-    jr $ra
-    addi $sp, $sp, 0x28
-
-_GB_BASIC_REGISTER_WRITE:
-    li $at, MEMORY_MISC_START-MM_REGISTER_START
-    add ADDR, $at, ADDR # ADDR relative to MISC memory
-    add ADDR, Memory, ADDR # Relative to memory
-    jr $ra
-    sb VAL, 0(ADDR)
-    
-######################
-# Reads ADDR into $v0
-######################
-
-GB_DO_READ_16:
-    move TMP2, $ra
-    jal GB_DO_READ
-    move TMP3, ADDR
-    addi ADDR, TMP3, 1
-    andi ADDR, ADDR, 0xFFFF
-    jal GB_DO_READ
-    move TMP3, $v0
-    sll $v0, $v0, 8
-    jr TMP2
-    or $v0, $v0, TMP3
-    
-######################
-# Reads ADDR into $v0
-######################
-
-GB_DO_READ:
-    ori $at, $zero, MM_REGISTER_START
-    sub $at, ADDR, $at
-    bgez $at, GB_DO_READ_REGISTERS # if ADDR >= 0xFE00
-
-    srl $at, ADDR, 12 # load bank in $at
-    andi ADDR, ADDR, 0xFFF # keep offset in ADDR
-    sll $at, $at, 2 # word align the memory map offset
-    add $at, $at, Memory # lookup start of bank in array at Memory
-    lw $at, 0($at) # load start of memory bank
-    add ADDR, ADDR, $at # use address relative to memory bank
-    jr $ra
-    lbu $v0, 0(ADDR) # load the byte
-
-######################
-# Reads the ADDR Value in the range 0xFE00-0xFFFF
-######################
-
-GB_DO_READ_REGISTERS:
-    li $at, MEMORY_MISC_START-MM_REGISTER_START
-    add ADDR, $at, ADDR # ADDR relative to MISC memory
-    add ADDR, Memory, ADDR # Relative to memory
-    jr $ra
-    lbu $v0, 0(ADDR)
-
 #######################
 # Reads the byte at PC
 # increments the program counter
@@ -2685,10 +2586,14 @@ READ_NEXT_INSTRUCTION:
     j GB_DO_READ
     addi GB_PC, GB_PC, 1
 
-CALCULATE_NEXT_INTERRUPT:
+CALCULATE_NEXT_TIMER_INTERRUPT:
+    srl $at, INTERRUPT_STATE, 16
+    beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE
+    andi $at, INTERRUPT_STATE, INTERRUPTS_TIMER << 8
+    beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE
     read_register_direct TMP4, REG_TAC # load the timer attributes table
     andi $at, TMP4, REG_TAC_STOP_BIT # check if interrupts are enabled
-    beq $at, $zero, _CALCULATE_NEXT_INTERRUPT_NONE # if timers are off, do nothing
+    beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
     addi TMP4, TMP4, -1 # 
@@ -2706,7 +2611,7 @@ CALCULATE_NEXT_INTERRUPT:
     # calculate the next interrupt time
     add NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, CYCLES_RUN
 
-_CALCULATE_NEXT_INTERRUPT_NONE:
+_CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
     jr $ra
     la NEXT_TIMER_INTERRUPT, 0xFFFFFFFF
 
@@ -3275,4 +3180,150 @@ _GB_PREFIX_FINISH_BIT:
     set_flags H_FLAG # set h flag
 
 
+#############################################################################################################################
+#############################################################################################################################
+#############################################################################################################################
+# memory TODO move to memory.s
 
+
+######################
+# Writes 16 bit VAL to ADDR
+######################
+
+GB_DO_WRITE_16:
+    move TMP2, VAL
+    move TMP3, ADDR
+    jal GB_DO_WRITE_CALL
+    andi VAL, VAL, 0xFF
+    srl VAL, TMP2, 8
+    addi ADDR, TMP3, 1
+    j GB_DO_WRITE
+    andi ADDR, ADDR, 0xFFFF
+
+######################
+# Writes VAL to ADDR
+######################
+
+GB_DO_WRITE:
+    la $ra, DECODE_NEXT
+GB_DO_WRITE_CALL:
+    ori $at, $zero, MM_REGISTER_START
+    sub $at, ADDR, $at 
+    bgez $at, GB_DO_WRITE_REGISTERS_CALL # if ADDR >= 0xFE00 do register logic
+
+    addiu $at, $zero, 0x8000
+    sub $at, ADDR, $at
+    bgez $at, _GB_DO_WRITE # if ADDR >= 0x8000 just write
+    nop 
+    j _GB_CALL_WRITE_CALLBACK # call bank switching callback
+    sw $at, MEMORY_BANK_SWITCHING(CPUState)
+_GB_DO_WRITE:
+    srl $at, ADDR, 12 # load bank in $at
+    andi ADDR, ADDR, 0xFFF # keep offset in ADDR
+    sll $at, $at, 2 # word align the memory map offset
+    add $at, $at, Memory # lookup start of bank in array at Memory
+    lw $at, 0($at) # load start of memory bank
+    add ADDR, ADDR, $at # use address relative to memory bank
+    jr $ra
+    sb VAL, 0(ADDR) # store the byte
+    
+######################
+# Writes VAL to ADDR in the range 0xFE00-0xFFFF
+######################
+
+GB_DO_WRITE_REGISTERS:
+    la $ra, DECODE_NEXT
+GB_DO_WRITE_REGISTERS_CALL:
+    li $at, -0xFF00
+    add $at, $at, ADDR # ADDR relative to MISC memory
+    bltz $at, _GB_BASIC_REGISTER_WRITE # just write the sprite memory bank
+    addi $at, $at, -0x80
+    bgez $at, _GB_BASIC_REGISTER_WRITE # just write memory above interrupt table
+
+    addi $at, $at, 0x80 # move $at back into range 0x00 - 0x80
+    srl $at, $at, 2 # get the upper nibble and multiply it by 4
+    andi $at, $at, 0x3C # mask upper nibble to get jump offset
+    add $at, $at, Memory # move jump relative to memory
+    lw $at, MEMORY_REGISTER_TABLE($at) # load memory callback
+_GB_CALL_WRITE_CALLBACK: # $at points to the funcation to call
+    addi $sp, $sp, -0x28 # save temporary registers
+    sw $t0, 0x00($sp)
+    sw $t1, 0x04($sp)
+    sw $t2, 0x08($sp)
+    sw $t3, 0x0C($sp)
+    sw $t4, 0x10($sp)
+    sw $a0, 0x14($sp)
+    sw $a1, 0x18($sp)
+    sw $a2, 0x1C($sp)
+    sw $a3, 0x20($sp)
+    sw $ra, 0x24($sp)
+
+    move $a0, Memory
+    move $a1, ADDR
+    jalr $ra, $at # call register handler
+    addi $a2, VAL, 0
+
+    lw $t0, 0x00($sp) # restore temporary registers
+    lw $t1, 0x04($sp)
+    lw $t2, 0x08($sp)
+    lw $t3, 0x0C($sp)
+    lw $t4, 0x10($sp)
+    lw $a0, 0x14($sp)
+    lw $a1, 0x18($sp)
+    lw $a2, 0x1C($sp)
+    lw $a3, 0x20($sp)
+    lw $ra, 0x24($sp)
+    jr $ra
+    addi $sp, $sp, 0x28
+
+_GB_BASIC_REGISTER_WRITE:
+    li $at, MEMORY_MISC_START-MM_REGISTER_START
+    add ADDR, $at, ADDR # ADDR relative to MISC memory
+    add ADDR, Memory, ADDR # Relative to memory
+    jr $ra
+    sb VAL, 0(ADDR)
+    
+######################
+# Reads ADDR into $v0
+######################
+
+GB_DO_READ_16:
+    move TMP2, $ra
+    jal GB_DO_READ
+    move TMP3, ADDR
+    addi ADDR, TMP3, 1
+    andi ADDR, ADDR, 0xFFFF
+    jal GB_DO_READ
+    move TMP3, $v0
+    sll $v0, $v0, 8
+    jr TMP2
+    or $v0, $v0, TMP3
+    
+######################
+# Reads ADDR into $v0
+######################
+
+GB_DO_READ:
+    ori $at, $zero, MM_REGISTER_START
+    sub $at, ADDR, $at
+    bgez $at, GB_DO_READ_REGISTERS # if ADDR >= 0xFE00
+
+    srl $at, ADDR, 12 # load bank in $at
+    andi ADDR, ADDR, 0xFFF # keep offset in ADDR
+    sll $at, $at, 2 # word align the memory map offset
+    add $at, $at, Memory # lookup start of bank in array at Memory
+    lw $at, 0($at) # load start of memory bank
+    add ADDR, ADDR, $at # use address relative to memory bank
+    jr $ra
+    lbu $v0, 0(ADDR) # load the byte
+
+######################
+# Reads the ADDR Value in the range 0xFE00-0xFFFF
+######################
+
+GB_DO_READ_REGISTERS:
+    li $at, MEMORY_MISC_START-MM_REGISTER_START
+    add ADDR, $at, ADDR # ADDR relative to MISC memory
+    add ADDR, Memory, ADDR # Relative to memory
+    jr $ra
+    lbu $v0, 0(ADDR)
