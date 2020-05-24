@@ -138,6 +138,7 @@ int runTests(char* testOutput) {
         !run0xETests(&z80, &gGameboy.memory, subTestOutput) ||
         !run0xFTests(&z80, &gGameboy.memory, subTestOutput) ||
         !runRegisterTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !runInterruptTests(&z80, &gGameboy.memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);

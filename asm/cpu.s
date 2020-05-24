@@ -14,7 +14,7 @@
 .endm
 
 .macro request_interrupt interrupt
-    ori INTERRUPT_STATE, INTERRUPT_STATE, interrupt
+    ori INTERRUPT_STATE, INTERRUPT_STATE, \interrupt
 .endm
 
 .global runZ80CPU 
@@ -73,16 +73,14 @@ runZ80CPU:
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
     beq $at, $zero, GB_BREAK_LOOP
-    nop
 
     # check if timer interrupt has happened
     sltu $at, CYCLES_RUN, NEXT_TIMER_INTERRUPT
-    beq $at, $zero, _CHECK_INTERRUPTS
+    bne $at, $zero, _CHECK_INTERRUPTS
+    nop
 
     read_register_direct TMP2, REG_TMA
     write_register_direct TMP2, REG_TIMA
-
-    read_register_direct TMP2, INTERRUPTS_REQUESTED
 
     jal CALCULATE_NEXT_TIMER_INTERRUPT
     request_interrupt INTERRUPTS_TIMER
@@ -117,6 +115,7 @@ _CHECK_INTERRUPTS:
     beq TMP2, $zero, _READ_NEXT_INSTRUCTION
     addi ADDR, $zero, 0x60
 _DO_INTERRUPT:
+    xor INTERRUPT_STATE, INTERRUPT_STATE, TMP2 # clear the interrupt
     addi GB_SP, GB_SP, -2 # reserve space in stack
     andi GB_SP, GB_SP, 0xFFFF
     andi INTERRUPT_STATE, INTERRUPT_STATE, 0xFFFF # disable interrupts
@@ -2544,8 +2543,8 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     # calculate the difference between the current time and
     # when the timer overflows
     read_register_direct NEXT_TIMER_INTERRUPT, REG_TIMA
-    sub NEXT_TIMER_INTERRUPT, $zero, NEXT_TIMER_INTERRUPT
-    andi NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, 0xFF
+    ori $at, $zero, 0x100
+    sub NEXT_TIMER_INTERRUPT, $at, NEXT_TIMER_INTERRUPT
     # shift the diffence by the clock divider
     sllv NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, TMP4
     jr $ra

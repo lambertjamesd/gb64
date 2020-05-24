@@ -49,6 +49,7 @@ int run0xDTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xETests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xFTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int runRegisterTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int runInterruptTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 
 extern char* registerNames[];
 extern int registerOffset[];
