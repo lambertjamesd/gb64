@@ -16,4 +16,6 @@ extern struct GameBoy gGameboy;
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 
+void requestInterrupt(struct GameBoy* gameboy, int interrupt);
+
 #endif

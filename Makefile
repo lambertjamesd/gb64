@@ -102,6 +102,9 @@ endif
 
 font.o:		./letters_img.h
 
+cleanall: clean
+	rm -f $(CODEOBJECTS) $(OBJECTS)
+
 # for exeGCC CELF
 ifeq ($(GCC_CELF), ON)
 ifneq ($(FINAL), YES)

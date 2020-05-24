@@ -318,7 +318,7 @@ game(void)
 
 		for (loop = 0; loop < GB_SCREEN_H; ++loop)
 		{
-			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop);
+			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 0);
 		}
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);

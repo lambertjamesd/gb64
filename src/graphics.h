@@ -15,7 +15,8 @@
 void renderPixelRow(
     struct Memory* memory,
     u16* memoryBuffer, 
-    int row
+    int row,
+    int gbc
 );
 
 #endif

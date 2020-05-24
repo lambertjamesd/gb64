@@ -13,10 +13,6 @@
     ori GB_F, GB_F, \flags
 .endm
 
-.macro request_interrupt interrupt
-    ori INTERRUPT_STATE, INTERRUPT_STATE, \interrupt
-.endm
-
 .global runZ80CPU 
 .balign 4 
 runZ80CPU:
@@ -43,18 +39,6 @@ runZ80CPU:
 
     lhu GB_SP, CPU_STATE_SP(CPUState)
     lhu GB_PC, CPU_STATE_PC(CPUState)
-
-    # load interrupt state
-    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    andi INTERRUPT_STATE, $at, INTERRUPTS_ENABLED
-    sll INTERRUPT_STATE, INTERRUPT_STATE, 16
-
-    read_register_direct $at, REG_INTERRUPTS_ENABLED
-    sll $at, $at, 8
-    or INTERRUPT_STATE, INTERRUPT_STATE, $at 
-
-    read_register_direct $at, REG_INTERRUPTS_REQUESTED
-    or INTERRUPT_STATE, INTERRUPT_STATE, $at
     
     # load stop reason
     addi $at, $zero, STOP_REASON_NONE
@@ -62,68 +46,18 @@ runZ80CPU:
 
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
-    la $at, 0x7FFFFFFF                  # mask last bit so overflow happens one bit sooner
-    and CYCLES_RUN, CYCLES_RUN, $at     #     so the upper bound, CycleTo, wont wrap back around
 
-    add CycleTo, CycleTo, CYCLES_RUN    # calculate upper bound of execution
-    
-    jal CALCULATE_NEXT_TIMER_INTERRUPT
+    add $at, CycleTo, CYCLES_RUN    # calculate upper bound of execution
+    sw $at, ST_CYCLE_TO($sp)
+
+    jal CALCULATE_NEXT_STOPPING_POINT
     nop
 
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
-    beq $at, $zero, GB_BREAK_LOOP
-
-    # check if timer interrupt has happened
-    sltu $at, CYCLES_RUN, NEXT_TIMER_INTERRUPT
-    bne $at, $zero, _CHECK_INTERRUPTS
+    beq $at, $zero, HANDLE_STOPPING_POINT
     nop
 
-    read_register_direct TMP2, REG_TMA
-    write_register_direct TMP2, REG_TIMA
-
-    jal CALCULATE_NEXT_TIMER_INTERRUPT
-    request_interrupt INTERRUPTS_TIMER
-
-_CHECK_INTERRUPTS:
-    # check if interrupts are enabled
-    srl $at, INTERRUPT_STATE, 16
-    beq $at, $zero, _READ_NEXT_INSTRUCTION
-    # check any enabled interrupts are set
-    srl $at, INTERRUPT_STATE, 8
-    and $at, INTERRUPT_STATE, $at
-    andi $at, $at, 0xFF
-    beq $at, $zero, _READ_NEXT_INSTRUCTION
-
-    andi TMP2, $at, INTERRUPTS_V_BLANK
-    bne TMP2, $zero, _DO_INTERRUPT
-    addi ADDR, $zero, 0x40
-    
-    andi TMP2, $at, INTERRUPTS_LCDC
-    bne TMP2, $zero, _DO_INTERRUPT
-    addi ADDR, $zero, 0x48
-    
-    andi TMP2, $at, INTERRUPTS_TIMER
-    bne TMP2, $zero, _DO_INTERRUPT
-    addi ADDR, $zero, 0x50
-    
-    andi TMP2, $at, INTERRUPTS_SERIAL
-    bne TMP2, $zero, _DO_INTERRUPT
-    addi ADDR, $zero, 0x58
-    
-    andi TMP2, $at, INTERRUPTS_INPUT
-    beq TMP2, $zero, _READ_NEXT_INSTRUCTION
-    addi ADDR, $zero, 0x60
-_DO_INTERRUPT:
-    xor INTERRUPT_STATE, INTERRUPT_STATE, TMP2 # clear the interrupt
-    addi GB_SP, GB_SP, -2 # reserve space in stack
-    andi GB_SP, GB_SP, 0xFFFF
-    andi INTERRUPT_STATE, INTERRUPT_STATE, 0xFFFF # disable interrupts
-    move VAL, GB_PC # set current PC to be saved
-    move GB_PC, ADDR # set the new PC
-    j GB_DO_WRITE_16
-    move ADDR, GB_SP # set the write address
-_READ_NEXT_INSTRUCTION:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
 
@@ -2112,11 +2046,11 @@ GB_RET_C:
     nop
 GB_RETI:
     addi $at, $zero, INTERRUPTS_ENABLED
-    sll $at, $at, 16
-    or INTERRUPT_STATE, INTERRUPT_STATE, $at
-    j _GB_RET
+    jal CHECK_FOR_INTERRUPT
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    jal CALCULATE_NEXT_STOPPING_POINT
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
-    nop
+    j _GB_RET
     nop
     nop
 GB_JP_C:
@@ -2347,10 +2281,10 @@ GB_LDH_A_C:
     nop
     nop
 GB_DI:
-    lui $at, %lo(~INTERRUPTS_ENABLED)
-    ori $at, $at, 0xFFFF
+    addi $at, $zero, 0
     j DECODE_NEXT
-    and INTERRUPT_STATE, INTERRUPT_STATE, $at
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    nop
     nop
     nop
     nop
@@ -2419,12 +2353,12 @@ GB_LD_A_a16:
     move GB_A, $v0
     j DECODE_NEXT
 GB_EI:
+    addi $at, $zero, INTERRUPTS_ENABLED
+    jal CHECK_FOR_INTERRUPT
+    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    jal CALCULATE_NEXT_STOPPING_POINT
     nop
-    ori $at, $zero, INTERRUPTS_ENABLED
-    sll $at, $at, 16
     j DECODE_NEXT
-    or INTERRUPT_STATE, INTERRUPT_STATE, $at
-    nop
     nop
     nop
 GB_ERROR_9:
@@ -2479,7 +2413,7 @@ _GB_EXIT_EARLY:
     add $at, $at, TMP2
     write_register_direct $at, REG_DIV
 
-    jal CALCULATE_TIMER_VALUE
+    jal CALCULATE_TIMA_VALUE
 
     sb GB_A, CPU_STATE_A(CPUState)
     sb GB_F, CPU_STATE_F(CPUState)
@@ -2494,17 +2428,26 @@ _GB_EXIT_EARLY:
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
 
+    # We don't want CYCLES_RUN
+    # to overflow while emulating the CPU
+    # since CPU_STATE_NEXT_TIMER should always
+    # be >= CYCLES_RUN
+    # to prevent this, when exiting the
+    # emulation we check if CYCLES_RUN is
+    # above 0x80000000 if it is we 
+    # decrement both CYCLES_RUN and
+    # by that much CPU_STATE_NEXT_TIMER
+    lui TMP2, 0x8000
+    sltu $at, CYCLES_RUN, TMP2
+    bnez $at, _GB_BREAK_LOOP_SAVE_CYCLES
+    nop
+    lw $at, CPU_STATE_NEXT_TIMER(CPUState)
+    sub $at, $at, TMP2
+    sw $at, CPU_STATE_NEXT_TIMER(CPUState)
+    sub CYCLES_RUN, CYCLES_RUN, TMP2
+
+_GB_BREAK_LOOP_SAVE_CYCLES:
     sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
-    
-    srl $at, INTERRUPT_STATE, 16
-    sb $at, CPU_STATE_INTERRUPTS(CPUState)
-
-    srl $at, INTERRUPT_STATE, 8
-    andi $at, $at, 0xFF 
-    write_register_direct $at, REG_INTERRUPTS_ENABLED
-
-    andi $at, INTERRUPT_STATE, 0xFF
-    write_register_direct $at, REG_INTERRUPTS_REQUESTED
     
     lw $s0, ST_S0($sp) # restore caller registers
     lw $s1, ST_S1($sp) 
@@ -2530,55 +2473,208 @@ READ_NEXT_INSTRUCTION:
     j GB_DO_READ
     addi GB_PC, GB_PC, 1
 
+########################
+# Calculates when the next timer interrupt will happen
+# Stomps on TMP2
+# Automatically calls CALCULATE_NEXT_STOPPING_POINT
+########################
+
 CALCULATE_NEXT_TIMER_INTERRUPT:
-    read_register_direct TMP4, REG_TAC # load the timer attributes table
-    andi $at, TMP4, REG_TAC_STOP_BIT # check if interrupts are enabled
+    read_register_direct TMP2, REG_TAC # load the timer attributes table
+    andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
     beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
-    addi TMP4, TMP4, -1 # 
-    andi TMP4, TMP4, REG_TAC_CLOCK_SELECT
-    addi TMP4, TMP4, 1
-    sll TMP4, TMP4, 1
+    addi TMP2, TMP2, -1 # 
+    andi TMP2, TMP2, REG_TAC_CLOCK_SELECT
+    addi TMP2, TMP2, 1
+    sll TMP2, TMP2, 1
     # calculate the difference between the current time and
     # when the timer overflows
-    read_register_direct NEXT_TIMER_INTERRUPT, REG_TIMA
-    ori $at, $zero, 0x100
-    sub NEXT_TIMER_INTERRUPT, $at, NEXT_TIMER_INTERRUPT
+    read_register_direct $at, REG_TIMA
+    sub $at, $zero, $at
+    addi $at, $at, 0x100
     # shift the diffence by the clock divider
-    sllv NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, TMP4
-    jr $ra
+    sllv $at, $at, TMP2
+    add $at, CYCLES_RUN, $at # make offset relative to cycles run
+    j CALCULATE_NEXT_STOPPING_POINT
     # calculate the next interrupt time
-    add NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, CYCLES_RUN
+    sw $at, CPU_STATE_NEXT_TIMER(CPUState)
 
 _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
-    jr $ra
-    la NEXT_TIMER_INTERRUPT, 0xFFFFFFFF
+    la $at, 0xFFFFFFFF
+    j CALCULATE_NEXT_STOPPING_POINT
+    sw $at, CPU_STATE_NEXT_TIMER(CPUState)
 
-CALCULATE_TIMER_VALUE:
-    addiu $at, NEXT_TIMER_INTERRUPT, 1 
-    beq $at, $zero, _CALCULATE_TIMER_VALUE_NONE # if timers are off, do nothing
+########################
+# Update TIMA register to the correct value
+# Stomps on TMP2
+########################
+
+CALCULATE_TIMA_VALUE:
+    lw TMP3, CPU_STATE_NEXT_TIMER(CPUState)
+    addiu $at, TMP3, 1 
+    # if there is no timer running, do nothing
+    beq $at, $zero, _CALCULATE_TIMA_VALUE_NONE 
     
-    read_register_direct TMP4, REG_TAC # load the timer attributes table
+    read_register_direct TMP2, REG_TAC # load the timer attributes table
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
-    addi TMP4, TMP4, -1 # 
-    andi TMP4, TMP4, REG_TAC_CLOCK_SELECT
-    addi TMP4, TMP4, 1
-    sll TMP4, TMP4, 1
+    addi TMP2, TMP2, -1 # 
+    andi TMP2, TMP2, REG_TAC_CLOCK_SELECT
+    addi TMP2, TMP2, 1
+    sll TMP2, TMP2, 1
 
     # calculate cycles until next interrupt
     # operands intentionally swapped to avoid needing
     # to negate the result later
-    sub $at, CYCLES_RUN, NEXT_TIMER_INTERRUPT
+    sub $at, CYCLES_RUN, TMP3
     # shift the diffence by the clock divider
-    srlv $at, $at, TMP4
+    srlv $at, $at, TMP2
 
     # write TIMA register
     write_register_direct $at, REG_TIMA
 
-_CALCULATE_TIMER_VALUE_NONE:
+_CALCULATE_TIMA_VALUE_NONE:
     jr $ra
+    nop
+
+########################
+# Determines the next time a special action
+# Needs to occur which can be
+#    Finished running cycles
+#    Timer overflow
+#    Interrupt
+# Stomps on TMP2
+########################
+
+CALCULATE_NEXT_STOPPING_POINT:
+    # if an interrupt has been requested
+    # then then always stop
+    lbu TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
+    bne TMP2, $zero, _CALCULATE_NEXT_STOPPING_POINT_FINISH
+    ori $at, $zero, 0
+    
+    # deterime if CycleTo or NextTimer is smaller
+    lw $at, CPU_STATE_NEXT_TIMER(CPUState)
+    lw CycleTo, ST_CYCLE_TO($sp)
+    sltu TMP2, CycleTo, $at
+    beq TMP2, $zero, _CALCULATE_NEXT_STOPPING_POINT_FINISH
+    nop
+    move $at, CycleTo
+_CALCULATE_NEXT_STOPPING_POINT_FINISH:
+    jr $ra
+    move CycleTo, $at
+
+
+#############################
+# Check if any interrupts have been requested
+# And saves the requested interrupt CPU_STATE_NEXT_INTERRUPT
+#############################
+
+CHECK_FOR_INTERRUPT:
+    # first check if interrupts are enabled
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    beq $at, $zero, _CHECK_FOR_INTERRUPT_EXIT
+    addi TMP2, $zero, 0
+
+    # see if any individual interrupts have been triggered
+    read_register_direct $at, REG_INTERRUPTS_REQUESTED
+    read_register_direct TMP2, REG_INTERRUPTS_ENABLED
+    and $at, TMP2, $at
+    beq $at, $zero, _CHECK_FOR_INTERRUPT_EXIT
+    addi TMP2, $zero, 0
+
+    andi TMP2, $at, INTERRUPTS_V_BLANK
+    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    addi TMP2, $zero, INTERRUPTS_V_BLANK
+    
+    andi TMP2, $at, INTERRUPTS_LCDC
+    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    addi TMP2, $zero, INTERRUPTS_LCDC
+    
+    andi TMP2, $at, INTERRUPTS_TIMER
+    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    addi TMP2, $zero, INTERRUPTS_TIMER
+    
+    andi TMP2, $at, INTERRUPTS_SERIAL
+    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    addi TMP2, $zero, INTERRUPTS_SERIAL
+    
+    andi TMP2, $at, INTERRUPTS_INPUT
+    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    addi TMP2, $zero, INTERRUPTS_INPUT
+    
+    j _CHECK_FOR_INTERRUPT_EXIT
+    addi TMP2, $zero, 0
+
+_CHECK_FOR_INTERRUPT_SAVE:
+    ori CycleTo, $zero, 0 # run interrupt next cycle
+_CHECK_FOR_INTERRUPT_EXIT:
+    jr $ra
+    sb TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
+
+########################
+# Determines the action to take now that
+# CycleTo has been reached
+# Stomps on TMP2
+########################
+
+HANDLE_STOPPING_POINT:
+    # check timer first
+    lw $at, CPU_STATE_NEXT_TIMER(CPUState)
+    sltu TMP2, CYCLES_RUN, $at
+    bne TMP2, $zero, _HANDLE_STOPPING_POINT_CHECK_INTERRUPT
+    nop
+    read_register_direct TMP2, REG_TMA
+    write_register_direct TMP2, REG_TIMA
+
+    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    ori TMP2, TMP2, INTERRUPTS_TIMER
+    jal CHECK_FOR_INTERRUPT
+    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+    jal CALCULATE_NEXT_TIMER_INTERRUPT
+    nop
+
+    j DECODE_NEXT
+    nop
+
+_HANDLE_STOPPING_POINT_CHECK_INTERRUPT:
+    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
+    beq $at, $zero, _HANDLE_STOPPING_POINT_BREAK
+
+    ori ADDR, $zero, 0x40 # load the base address for interrupt jumps
+    srl TMP2, $at, 1 # calculte which bit to jump tp
+_HANDLE_STOPPING_POINT_INT_JUMP_LOOP:
+    beq TMP2, $zero, _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT
+    srl TMP2, TMP2, 1
+    j _HANDLE_STOPPING_POINT_INT_JUMP_LOOP
+    addi ADDR, ADDR, 0x80
+
+_HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
+    # clear requested interrupt
+    xori $at, $at, 0xFF
+    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    and TMP2, TMP2, $at
+    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+    addi $at, $zero, 0
+    sb $at, CPU_STATE_NEXT_INTERRUPT(CPUState) # clear pending interrupt
+    sb $at, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
+    
+    jal CALCULATE_NEXT_STOPPING_POINT
+    nop
+    
+    addi GB_SP, GB_SP, -2 # reserve space in stack
+    andi GB_SP, GB_SP, 0xFFFF
+    move VAL, GB_PC # set current PC to be saved
+    move GB_PC, ADDR # set the new PC
+    j GB_DO_WRITE_16
+    move ADDR, GB_SP # set the write address
+
+_HANDLE_STOPPING_POINT_BREAK:
+    j GB_BREAK_LOOP
     nop
 
 #######################
@@ -3255,7 +3351,7 @@ _GB_WRITE_REG_0X:
     ori $at, $zero, REG_TAC
     beq ADDR, $at, _GB_WRITE_REG_TAC
     ori $at, $zero, REG_INTERRUPTS_REQUESTED
-    beq ADDR, $at, _GB_WRITE_REG_INT
+    beq ADDR, $at, _GB_WRITE_REG_INT_REQ
     nop
     jr $ra
     nop
@@ -3291,17 +3387,18 @@ _GB_WRITE_REG_TMA:
     
 _GB_WRITE_REG_TAC:
     sw $ra, -2($sp)
-    jal CALCULATE_TIMER_VALUE
+    jal CALCULATE_TIMA_VALUE
     nop
     lw $ra, -2($sp)
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TAC
     
-_GB_WRITE_REG_INT:
-    srl NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, 8
-    sll NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, 8
-    jr $ra
-    or NEXT_TIMER_INTERRUPT, NEXT_TIMER_INTERRUPT, VAL
+_GB_WRITE_REG_INT_REQ:
+    sw $ra, -2($sp)
+    jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
+    write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
+    j CALCULATE_NEXT_STOPPING_POINT
+    lw $ra, -2($sp)
 
 
 ############################

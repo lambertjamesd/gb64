@@ -10,14 +10,12 @@
 .set GB_SP, $t0
 .set GB_PC, $t1
 .set CYCLES_RUN, $t2
-.set NEXT_TIMER_INTERRUPT, $t3
-.set INTERRUPT_STATE, $t4
 
-.set ADDR, $t5
-.set VAL,  $t6
-.set TMP2,  $t7
-.set TMP3,  $t8
-.set TMP4,  $t9
+.set ADDR, $t3
+.set VAL,  $t4
+.set TMP2,  $t5
+.set TMP3,  $t6
+.set TMP4,  $t7
 
 .set CPUState, $a0
 .set Memory, $a1
@@ -37,7 +35,9 @@
 .eqv CPU_STATE_PC, 0xA
 .eqv CPU_STATE_STOP_REASON, 0xC
 .eqv CPU_STATE_INTERRUPTS, 0xD
+.eqv CPU_STATE_NEXT_INTERRUPT, 0xE
 .eqv CPU_STATE_CYCLES_RUN, 0x10
+.eqv CPU_STATE_NEXT_TIMER, 0x14
 
 .eqv MEMORY_ADDR_TABLE, 0x00
 .eqv MEMORY_REGISTER_TABLE, 0x40
@@ -58,7 +58,7 @@
 .eqv H_FLAG, 0x20
 .eqv C_FLAG, 0x10
 
-.eqv STACK_SIZE, 0x28
+.eqv STACK_SIZE, 0x2C
 .eqv ST_RA, 0x0
 # hole here
 .eqv ST_S0, 0x8
@@ -69,6 +69,7 @@
 .eqv ST_S5, 0x1C
 .eqv ST_S6, 0x20
 .eqv ST_S7, 0x24
+.eqv ST_CYCLE_TO, 0x28
 
 .eqv SAVE_TMP_SIZE, 0x28
 

@@ -51,3 +51,20 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF4B, 0x00);
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFFFF, 0x00);
 }
+
+void requestInterrupt(struct GameBoy* gameboy, int interrupt)
+{
+    int interrupts;
+    interrupts = READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_REQUESTED);
+    interrupts |= interrupts;
+    WRITE_REGISTER_DIRECT(&gameboy->memory, REG_INT_REQUESTED, interrupt);
+
+    if (
+        gameboy->cpu.interrupts && 
+        (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED)) &&
+        (!gameboy->nextInterrupt || gameboy->nextInterrupt > interrupt)
+    )
+    {
+        gameboy->nextInterrupt = interrupt;
+    }
+}

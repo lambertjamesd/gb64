@@ -41,8 +41,10 @@ struct Z80State {
     unsigned short pc;
     unsigned char stopReason;
     unsigned char interrupts;
-    unsigned short unused1;
+    unsigned char nextInterrupt;
+    unsigned char unused1;
     unsigned long cyclesRun;
+    unsigned long nextTimerTrigger;
 };
 
 extern int runZ80CPU(struct Z80State* state, struct Memory* memory, int cyclesToRun);

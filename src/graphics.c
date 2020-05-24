@@ -14,7 +14,8 @@
 void renderPixelRow(
     struct Memory* memory,
     u16* memoryBuffer, 
-    int row
+    int row,
+    int gbc
 )
 {
     int x;
@@ -22,9 +23,11 @@ void renderPixelRow(
     int windowX;
     int windowY;
     int tilemapRow;
+    int tileInfo;
     u32 tileRow;
     int palleteIndex;
     int subLoop;
+    int tileIndex;
     u16* targetMemory;
     u16* pallete;
     u16 spriteRow;
@@ -40,8 +43,18 @@ void renderPixelRow(
     for (x = 0; x < GB_SCREEN_W;)
     {
         windowX = (x + offsetX) & 0xFF;
-        tileRow = memory->vram.tilemap0[tilemapRow + (windowX >> 3)];
+        tileIndex = tilemapRow + (windowX >> 3);
+        tileRow = memory->vram.tilemap0[tileIndex];
         spriteRow = memory->vram.tiles[tileRow].rows[windowY & 0x7];
+
+        if (gbc)
+        {
+            tileInfo = memory->vram.tilemap0Atts[tileIndex];
+        }
+        else
+        {
+            tileInfo = 0;
+        }
         
         switch (windowX & 0x7)
         {

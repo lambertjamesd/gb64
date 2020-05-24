@@ -31,8 +31,8 @@
 #define REG_SCY         0xFF42
 #define REG_SCX         0xFF43
 
-#define REG_INT_FLAGS   0xFF0F
-#define REG_INT_ENABLED 0xFFFF
+#define REG_INT_REQUESTED   0xFF0F
+#define REG_INT_ENABLED     0xFFFF
 
 #define TILEMAP_W   32
 #define TILEMAP_H   32
