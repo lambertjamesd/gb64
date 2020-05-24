@@ -1,6 +1,8 @@
 
 #include "../z80.h"
 
+#define LOAD_PROGRAM(dest, src) memCopy(dest, src, sizeof(src));
+
 int testZ80State(
     char *testName,
     char *testOutput,

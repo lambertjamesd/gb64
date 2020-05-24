@@ -62,9 +62,9 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
     if (
         gameboy->cpu.interrupts && 
         (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED)) &&
-        (!gameboy->nextInterrupt || gameboy->nextInterrupt > interrupt)
+        (!gameboy->cpu.nextInterrupt || gameboy->cpu.nextInterrupt > interrupt)
     )
     {
-        gameboy->nextInterrupt = interrupt;
+        gameboy->cpu.nextInterrupt = interrupt;
     }
 }

@@ -217,14 +217,22 @@ GB_RRCA:
     nop
 #### 0x1X
 GB_STOP:
-    jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
-    nop
-    addi $at, $zero, STOP_REASON_STOP
-    j GB_BREAK_LOOP # exit early
-    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    j DECODE_NEXT
     nop
     nop
     nop
+    nop
+    nop
+    nop
+    nop
+    # jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
+    # nop
+    # addi $at, $zero, STOP_REASON_STOP
+    # j GB_BREAK_LOOP # exit early
+    # sb $at, CPU_STATE_STOP_REASON(CPUState)
+    # nop
+    # nop
+    # nop
 GB_LD_DE_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
@@ -1146,15 +1154,23 @@ GB_LD_HL_L:
     nop
     nop
     nop
-GB_LD_HALT:
-    addi $at, $zero, STOP_REASON_HALT
-    j GB_BREAK_LOOP # exit early
-    sb $at, CPU_STATE_STOP_REASON(CPUState)
+GB_HALT:
+    j DECODE_NEXT
     nop
     nop
     nop
     nop
     nop
+    nop
+    nop
+    # addi $at, $zero, STOP_REASON_HALT
+    # j GB_BREAK_LOOP # exit early
+    # sb $at, CPU_STATE_STOP_REASON(CPUState)
+    # nop
+    # nop
+    # nop
+    # nop
+    # nop
 GB_LD_HL_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     sll ADDR, GB_H, 8 # load upper address
@@ -2113,7 +2129,7 @@ GB_LDH_a8_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     ori ADDR, $v0, 0xFF00
     j GB_DO_WRITE_REGISTERS
-    addi VAL, GB_A, 0
+    move VAL, GB_A
     nop
     nop
     nop
@@ -2587,23 +2603,23 @@ CHECK_FOR_INTERRUPT:
 
     andi TMP2, $at, INTERRUPTS_V_BLANK
     bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
-    addi TMP2, $zero, INTERRUPTS_V_BLANK
+    nop
     
     andi TMP2, $at, INTERRUPTS_LCDC
     bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
-    addi TMP2, $zero, INTERRUPTS_LCDC
+    nop
     
     andi TMP2, $at, INTERRUPTS_TIMER
     bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
-    addi TMP2, $zero, INTERRUPTS_TIMER
+    nop
     
     andi TMP2, $at, INTERRUPTS_SERIAL
     bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
-    addi TMP2, $zero, INTERRUPTS_SERIAL
+    nop
     
     andi TMP2, $at, INTERRUPTS_INPUT
     bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
-    addi TMP2, $zero, INTERRUPTS_INPUT
+    nop
     
     j _CHECK_FOR_INTERRUPT_EXIT
     addi TMP2, $zero, 0
@@ -2645,12 +2661,13 @@ _HANDLE_STOPPING_POINT_CHECK_INTERRUPT:
     beq $at, $zero, _HANDLE_STOPPING_POINT_BREAK
 
     ori ADDR, $zero, 0x40 # load the base address for interrupt jumps
+    andi $at, $at, 0x1F # mask bits
     srl TMP2, $at, 1 # calculte which bit to jump tp
 _HANDLE_STOPPING_POINT_INT_JUMP_LOOP:
     beq TMP2, $zero, _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT
     srl TMP2, TMP2, 1
     j _HANDLE_STOPPING_POINT_INT_JUMP_LOOP
-    addi ADDR, ADDR, 0x80
+    addi ADDR, ADDR, 0x8
 
 _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
     # clear requested interrupt
@@ -3386,19 +3403,19 @@ _GB_WRITE_REG_TMA:
     write_register_direct VAL, REG_TMA
     
 _GB_WRITE_REG_TAC:
-    sw $ra, -2($sp)
+    sw $ra, -4($sp)
     jal CALCULATE_TIMA_VALUE
     nop
-    lw $ra, -2($sp)
+    lw $ra, -4($sp)
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TAC
     
 _GB_WRITE_REG_INT_REQ:
-    sw $ra, -2($sp)
+    sw $ra, -4($sp)
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
     j CALCULATE_NEXT_STOPPING_POINT
-    lw $ra, -2($sp)
+    lw $ra, -4($sp)
 
 
 ############################

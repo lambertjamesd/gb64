@@ -21,5 +21,6 @@ void markAllocated(void* addr, int length);
 int calculateBytesFree();
 int calculateLargestFreeChunk();
 extern void zeroMemory(void* memory, int size);
+extern void memCopy(void* target, void* src, int size);
 
 #endif

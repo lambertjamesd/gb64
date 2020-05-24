@@ -126,18 +126,18 @@ int runTests(char* testOutput) {
     initializeZ80(&z80);
 
     if (
-        // !run0x0Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0x1Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0x2Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0x3Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0x4_7Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0x8_9Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0xA_BTests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0xCTests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0xDTests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0xETests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !run0xFTests(&z80, &gGameboy.memory, subTestOutput) ||
-        // !runRegisterTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x0Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x1Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x2Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x3Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x4_7Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x8_9Tests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xA_BTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xCTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xDTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xETests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0xFTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !runRegisterTests(&z80, &gGameboy.memory, subTestOutput) ||
         !runInterruptTests(&z80, &gGameboy.memory, subTestOutput) ||
         0)
     {

@@ -224,3 +224,31 @@ void zeroMemory(void* memory, int size)
         --size;
     }
 }
+
+void memCopy(void* target, void* src, int size)
+{
+    int* targetAsInt;
+    unsigned char* targetAsChar;
+    int* srcAsInt;
+    unsigned char* srcAsChar;
+
+    targetAsInt = (int*)target;
+    srcAsInt = (int*)src;
+
+    while (size > 3) {
+        *targetAsInt = *srcAsInt;
+        ++targetAsInt;
+        ++srcAsInt;
+        size -= 4;
+    }
+
+    targetAsChar = (unsigned char*)targetAsInt;
+    srcAsChar = (unsigned char*)srcAsInt;
+    
+    while (size > 0) {
+        *targetAsChar = *srcAsChar;
+        ++targetAsChar;
+        ++srcAsChar;
+        --size;
+    }
+}
