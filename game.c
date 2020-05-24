@@ -131,7 +131,7 @@ game(void)
 	lastTime = 0;
 	cyclesToRun = 0;
 	gGameboy.cpu.cyclesRun = 0;
-	cycleStep = 1024 * 1024 / 30;
+	cycleStep = 0;//1024 * 1024 / 30;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
 #if RUN_TESTS

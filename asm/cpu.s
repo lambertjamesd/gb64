@@ -2524,7 +2524,7 @@ _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
 
 ########################
 # Update TIMA register to the correct value
-# Stomps on TMP2
+# Stomps on TMP2 and TMP3
 ########################
 
 CALCULATE_TIMA_VALUE:
@@ -3270,12 +3270,19 @@ _GB_PREFIX_FINISH_BIT:
 ######################
 
 GB_DO_WRITE_16:
-    move TMP2, VAL
-    move TMP3, ADDR
+    addi $sp, $sp, -4
+    sh VAL, 0($sp)
+    sh ADDR, 2($sp)
     jal GB_DO_WRITE_CALL
     andi VAL, VAL, 0xFF
-    srl VAL, TMP2, 8
-    addi ADDR, TMP3, 1
+
+    lhu VAL, 0($sp)
+    lhu ADDR, 2($sp)
+    addi $sp, $sp, 4
+
+    srl VAL, VAL, 8
+    addi ADDR, ADDR, 1
+
     j GB_DO_WRITE
     andi ADDR, ADDR, 0xFFFF
 
@@ -3514,16 +3521,24 @@ _GB_WRITE_REG_7X_SKIP:
 ######################
 
 GB_DO_READ_16:
-    move TMP2, $ra
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
     jal GB_DO_READ
-    move TMP3, ADDR
-    addi ADDR, TMP3, 1
+    sh ADDR, 4($sp)
+
+    sh $v0, 6($sp)
+    lhu ADDR, 4($sp)
+    addi ADDR, ADDR, 1
+    jal GB_DO_READ
     andi ADDR, ADDR, 0xFFFF
-    jal GB_DO_READ
-    move TMP3, $v0
+
+    lhu $at, 6($sp)
+    lw $ra, 0($sp)
+    addi $sp, $sp, 8
+
     sll $v0, $v0, 8
-    jr TMP2
-    or $v0, $v0, TMP3
+    jr $ra
+    or $v0, $v0, $at
     
 ######################
 # Reads ADDR into $v0
