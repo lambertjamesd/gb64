@@ -22,11 +22,17 @@
 #define REGISTERS_START         0xFF00
 #define REGISTER_WRITER_COUNT   0x08
 
-#define REG_SCY 0xFF42
-#define REG_SCX 0xFF43
+#define REG_JOYP        0xFF00
+#define REG_DIV         0xFF04 
+#define _REG_JOYSTATE   0xFF03
+#define REG_SCY         0xFF42
+#define REG_SCX         0xFF43
 
 #define TILEMAP_W   32
 #define TILEMAP_H   32
+
+#define MEMORY_VRAM_BANK_INDEX  0x8
+#define MEMORY_RAM_BANK_INDEX   0xD
 
 #define WRITE_REGISTER_DIRECT(mm, addr, val) (mm)->miscBytes[(addr) - MISC_START] = (val)
 #define READ_REGISTER_DIRECT(mm, addr) ((mm)->miscBytes[(addr) - MISC_START])

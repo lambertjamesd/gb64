@@ -5,6 +5,7 @@ int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
 {
     int run;
     int expectedRunLength;
+    int expectedValue;
     struct Z80State expected;
     int targetRegister;
     int srcRegister;
@@ -20,6 +21,19 @@ int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
             {
                 continue;
             }
+
+            if (srcRegister == H_REGISTER_INDEX)
+            {
+                expectedValue = 0x80;
+            }
+            else if (srcRegister == L_REGISTER_INDEX)
+            {
+                expectedValue = 0x20;
+            }
+            else
+            {
+                expectedValue = 0x63;
+            }
             
             srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
             targetByte = getRegisterPointer(&expected, memory->internalRam + 0x20, memory->internalRam + 1, targetRegister);
@@ -28,10 +42,10 @@ int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
             memory->internalRam[0x20] = 0x0;
             z80->h = 0x80;
             z80->l = 0x20;
-            *srcByte = 0x63;
+            *srcByte = expectedValue;
             expected = *z80;
             expected.pc = 1;
-            *targetByte = 0x63;
+            *targetByte = expectedValue;
             expectedRunLength = (srcRegister == HL_REGISTER_INDEX || targetRegister == HL_REGISTER_INDEX) ? 2 : 1;
 
             memory->internalRam[0] = Z80_LD_B_B + REGISTER_COUNT * targetRegister + srcRegister;
@@ -43,7 +57,7 @@ int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
             if (
                 !testZ80State(instructionName, testOutput, z80, &expected) ||
                 !testInt(instructionName, testOutput, run, expectedRunLength) ||
-                !testInt(instructionName, testOutput, *targetByte, 0x63)
+                !testInt(instructionName, testOutput, *targetByte, expectedValue)
             )
             {
                 return 0;

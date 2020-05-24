@@ -52,6 +52,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/test/z80_tests_E.c                \
        src/test/z80_tests_F.c                \
        src/test/z80_tests_prefix_cb.c        \
+       src/test/register_test.c              \
        src/z80.c                             \
        src/rom.c                             \
        src/memory_map.c                      \

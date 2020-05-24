@@ -48,6 +48,7 @@ int run0xCTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xDTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xETests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 int run0xFTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
+int runRegisterTests(struct Z80State* z80, struct Memory* memory, char* testOutput);
 
 extern char* registerNames[];
 extern int registerOffset[];
@@ -55,6 +56,12 @@ extern int registerOffset[];
 int runTests(char* testOutput);
 
 #define REGISTER_COUNT 8
+#define B_REGISTER_INDEX 0
+#define C_REGISTER_INDEX 1
+#define D_REGISTER_INDEX 2
+#define E_REGISTER_INDEX 3
+#define H_REGISTER_INDEX 4
+#define L_REGISTER_INDEX 5
 #define HL_REGISTER_INDEX 6
 #define A_REGISTER_INDEX 7
 #define d8_REGISTER_INDEX 8

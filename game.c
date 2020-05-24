@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 0
+#define RUN_TESTS 1
 				
 /*
  * macros 
@@ -224,7 +224,12 @@ game(void)
 		lastDrawTime += osGetTime();
 		
 #if !RUN_TESTS
-		sprintf(cstring, "Cycles run %d Time %d %X", gGameboy.cpu.cyclesRun, (int)(100 * lastDrawTime / frameTime), runZ80CPU);
+		sprintf(cstring, "Cycles run %d Time %d %X\n%X", 
+			gGameboy.cpu.cyclesRun, 
+			(int)(100 * lastDrawTime / frameTime), 
+			runZ80CPU,
+			offsetof(struct Memory, rom)
+		);
 #endif
 
 		/*

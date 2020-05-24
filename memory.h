@@ -2,6 +2,9 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
+#define offsetof(st, m) \
+    ((int)&(((st *)0)->m))
+
 extern struct HeapSegment* gFirstHeapSegment;
 
 struct HeapSegment

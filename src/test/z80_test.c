@@ -1,8 +1,6 @@
 #include "z80_test.h"
 #include "../gameboy.h"
-
-#define offsetof(st, m) \
-    ((int)&(((st *)0)->m))
+#include "../../memory.h"
 
 int testInt(
     char *testName,
@@ -139,6 +137,7 @@ int runTests(char* testOutput) {
         !run0xDTests(&z80, &gGameboy.memory, subTestOutput) ||
         !run0xETests(&z80, &gGameboy.memory, subTestOutput) ||
         !run0xFTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !runRegisterTests(&z80, &gGameboy.memory, subTestOutput) ||
         0)
     {
         sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);
