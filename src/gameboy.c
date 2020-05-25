@@ -60,11 +60,18 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
     WRITE_REGISTER_DIRECT(&gameboy->memory, REG_INT_REQUESTED, interrupt);
 
     if (
-        gameboy->cpu.interrupts && 
-        (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED)) &&
-        (!gameboy->cpu.nextInterrupt || gameboy->cpu.nextInterrupt > interrupt)
+        (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED))
     )
     {
-        gameboy->cpu.nextInterrupt = interrupt;
+        if (gameboy->cpu.interrupts &&
+            (!gameboy->cpu.nextInterrupt || gameboy->cpu.nextInterrupt > interrupt))
+        {
+            gameboy->cpu.nextInterrupt = interrupt;
+        }
+        
+        if (gameboy->cpu.stopReason == STOP_REASON_HALT)
+        {
+            gameboy->cpu.stopReason = STOP_REASON_NONE;
+        }
     }
 }

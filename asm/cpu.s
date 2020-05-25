@@ -40,9 +40,8 @@ runZ80CPU:
     lhu GB_SP, CPU_STATE_SP(CPUState)
     lhu GB_PC, CPU_STATE_PC(CPUState)
     
-    # load stop reason
-    addi $at, $zero, STOP_REASON_NONE
-    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    lbu $at, CPU_STATE_STOP_REASON(CPUState)
+    bnez $at, GB_BREAK_LOOP
 
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
@@ -53,6 +52,8 @@ runZ80CPU:
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
 
+    la TMP4, 0x80700000
+
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
     beq $at, $zero, HANDLE_STOPPING_POINT
@@ -60,6 +61,23 @@ DECODE_NEXT:
 
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
+
+    la $at, 0x80700000 - 4
+    sw Memory, -4($at)
+    sw TMP4, 0($at)
+    sb $v0, 0(TMP4)
+    sh GB_PC, 2(TMP4)
+    addi TMP4, TMP4, 4
+
+    la $at, 0x80800000
+    sltu $at, TMP4, $at
+    bne $at, $zero, _DEBUG_SKIP
+    nop
+
+    la TMP4, 0x80700000
+
+_DEBUG_SKIP:
+
 
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
@@ -217,22 +235,14 @@ GB_RRCA:
     nop
 #### 0x1X
 GB_STOP:
-    j DECODE_NEXT
+    jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
+    nop
+    addi $at, $zero, STOP_REASON_STOP
+    j GB_SIMULATE_HALTED # exit early
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
     nop
     nop
     nop
-    nop
-    nop
-    nop
-    nop
-    # jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
-    # nop
-    # addi $at, $zero, STOP_REASON_STOP
-    # j GB_BREAK_LOOP # exit early
-    # sb $at, CPU_STATE_STOP_REASON(CPUState)
-    # nop
-    # nop
-    # nop
 GB_LD_DE_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
@@ -1155,22 +1165,14 @@ GB_LD_HL_L:
     nop
     nop
 GB_HALT:
-    j DECODE_NEXT
+    addi $at, $zero, STOP_REASON_HALT
+    j GB_SIMULATE_HALTED
+    sb $at, CPU_STATE_STOP_REASON(CPUState)
     nop
     nop
     nop
     nop
     nop
-    nop
-    nop
-    # addi $at, $zero, STOP_REASON_HALT
-    # j GB_BREAK_LOOP # exit early
-    # sb $at, CPU_STATE_STOP_REASON(CPUState)
-    # nop
-    # nop
-    # nop
-    # nop
-    # nop
 GB_LD_HL_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     sll ADDR, GB_H, 8 # load upper address
@@ -2565,6 +2567,8 @@ _CALCULATE_TIMA_VALUE_NONE:
 ########################
 
 CALCULATE_NEXT_STOPPING_POINT:
+    jr $ra # tmp
+    lw CycleTo, ST_CYCLE_TO($sp)
     # if an interrupt has been requested
     # then then always stop
     lbu TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
@@ -2637,6 +2641,8 @@ _CHECK_FOR_INTERRUPT_EXIT:
 ########################
 
 HANDLE_STOPPING_POINT:
+    j GB_BREAK_LOOP # tmp
+    nop
     # check timer first
     lw $at, CPU_STATE_NEXT_TIMER(CPUState)
     sltu TMP2, CYCLES_RUN, $at
@@ -2693,6 +2699,16 @@ _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
 _HANDLE_STOPPING_POINT_BREAK:
     j GB_BREAK_LOOP
     nop
+
+######################
+# Checks to see if a timer interrupt would wake up the CPU
+######################
+
+GB_SIMULATE_HALTED:
+    # todo timer values
+    lw $at, ST_CYCLE_TO($sp)
+    j GB_BREAK_LOOP
+    move CYCLES_RUN, TMP2 # catch cpu clock up to requested cycles to run
 
 #######################
 # Reads the address HL into $v0
@@ -3303,7 +3319,7 @@ GB_DO_WRITE_CALL:
     bgez $at, _GB_DO_WRITE # if ADDR >= 0x8000 just write
     nop 
     j _GB_CALL_WRITE_CALLBACK # call bank switching callback
-    sw $at, MEMORY_BANK_SWITCHING(CPUState)
+    lw Param0, MEMORY_BANK_SWITCHING(Memory)
 _GB_DO_WRITE:
     srl $at, ADDR, 12 # load bank in $at
     andi ADDR, ADDR, 0xFFF # keep offset in ADDR
@@ -3313,7 +3329,58 @@ _GB_DO_WRITE:
     add ADDR, ADDR, $at # use address relative to memory bank
     jr $ra
     sb VAL, 0(ADDR) # store the byte
-    
+
+.eqv _WRITE_CALLBACK_FRAME_SIZE, 0x20
+
+_GB_CALL_WRITE_CALLBACK:
+    addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
+    sb GB_A, 0x0($sp)
+    sb GB_F, 0x1($sp)
+    sb GB_B, 0x2($sp)
+    sb GB_C, 0x3($sp)
+
+    sb GB_D, 0x4($sp)
+    sb GB_E, 0x5($sp)
+    sb GB_H, 0x6($sp)
+    sb GB_L, 0x7($sp)
+
+    sh GB_PC, 0x8($sp)
+    sh GB_SP, 0xA($sp)
+
+    sw CYCLES_RUN, 0xC($sp)
+    sw CPUState, 0x10($sp)
+    sw Memory, 0x14($sp)
+    sw CycleTo, 0x18($sp)
+    sw $ra, 0x1C($sp)
+
+    move $a0, Memory
+    move $a1, ADDR
+    jalr $ra, Param0
+    move $a2, VAL
+
+    lw CYCLES_RUN, 0xC($sp)
+    lw CPUState, 0x10($sp)
+    lw Memory, 0x14($sp)
+    lw CycleTo, 0x18($sp)
+    lw $ra, 0x1C($sp)
+
+    lbu GB_A, 0x0($sp)
+    lbu GB_F, 0x1($sp)
+    lbu GB_B, 0x2($sp)
+    lbu GB_C, 0x3($sp)
+
+    lbu GB_D, 0x4($sp)
+    lbu GB_E, 0x5($sp)
+    lbu GB_H, 0x6($sp)
+    sb GB_L, 0x7($sp)
+
+    lhu GB_PC, 0x8($sp)
+    lhu GB_SP, 0xA($sp)
+
+    jr $ra
+    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+
+
 ######################
 # Writes VAL to ADDR in the range 0xFE00-0xFFFF
 ######################
@@ -3321,6 +3388,8 @@ _GB_DO_WRITE:
 GB_DO_WRITE_REGISTERS:
     la $ra, DECODE_NEXT
 GB_DO_WRITE_REGISTERS_CALL:
+    jr $ra # tmp
+    nop
     li $at, -0xFF00
     add $at, $at, ADDR # ADDR relative to MISC memory
     bltz $at, _GB_BASIC_REGISTER_WRITE # just write the sprite memory bank
@@ -3563,6 +3632,8 @@ GB_DO_READ:
 ######################
 
 GB_DO_READ_REGISTERS:
+    jr $ra # tmp
+    addi $v0, $zero, 0
     li $at, MEMORY_MISC_START-MM_REGISTER_START
     add ADDR, $at, ADDR # ADDR relative to MISC memory
     add ADDR, Memory, ADDR # Relative to memory

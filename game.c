@@ -131,7 +131,7 @@ game(void)
 	lastTime = 0;
 	cyclesToRun = 0;
 	gGameboy.cpu.cyclesRun = 0;
-	cycleStep = 0;//1024 * 1024 / 30;
+	cycleStep = 1024 * 1024 / 30;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
 #if RUN_TESTS
@@ -177,10 +177,10 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-		// if (gGameboy.cpu.cyclesRun == 61000)
-		// {
-		// 	cycleStep = 0;
-		// }
+		if (gGameboy.cpu.cyclesRun == 314568)
+		{
+			// cycleStep = 1;
+		}
 
 		if (pad[0]->button && !lastButton)
 		{
@@ -224,11 +224,11 @@ game(void)
 		lastDrawTime += osGetTime();
 		
 #if !RUN_TESTS
-		sprintf(cstring, "Cycles run %d Time %d %X\n%X", 
+		sprintf(cstring, "Cycles run %d Time %d %X\n%d", 
 			gGameboy.cpu.cyclesRun, 
 			(int)(100 * lastDrawTime / frameTime), 
 			runZ80CPU,
-			offsetof(struct Memory, rom)
+			gGameboy.cpu.stopReason
 		);
 #endif
 
