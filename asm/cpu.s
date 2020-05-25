@@ -56,7 +56,7 @@ runCPU:
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
 
-    la TMP4, 0x80700000
+    # la TMP4, 0x80700000
 
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
@@ -66,21 +66,21 @@ DECODE_NEXT:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
 
-    la $at, 0x80700000 - 4
-    sw Memory, -4($at)
-    sw TMP4, 0($at)
-    sb $v0, 0(TMP4)
-    sh GB_PC, 2(TMP4)
-    addi TMP4, TMP4, 4
+#     la $at, 0x80700000 - 4
+#     sw Memory, -4($at)
+#     sw TMP4, 0($at)
+#     sb $v0, 0(TMP4)
+#     sh GB_PC, 2(TMP4)
+#     addi TMP4, TMP4, 4
 
-    la $at, 0x80800000
-    sltu $at, TMP4, $at
-    bne $at, $zero, _DEBUG_SKIP
-    nop
+#     la $at, 0x80800000
+#     sltu $at, TMP4, $at
+#     bne $at, $zero, _DEBUG_SKIP
+#     nop
 
-    la TMP4, 0x80700000
+#     la TMP4, 0x80700000
 
-_DEBUG_SKIP:
+# _DEBUG_SKIP:
 
 
     la $at, GB_NOP # load start of jump table
@@ -3602,10 +3602,10 @@ _GB_WRITE_REG_4X_TABLE:
     sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_VRAM_BANK_INDEX + 1))(Memory)
 
 _GB_WRITE_REG_LCDC_STATUS:
-    read_register_direct $ra, REG_LCDC_STATUS
-    andi $ra, $ra, 0x7
+    read_register_direct $at, REG_LCDC_STATUS
+    andi $at, $at, 0x7
     andi VAL, VAL, 0xF8
-    or VAL, VAL, $ra
+    or VAL, VAL, $at
     jr $ra
     write_register_direct VAL, REG_LCDC_STATUS
     
