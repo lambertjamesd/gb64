@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 0
+#define RUN_TESTS 1
 				
 /*
  * macros 
@@ -131,7 +131,7 @@ game(void)
 	lastTime = 0;
 	cyclesToRun = 0;
 	gGameboy.cpu.cyclesRun = 0;
-	cycleStep = 1024 * 1024 / 30;
+	cycleStep = 0; //1024 * 1024 / 30;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
 #if RUN_TESTS
@@ -211,7 +211,7 @@ game(void)
 
 		while (cyclesToRun > 0 && gGameboy.cpu.stopReason != STOP_REASON_STOP)
 		{
-			int cyclesRun = runCPUCPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
+			int cyclesRun = runCPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
 
 			cyclesToRun -= cyclesRun;
 
@@ -227,7 +227,7 @@ game(void)
 		sprintf(cstring, "Cycles run %d Time %d %X\n%d", 
 			gGameboy.cpu.cyclesRun, 
 			(int)(100 * lastDrawTime / frameTime), 
-			runCPUCPU,
+			runCPU,
 			gGameboy.cpu.stopReason
 		);
 #endif

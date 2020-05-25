@@ -14,7 +14,7 @@ int runJOYPTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = CPU_LDH_a8_A;
     memory->internalRam[5] = 0x00;
 
-    runCPUCPU(cpu, memory, 2);
+    runCPU(cpu, memory, 2);
 
     if (!testInt("JOYP", testOutput, 
         READ_REGISTER_DIRECT(memory, REG_JOYP), 
@@ -24,7 +24,7 @@ int runJOYPTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
         return 0;
     }
     
-    runCPUCPU(cpu, memory, 4);
+    runCPU(cpu, memory, 4);
 
     return testInt("JOYP select second", testOutput, 
         READ_REGISTER_DIRECT(memory, REG_JOYP), 
@@ -48,7 +48,7 @@ int runDIVTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[6] = CPU_JR_NZ;
     memory->internalRam[7] = -5;
 
-    runCPUCPU(cpu, memory, 512);
+    runCPU(cpu, memory, 512);
 
     if (!testInt("DIV", testOutput, 
         READ_REGISTER_DIRECT(memory, REG_DIV), 
@@ -60,7 +60,7 @@ int runDIVTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     cpu->pc = 3;
     
-    runCPUCPU(cpu, memory, 512);
+    runCPU(cpu, memory, 512);
 
     return testInt("DIV select second", testOutput, 
         READ_REGISTER_DIRECT(memory, REG_DIV), 
@@ -80,7 +80,7 @@ int runSVBKTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = CPU_LDH_a8_A;
     memory->internalRam[5] = 0x70;
 
-    runCPUCPU(cpu, memory, 2);
+    runCPU(cpu, memory, 2);
 
     if (!testInt("SVBK ram bank", testOutput, 
         (int)memory->memoryMap[MEMORY_RAM_BANK_INDEX], 
@@ -90,7 +90,7 @@ int runSVBKTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
         return 0;
     }
     
-    runCPUCPU(cpu, memory, 4);
+    runCPU(cpu, memory, 4);
 
     return testInt("SVBK ram bank 0 bank", testOutput, 
         (int)memory->memoryMap[MEMORY_RAM_BANK_INDEX], 

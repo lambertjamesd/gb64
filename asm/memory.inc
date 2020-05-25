@@ -10,12 +10,13 @@
 .set GB_SP, $t0
 .set GB_PC, $t1
 .set CYCLES_RUN, $t2
+.set PC_MEMORY_BANK, $t3
 
-.set ADDR, $t3
-.set VAL,  $t4
-.set TMP2,  $t5
-.set TMP3,  $t6
-.set TMP4,  $t7
+.set ADDR, $t4
+.set VAL,  $t5
+.set TMP2,  $t6
+.set TMP3,  $t7
+.set TMP4,  $t8
 
 .set CPUState, $a0
 .set Memory, $a1

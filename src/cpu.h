@@ -47,7 +47,7 @@ struct CPUState {
     unsigned long nextTimerTrigger;
 };
 
-extern int runCPUCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);
+extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);
 
 extern void initializeCPU(struct CPUState* state);
 

@@ -141,11 +141,11 @@ int runTests(char* testOutput) {
         !runInterruptTests(&cpu, &gGameboy.memory, subTestOutput) ||
         0)
     {
-        sprintf(testOutput, "runCPUCPU 0x%X\n%s", &runCPUCPU, subTestOutput);
+        sprintf(testOutput, "runCPU 0x%X\n%s", &runCPU, subTestOutput);
         return 0;
     }
 
-	sprintf(testOutput, "Tests Passed %X", &runCPUCPU);
+	sprintf(testOutput, "Tests Passed %X", &runCPU);
 
     return 1;
 }

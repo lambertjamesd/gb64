@@ -115,7 +115,7 @@ int testSingleShfit(
         memory->internalRam[0] = CPU_PREFIX_CB;
         memory->internalRam[1] = baseInstruction + srcRegister;
 
-        run = runCPUCPU(cpu, memory, 1);
+        run = runCPU(cpu, memory, 1);
         
         if (
             !testCPUState(instructionName, testOutput, cpu, &expected) ||
@@ -214,7 +214,7 @@ int testSingleBitOp(
             memory->internalRam[0] = CPU_PREFIX_CB;
             memory->internalRam[1] = baseInstruction + srcRegister + bit * 8;
 
-            run = runCPUCPU(cpu, memory, 1);
+            run = runCPU(cpu, memory, 1);
             
             if (
                 !testCPUState(instructionName, testOutput, cpu, &expected) ||

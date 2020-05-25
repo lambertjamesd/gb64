@@ -50,7 +50,7 @@ int testLD_X_Y(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
             memory->internalRam[0] = CPU_LD_B_B + REGISTER_COUNT * targetRegister + srcRegister;
 
-            run = runCPUCPU(cpu, memory, 1);
+            run = runCPU(cpu, memory, 1);
 
             sprintf(instructionName, "LD %s %s", registerNames[targetRegister], registerNames[srcRegister]);
 
@@ -79,7 +79,7 @@ int testHALT(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_HALT;
 
-    run = runCPUCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1);
 
     return 
         testCPUState("HALT", testOutput, cpu, &expected) &&
