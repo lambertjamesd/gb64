@@ -92,13 +92,6 @@ extern char     _gbromSegmentRomEnd[];
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
-u16 palleteColors[] = {
-	0x7C00,
-	0x3E0,
-	0x1F,
-	0x00,
-};
-
 /*
  * This is the main routine of the app.
  */
@@ -131,7 +124,7 @@ game(void)
 	lastTime = 0;
 	cyclesToRun = 0;
 	gGameboy.cpu.cyclesRun = 0;
-	cycleStep = 1024 * 1024 / 30;
+	cycleStep = 0;// 1024 * 1024 / 30;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
 #if RUN_TESTS
@@ -140,10 +133,21 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
+	WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_LCDC, LCDC_BG_TILE_DATA);
+
 	gGameboy.memory.misc.colorPalletes[0] = 0x0842;
 	gGameboy.memory.misc.colorPalletes[1] = 0x1084;
 	gGameboy.memory.misc.colorPalletes[2] = 0x2108;
 	gGameboy.memory.misc.colorPalletes[3] = 0x4210;
+
+	gGameboy.memory.misc.monochromePallete[0] = 
+		gGameboy.memory.misc.monochromePalleteSource[0];
+	gGameboy.memory.misc.monochromePallete[1] = 
+		gGameboy.memory.misc.monochromePalleteSource[1];
+	gGameboy.memory.misc.monochromePallete[2] = 
+		gGameboy.memory.misc.monochromePalleteSource[2];
+	gGameboy.memory.misc.monochromePallete[3] = 
+		gGameboy.memory.misc.monochromePalleteSource[3];
 
 	gGameboy.memory.vram.tiles[1].rows[0] = 0xFFFF;
 	gGameboy.memory.vram.tiles[1].rows[1] = 0x8181;
@@ -153,6 +157,24 @@ game(void)
 	gGameboy.memory.vram.tiles[1].rows[5] = 0x8181;
 	gGameboy.memory.vram.tiles[1].rows[6] = 0x8181;
 	gGameboy.memory.vram.tiles[1].rows[7] = 0xFFFF;
+	
+	gGameboy.memory.vram.tiles[2].rows[0] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[1] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[2] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[3] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[4] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[5] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[6] = 0x0F33;
+	gGameboy.memory.vram.tiles[2].rows[7] = 0x0F33;
+	
+	gGameboy.memory.vram.tiles[3].rows[0] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[1] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[2] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[3] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[4] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[5] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[6] = 0x330F;
+	gGameboy.memory.vram.tiles[3].rows[7] = 0x330F;
 
 	gGameboy.memory.vram.tiles[32].rows[0] = 0x5555;
 	gGameboy.memory.vram.tiles[32].rows[1] = 0xAAAA;
@@ -318,7 +340,7 @@ game(void)
 
 		for (loop = 0; loop < GB_SCREEN_H; ++loop)
 		{
-			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 1);
+			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 0);
 		}
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);

@@ -71,7 +71,7 @@ DATAFILES   =	gfxinit.c \
 		cfb.c \
 		zbuffer.c
 
-DATAOBJECTS =	$(DATAFILES:.c=.o) data/game.gb.o
+DATAOBJECTS =	$(DATAFILES:.c=.o)
 
 CODESEGMENT =	codesegment.o
 

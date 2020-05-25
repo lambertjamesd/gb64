@@ -55,7 +55,9 @@ struct Sprite {
 struct MiscMemory {
     struct Sprite sprites[SPRITE_COUNT];
     u16 colorPalletes[64];
-    unsigned char unused[0x58];
+    u16 monochromePallete[4];
+    u16 monochromePalleteSource[4];
+    unsigned char unused[0x48];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };

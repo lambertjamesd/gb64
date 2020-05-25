@@ -2,6 +2,13 @@
 #include "memory_map.h"
 #include "../memory.h"
 
+u16 palleteColors[] = {
+    0x09C2,
+    0x330C,
+    0x8D42,
+    0x9DC2,
+};
+
 void nopBankSwitch(struct Memory* memory, int addr, unsigned char value)
 {
 
@@ -53,4 +60,9 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     }
 
     memory->bankSwitch = nopBankSwitch;
+    
+	memory->misc.monochromePalleteSource[0] = palleteColors[0];
+	memory->misc.monochromePalleteSource[1] = palleteColors[1];
+	memory->misc.monochromePalleteSource[2] = palleteColors[2];
+	memory->misc.monochromePalleteSource[3] = palleteColors[3];
 }
