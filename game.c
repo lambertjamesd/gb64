@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 1
+#define RUN_TESTS 0
 				
 /*
  * macros 
@@ -131,7 +131,7 @@ game(void)
 	lastTime = 0;
 	cyclesToRun = 0;
 	gGameboy.cpu.cyclesRun = 0;
-	cycleStep = 0; //1024 * 1024 / 30;
+	cycleStep = 1024 * 1024 / 30;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
 #if RUN_TESTS
@@ -194,7 +194,7 @@ game(void)
 
 		frameTime = lastTime - frameTime;
 
-		if (frameTime && !offset && RUN_TESTS)
+		if (frameTime && !offset)
 		{
 			// sprintf(str, "Render Time: %d%% %lld\n%X", (int)(100 * lastDrawTime / frameTime), frameTime, renderPixelRow);
 		}
@@ -318,7 +318,7 @@ game(void)
 
 		for (loop = 0; loop < GB_SCREEN_H; ++loop)
 		{
-			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 0);
+			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 1);
 		}
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);

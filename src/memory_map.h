@@ -28,6 +28,8 @@
 #define REG_TIMA        0xFF05 
 #define REG_TMA         0xFF06
 #define REG_TAC         0xFF07
+
+#define REG_LCDC        0xFF40
 #define REG_SCY         0xFF42
 #define REG_SCX         0xFF43
 

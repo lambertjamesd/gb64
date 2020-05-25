@@ -56,7 +56,7 @@ runCPU:
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
 
-    # la TMP4, 0x80700000
+    la TMP4, 0x80700000
 
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
@@ -66,21 +66,21 @@ DECODE_NEXT:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
 
-#     la $at, 0x80700000 - 4
-#     sw Memory, -4($at)
-#     sw TMP4, 0($at)
-#     sb $v0, 0(TMP4)
-#     sh GB_PC, 2(TMP4)
-#     addi TMP4, TMP4, 4
+    la $at, 0x80700000 - 4
+    sw Memory, -4($at)
+    sw TMP4, 0($at)
+    sb $v0, 0(TMP4)
+    sh GB_PC, 2(TMP4)
+    addi TMP4, TMP4, 4
 
-#     la $at, 0x80800000
-#     sltu $at, TMP4, $at
-#     bne $at, $zero, _DEBUG_SKIP
-#     nop
+    la $at, 0x80800000
+    sltu $at, TMP4, $at
+    bne $at, $zero, _DEBUG_SKIP
+    nop
 
-#     la TMP4, 0x80700000
+    la TMP4, 0x80700000
 
-# _DEBUG_SKIP:
+_DEBUG_SKIP:
 
 
     la $at, GB_NOP # load start of jump table
@@ -3374,7 +3374,7 @@ _GB_DO_WRITE:
     jr $ra
     sb VAL, 0(ADDR) # store the byte
 
-.eqv _WRITE_CALLBACK_FRAME_SIZE, 0x20
+.eqv _WRITE_CALLBACK_FRAME_SIZE, 0x24
 
 _GB_CALL_WRITE_CALLBACK:
     addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
@@ -3395,7 +3395,8 @@ _GB_CALL_WRITE_CALLBACK:
     sw CPUState, 0x10($sp)
     sw Memory, 0x14($sp)
     sw CycleTo, 0x18($sp)
-    sw $ra, 0x1C($sp)
+    sw PC_MEMORY_BANK, 0x1C($sp)
+    sw $ra, 0x20($sp)
 
     move $a0, Memory
     move $a1, ADDR
@@ -3406,7 +3407,8 @@ _GB_CALL_WRITE_CALLBACK:
     lw CPUState, 0x10($sp)
     lw Memory, 0x14($sp)
     lw CycleTo, 0x18($sp)
-    lw $ra, 0x1C($sp)
+    lw PC_MEMORY_BANK, 0x1C($sp)
+    lw $ra, 0x20($sp)
 
     lbu GB_A, 0x0($sp)
     lbu GB_F, 0x1($sp)
@@ -3416,11 +3418,9 @@ _GB_CALL_WRITE_CALLBACK:
     lbu GB_D, 0x4($sp)
     lbu GB_E, 0x5($sp)
     lbu GB_H, 0x6($sp)
-    sb GB_L, 0x7($sp)
+    lbu GB_L, 0x7($sp)
 
-    lhu Param0, 0x8($sp)
-    jal SET_GB_PC
-    xori GB_PC, Param0, 0xFFFF
+    lhu GB_PC, 0x8($sp)
     lhu GB_SP, 0xA($sp)
 
     jr $ra
