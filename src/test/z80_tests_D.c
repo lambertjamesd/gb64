@@ -1,134 +1,134 @@
 
-#include "z80_test.h"
+#include "cpu_test.h"
 
-int testRET_NC(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testRET_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = GB_FLAGS_C;
-    z80->sp = 0x8020;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = GB_FLAGS_C;
+    cpu->sp = 0x8020;
+    expected = *cpu;
     expected.pc = 1;
 
-    memory->internalRam[0] = Z80_RET_NC;
-    memory->internalRam[1] = Z80_RET_NC;
+    memory->internalRam[0] = CPU_RET_NC;
+    memory->internalRam[1] = CPU_RET_NC;
 
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    if (!testZ80State("RET NC", testOutput, z80, &expected) ||
+    if (!testCPUState("RET NC", testOutput, cpu, &expected) ||
         !testInt("RET NC run result", testOutput, run, 2))
     {
         return 0;
     }
     
-    z80->f = 0;
+    cpu->f = 0;
     expected.f = 0;
     expected.pc = 0x34E0;
     expected.sp = 0x8022;
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("RET NC branch", testOutput, z80, &expected) &&
+    return testCPUState("RET NC branch", testOutput, cpu, &expected) &&
         testInt("RET NC branch run result", testOutput, run, 3) &&
         1
     ;
 }
 
-int testPOP_DE(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testPOP_DE(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->sp = 0x8020;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->sp = 0x8020;
+    expected = *cpu;
     expected.pc = 1;
     expected.sp = 0x8022;
     expected.d = 0x34;
     expected.e = 0xE0;
 
-    memory->internalRam[0] = Z80_POP_DE;
+    memory->internalRam[0] = CPU_POP_DE;
 
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("POP DE branch", testOutput, z80, &expected) &&
+    return testCPUState("POP DE branch", testOutput, cpu, &expected) &&
         testInt("POP DE branch run result", testOutput, run, 3) &&
         1
     ;
 }
 
-int testJP_NC(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testJP_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = GB_FLAGS_C;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = GB_FLAGS_C;
+    expected = *cpu;
     expected.pc = 3;
 
-    memory->internalRam[0] = Z80_JP_NC_a16;
+    memory->internalRam[0] = CPU_JP_NC_a16;
     memory->internalRam[1] = 0x20;
     memory->internalRam[2] = 0x00;
-    memory->internalRam[3] = Z80_JP_NC_a16;
+    memory->internalRam[3] = CPU_JP_NC_a16;
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    if (!testZ80State("JP NC", testOutput, z80, &expected) ||
+    if (!testCPUState("JP NC", testOutput, cpu, &expected) ||
         !testInt("JP NC run result", testOutput, run, 3))
     {
         return 0;
     }
     
-    z80->f = 0;
+    cpu->f = 0;
     expected.f = 0;
     expected.pc = 0x0030;
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("JP NC branch", testOutput, z80, &expected) &&
+    return testCPUState("JP NC branch", testOutput, cpu, &expected) &&
         testInt("JP NC branch run result", testOutput, run, 3) &&
         1
     ;
 }
 
-int testCALL_NC(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testCALL_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = GB_FLAGS_C;
-    z80->sp = 0x8022;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = GB_FLAGS_C;
+    cpu->sp = 0x8022;
+    expected = *cpu;
     expected.pc = 3;
 
-    memory->internalRam[0] = Z80_CALL_NC;
+    memory->internalRam[0] = CPU_CALL_NC;
     memory->internalRam[1] = 0x20;
     memory->internalRam[2] = 0x00;
-    memory->internalRam[3] = Z80_CALL_NC;
+    memory->internalRam[3] = CPU_CALL_NC;
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    if (!testZ80State("CALL NC", testOutput, z80, &expected) ||
+    if (!testCPUState("CALL NC", testOutput, cpu, &expected) ||
         !testInt("CALL NC run result", testOutput, run, 3))
     {
         return 0;
     }
     
-    z80->f = 0;
+    cpu->f = 0;
     expected.f = 0;
     expected.pc = 0x0030;
     expected.sp = 0x8020;
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("CALL NC branch", testOutput, z80, &expected) &&
+    return testCPUState("CALL NC branch", testOutput, cpu, &expected) &&
         testInt("CALL NC branch run result", testOutput, run, 5) &&
         testInt("CALL NC saved return", testOutput, memory->internalRam[0x20], 0x6) &&
         testInt("CALL NC saved return", testOutput, memory->internalRam[0x21], 0x0) &&
@@ -136,24 +136,24 @@ int testCALL_NC(struct Z80State* z80, struct Memory* memory, char* testOutput)
     ;
 }
 
-int testPUSH_DE(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testPUSH_DE(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = 0;
-    z80->sp = 0x8022;
-    z80->d = 0x45;
-    z80->e = 0x24;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = 0;
+    cpu->sp = 0x8022;
+    cpu->d = 0x45;
+    cpu->e = 0x24;
+    expected = *cpu;
     expected.pc = 1;
     expected.sp = 0x8020;
 
-    memory->internalRam[0] = Z80_PUSH_DE;
+    memory->internalRam[0] = CPU_PUSH_DE;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("PUSH DE", testOutput, z80, &expected) &&
+    return testCPUState("PUSH DE", testOutput, cpu, &expected) &&
         testInt("PUSH DE run result", testOutput, run, 4) &&
         testInt("PUSH DE pushed value", testOutput, memory->internalRam[0x20], 0x24) &&
         testInt("PUSH DE pushed value", testOutput, memory->internalRam[0x21], 0x45) &&
@@ -162,133 +162,133 @@ int testPUSH_DE(struct Z80State* z80, struct Memory* memory, char* testOutput)
 }
 
 
-int testRET_C(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testRET_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = 0;
-    z80->sp = 0x8020;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = 0;
+    cpu->sp = 0x8020;
+    expected = *cpu;
     expected.pc = 1;
 
-    memory->internalRam[0] = Z80_RET_C;
-    memory->internalRam[1] = Z80_RET_C;
+    memory->internalRam[0] = CPU_RET_C;
+    memory->internalRam[1] = CPU_RET_C;
 
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    if (!testZ80State("RET C", testOutput, z80, &expected) ||
+    if (!testCPUState("RET C", testOutput, cpu, &expected) ||
         !testInt("RET C run result", testOutput, run, 2))
     {
         return 0;
     }
     
-    z80->f = GB_FLAGS_C;
+    cpu->f = GB_FLAGS_C;
     expected.f = GB_FLAGS_C;
     expected.pc = 0x34E0;
     expected.sp = 0x8022;
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("RET C branch", testOutput, z80, &expected) &&
+    return testCPUState("RET C branch", testOutput, cpu, &expected) &&
         testInt("RET C branch run result", testOutput, run, 3) &&
         1
     ;
 }
 
-int testRETI(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testRETI(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->sp = 0x8020;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->sp = 0x8020;
+    expected = *cpu;
     expected.pc = 0x34E0;
     expected.sp = 0x8022;
     expected.interrupts = GB_INTERRUPTS_ENABLED;
 
-    memory->internalRam[0] = Z80_RETI;
+    memory->internalRam[0] = CPU_RETI;
 
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("RETI", testOutput, z80, &expected) &&
+    return testCPUState("RETI", testOutput, cpu, &expected) &&
         testInt("RETI run result", testOutput, run, 3) &&
         1
     ;
 }
 
-int testJP_C(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testJP_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = 0;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = 0;
+    expected = *cpu;
     expected.pc = 3;
 
-    memory->internalRam[0] = Z80_JP_C_a16;
+    memory->internalRam[0] = CPU_JP_C_a16;
     memory->internalRam[1] = 0x20;
     memory->internalRam[2] = 0x00;
-    memory->internalRam[3] = Z80_JP_C_a16;
+    memory->internalRam[3] = CPU_JP_C_a16;
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    if (!testZ80State("JP C", testOutput, z80, &expected) ||
+    if (!testCPUState("JP C", testOutput, cpu, &expected) ||
         !testInt("JP C run result", testOutput, run, 3))
     {
         return 0;
     }
     
-    z80->f = GB_FLAGS_C;
+    cpu->f = GB_FLAGS_C;
     expected.f = GB_FLAGS_C;
     expected.pc = 0x0030;
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("JP C branch", testOutput, z80, &expected) &&
+    return testCPUState("JP C branch", testOutput, cpu, &expected) &&
         testInt("JP C branch run result", testOutput, run, 3) &&
         1
     ;
 }
 
-int testCALL_C(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testCALL_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    z80->f = 0;
-    z80->sp = 0x8022;
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    cpu->f = 0;
+    cpu->sp = 0x8022;
+    expected = *cpu;
     expected.pc = 3;
 
-    memory->internalRam[0] = Z80_CALL_C;
+    memory->internalRam[0] = CPU_CALL_C;
     memory->internalRam[1] = 0x20;
     memory->internalRam[2] = 0x00;
-    memory->internalRam[3] = Z80_CALL_C;
+    memory->internalRam[3] = CPU_CALL_C;
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    if (!testZ80State("CALL C", testOutput, z80, &expected) ||
+    if (!testCPUState("CALL C", testOutput, cpu, &expected) ||
         !testInt("CALL C run result", testOutput, run, 3))
     {
         return 0;
     }
     
-    z80->f = GB_FLAGS_C;
+    cpu->f = GB_FLAGS_C;
     expected.f = GB_FLAGS_C;
     expected.pc = 0x0030;
     expected.sp = 0x8020;
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
-    return testZ80State("CALL C branch", testOutput, z80, &expected) &&
+    return testCPUState("CALL C branch", testOutput, cpu, &expected) &&
         testInt("CALL C branch run result", testOutput, run, 5) &&
         testInt("CALL C saved return", testOutput, memory->internalRam[0x20], 0x6) &&
         testInt("CALL C saved return", testOutput, memory->internalRam[0x21], 0x0) &&
@@ -296,24 +296,24 @@ int testCALL_C(struct Z80State* z80, struct Memory* memory, char* testOutput)
     ;
 }
 
-int run0xDTests(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int run0xDTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     return 
-        testRET_NC(z80, memory, testOutput) &&
-        testPOP_DE(z80, memory, testOutput) &&
-        testJP_NC(z80, memory, testOutput) &&
-        testCALL_NC(z80, memory, testOutput) &&
-        testPUSH_DE(z80, memory, testOutput) &&
-        testSingleADD(z80, memory, testOutput, d8_REGISTER_INDEX, Z80_SUB_A_d8, 0) &&
-        testSingleADD(z80, memory, testOutput, d8_REGISTER_INDEX, Z80_SUB_A_d8, 1) &&
-        testRST(z80, memory, testOutput, Z80_RST_10H, 0x10) &&
-        testRET_C(z80, memory, testOutput) &&
-        testRETI(z80, memory, testOutput) &&
-        testJP_C(z80, memory, testOutput) &&
-        testCALL_C(z80, memory, testOutput) &&
-        testSingleADD(z80, memory, testOutput, d8_REGISTER_INDEX, Z80_SBC_A_d8, 0) &&
-        testSingleADD(z80, memory, testOutput, d8_REGISTER_INDEX, Z80_SBC_A_d8, 1) &&
-        testRST(z80, memory, testOutput, Z80_RST_18H, 0x18) &&
+        testRET_NC(cpu, memory, testOutput) &&
+        testPOP_DE(cpu, memory, testOutput) &&
+        testJP_NC(cpu, memory, testOutput) &&
+        testCALL_NC(cpu, memory, testOutput) &&
+        testPUSH_DE(cpu, memory, testOutput) &&
+        testSingleADD(cpu, memory, testOutput, d8_REGISTER_INDEX, CPU_SUB_A_d8, 0) &&
+        testSingleADD(cpu, memory, testOutput, d8_REGISTER_INDEX, CPU_SUB_A_d8, 1) &&
+        testRST(cpu, memory, testOutput, CPU_RST_10H, 0x10) &&
+        testRET_C(cpu, memory, testOutput) &&
+        testRETI(cpu, memory, testOutput) &&
+        testJP_C(cpu, memory, testOutput) &&
+        testCALL_C(cpu, memory, testOutput) &&
+        testSingleADD(cpu, memory, testOutput, d8_REGISTER_INDEX, CPU_SBC_A_d8, 0) &&
+        testSingleADD(cpu, memory, testOutput, d8_REGISTER_INDEX, CPU_SBC_A_d8, 1) &&
+        testRST(cpu, memory, testOutput, CPU_RST_18H, 0x18) &&
         1
     ;
 }

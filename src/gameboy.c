@@ -5,7 +5,7 @@ struct GameBoy gGameboy;
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 {
-    initializeZ80(&gameboy->cpu);
+    initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
 
     gameboy->cpu.a = 0x01;

@@ -1,8 +1,8 @@
 
-#include "z80_test.h"
+#include "cpu_test.h"
 
 int testSingleBitwise(
-    struct Z80State* z80, 
+    struct CPUState* cpu, 
     struct Memory* memory,
     char* testOutput,
     int srcRegister,
@@ -12,7 +12,7 @@ int testSingleBitwise(
     int run;
     unsigned char* srcByte;
     char instructionName[32];
-    struct Z80State expected;
+    struct CPUState expected;
     int aValue;
     int srcValue;
     int expectedRunLength;
@@ -26,14 +26,14 @@ int testSingleBitwise(
                 srcValue = aValue;
             }
 
-            srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
+            srcByte = getRegisterPointer(cpu, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
 
-            initializeZ80(z80);
-            z80->a = aValue;
-            z80->h = 0x80;
-            z80->l = 0x20;
+            initializeCPU(cpu);
+            cpu->a = aValue;
+            cpu->h = 0x80;
+            cpu->l = 0x20;
             *srcByte = srcValue;
-            expected = *z80;
+            expected = *cpu;
             expected.pc = 1;
             expectedRunLength = (srcRegister == HL_REGISTER_INDEX || srcRegister == d8_REGISTER_INDEX) ? 2 : 1;
 
@@ -47,18 +47,18 @@ int testSingleBitwise(
                 memory->internalRam[0] = baseInstruction + srcRegister;
             }
             
-            if (baseInstruction == Z80_AND_A_B || baseInstruction == Z80_AND_A_d8)
+            if (baseInstruction == CPU_AND_A_B || baseInstruction == CPU_AND_A_d8)
             {
                 expected.a = aValue & srcValue;
                 expected.f = GB_FLAGS_H;
                 sprintf(instructionName, "AND A (%X) %s (%X)", aValue, registerNames[srcRegister], srcValue);
             } 
-            else if (baseInstruction == Z80_XOR_A_B || baseInstruction == Z80_XOR_A_d8)
+            else if (baseInstruction == CPU_XOR_A_B || baseInstruction == CPU_XOR_A_d8)
             {
                 expected.a = aValue ^ srcValue;
                 sprintf(instructionName, "XOR A (%X) %s (%X)", aValue, registerNames[srcRegister], srcValue);
             } 
-            else if (baseInstruction == Z80_OR_A_B || baseInstruction == Z80_OR_A_d8) 
+            else if (baseInstruction == CPU_OR_A_B || baseInstruction == CPU_OR_A_d8) 
             {
                 expected.a = aValue | srcValue;
                 sprintf(instructionName, "OR A (%X) %s (%X)", aValue, registerNames[srcRegister], srcValue);
@@ -74,10 +74,10 @@ int testSingleBitwise(
                 expected.f |= GB_FLAGS_Z;
             }
 
-            run = runZ80CPU(z80, memory, 1);
+            run = runCPUCPU(cpu, memory, 1);
 
             if (
-                !testZ80State(instructionName, testOutput, z80, &expected) ||
+                !testCPUState(instructionName, testOutput, cpu, &expected) ||
                 !testInt(instructionName, testOutput, run, expectedRunLength)
             )
             {
@@ -94,16 +94,16 @@ int testSingleBitwise(
     return 1;
 }
 
-int testAND_XOR_OR(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testAND_XOR_OR(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleBitwise( z80, memory, testOutput, srcRegister, Z80_AND_A_B) ||
-            !testSingleBitwise( z80, memory, testOutput, srcRegister, Z80_XOR_A_B) ||
-            !testSingleBitwise( z80, memory, testOutput, srcRegister, Z80_OR_A_B) ||
+            !testSingleBitwise( cpu, memory, testOutput, srcRegister, CPU_AND_A_B) ||
+            !testSingleBitwise( cpu, memory, testOutput, srcRegister, CPU_XOR_A_B) ||
+            !testSingleBitwise( cpu, memory, testOutput, srcRegister, CPU_OR_A_B) ||
             0
         )
         {
@@ -114,15 +114,15 @@ int testAND_XOR_OR(struct Z80State* z80, struct Memory* memory, char* testOutput
     return 1;
 }
 
-int testCP(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testCP(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_CP_A_B, 0) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_CP_A_B, 1) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_CP_A_B, 0) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_CP_A_B, 1) ||
             0
         )
         {
@@ -133,11 +133,11 @@ int testCP(struct Z80State* z80, struct Memory* memory, char* testOutput)
     return 1;
 }
 
-int run0xA_BTests(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int run0xA_BTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     return 
-        testCP(z80, memory, testOutput) &&
-        testAND_XOR_OR(z80, memory, testOutput) &&
+        testCP(cpu, memory, testOutput) &&
+        testAND_XOR_OR(cpu, memory, testOutput) &&
         1
     ;
 }

@@ -1,6 +1,6 @@
-#include "z80.h"
+#include "cpu.h"
 
-void initializeZ80(struct Z80State* state)
+void initializeCPU(struct CPUState* state)
 {
     state->a = 0; state->f = 0; state->b = 0; state->c = 0;
     state->d = 0; state->e = 0; state->h = 0; state->l = 0;

@@ -13,9 +13,9 @@
     ori GB_F, GB_F, \flags
 .endm
 
-.global runZ80CPU 
+.global runCPUCPU 
 .balign 4 
-runZ80CPU:
+runCPUCPU:
     addi $sp, $sp, -STACK_SIZE
     sw $ra, ST_RA($sp) # save return address
     sw $s0, ST_S0($sp) # save caller registers

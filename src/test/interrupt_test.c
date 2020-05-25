@@ -1,81 +1,81 @@
-#include "z80_test.h"
+#include "cpu_test.h"
 
 unsigned char timerInterruptProgram[] = {
     // enable timer interrupt
-    Z80_LD_A_d8,
+    CPU_LD_A_d8,
     GB_INTERRUPTS_TIMER,
-    Z80_LDH_a8_A,
+    CPU_LDH_a8_A,
     REG_INT_ENABLED & 0xFF,
 
     // set TIMA to 0xFF
-    Z80_LD_A_d8,
+    CPU_LD_A_d8,
     0xFF,
-    Z80_LDH_a8_A,
+    CPU_LDH_a8_A,
     REG_TIMA & 0xFF,
 
     // set TAC to 0x5
-    Z80_LD_A_d8,
+    CPU_LD_A_d8,
     0x5,
-    Z80_LDH_a8_A,
+    CPU_LDH_a8_A,
     REG_TAC & 0xFF,
 
-    Z80_LD_A_d8,
+    CPU_LD_A_d8,
     0,
     
     // infinate loop
-    Z80_NOP,
-    Z80_JR,
+    CPU_NOP,
+    CPU_JR,
     -3
 };
 
-int runTimerInterruptTest(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int runTimerInterruptTest(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
-    initializeZ80(z80);
-    z80->a = 0;
-    z80->interrupts = GB_INTERRUPTS_ENABLED;
-    z80->sp = 0xFFFE;
+    initializeCPU(cpu);
+    cpu->a = 0;
+    cpu->interrupts = GB_INTERRUPTS_ENABLED;
+    cpu->sp = 0xFFFE;
 
     LOAD_PROGRAM(memory->internalRam, timerInterruptProgram);
 
-    memory->internalRam[0x50] = Z80_INC_A;
-    memory->internalRam[0x51] = Z80_RETI;
+    memory->internalRam[0x50] = CPU_INC_A;
+    memory->internalRam[0x51] = CPU_RETI;
 
-    runZ80CPU(z80, memory, 19);
+    runCPUCPU(cpu, memory, 19);
 
     if (!testInt("INT TIMER", testOutput, 
-        z80->pc, 
+        cpu->pc, 
         0x50) ||
         !testInt("INT TIMER interrupts", testOutput, 
-        z80->interrupts, 
+        cpu->interrupts, 
         0)
     )
     {
         return 0;
     }
     
-    runZ80CPU(z80, memory, 4);
+    runCPUCPU(cpu, memory, 4);
 
     if (!testInt("INT TIMER CALLED", testOutput, 
-        z80->a, 
+        cpu->a, 
         1) ||
         !testInt("INT TIMER CALLED interrupts", testOutput, 
-        z80->interrupts, 
+        cpu->interrupts, 
         GB_INTERRUPTS_ENABLED)
     )
     {
         return 0;
     }
 
-    runZ80CPU(z80, memory, 0x400);
+    runCPUCPU(cpu, memory, 0x400);
 
     return testInt("INT TIMER TWICE", testOutput, 
-        z80->a, 
+        cpu->a, 
         2);
 }
 
-int runInterruptTests(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int runInterruptTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     return
-        runTimerInterruptTest(z80, memory, testOutput) &&
+        runTimerInterruptTest(cpu, memory, testOutput) &&
     1;
 }

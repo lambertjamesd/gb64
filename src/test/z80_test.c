@@ -1,4 +1,4 @@
-#include "z80_test.h"
+#include "cpu_test.h"
 #include "../gameboy.h"
 #include "../../memory.h"
 
@@ -17,11 +17,11 @@ int testInt(
     return 1;
 }
 
-int testZ80State(
+int testCPUState(
     char *testName,
     char *testOutput,
-    struct Z80State* actual,
-    struct Z80State* expected
+    struct CPUState* actual,
+    struct CPUState* expected
 ) {
     if (actual->a != expected->a || actual->f != expected->f || actual->b != expected->b || actual->c != expected->c ||
         actual->d != expected->d || actual->e != expected->e || actual->h != expected->h || actual->l != expected->l ||
@@ -29,7 +29,7 @@ int testZ80State(
         actual->interrupts != expected->interrupts)
     {
         sprintf(testOutput, 
-            "Failed z80: %s\n"
+            "Failed cpu: %s\n"
             "   A  F  B  C  D  E  H  L  PC   SP\n"
             " E %02X %02X %02X %02X %02X %02X %02X %02X %04X %04X\n"
             " A %02X %02X %02X %02X %02X %02X %02X %02X %04X %04X\n"
@@ -64,18 +64,18 @@ char* registerNames[] = {
 };
 
 int registerOffset[] = {
-    offsetof(struct Z80State, b),
-    offsetof(struct Z80State, c),
-    offsetof(struct Z80State, d),
-    offsetof(struct Z80State, e),
-    offsetof(struct Z80State, h),
-    offsetof(struct Z80State, l),
+    offsetof(struct CPUState, b),
+    offsetof(struct CPUState, c),
+    offsetof(struct CPUState, d),
+    offsetof(struct CPUState, e),
+    offsetof(struct CPUState, h),
+    offsetof(struct CPUState, l),
     0,
-    offsetof(struct Z80State, a),
+    offsetof(struct CPUState, a),
     0,
 };
 
-unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget, unsigned char* d8Target, int registerIndex)
+unsigned char* getRegisterPointer(struct CPUState* cpu, unsigned char* hlTarget, unsigned char* d8Target, int registerIndex)
 {
     if (registerIndex == HL_REGISTER_INDEX)
     {
@@ -87,7 +87,7 @@ unsigned char* getRegisterPointer(struct Z80State* z80, unsigned char* hlTarget,
     }
     else
     {
-        return (unsigned char*)z80 + registerOffset[registerIndex];
+        return (unsigned char*)cpu + registerOffset[registerIndex];
     }
 }
 
@@ -105,7 +105,7 @@ void BankSwitchingWriter(struct Memory* memory, int addr, unsigned char value)
 }
 
 int runTests(char* testOutput) {
-    struct Z80State z80;
+    struct CPUState cpu;
     int i;
     char subTestOutput[200];
 
@@ -123,29 +123,29 @@ int runTests(char* testOutput) {
 
     gGameboy.memory.bankSwitch = &BankSwitchingWriter;
 
-    initializeZ80(&z80);
+    initializeCPU(&cpu);
 
     if (
-        !run0x0Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0x1Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0x2Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0x3Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0x4_7Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0x8_9Tests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0xA_BTests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0xCTests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0xDTests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0xETests(&z80, &gGameboy.memory, subTestOutput) ||
-        !run0xFTests(&z80, &gGameboy.memory, subTestOutput) ||
-        !runRegisterTests(&z80, &gGameboy.memory, subTestOutput) ||
-        !runInterruptTests(&z80, &gGameboy.memory, subTestOutput) ||
+        !run0x0Tests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0x1Tests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0x2Tests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0x3Tests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0x4_7Tests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0x8_9Tests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0xA_BTests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0xCTests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0xDTests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0xETests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !run0xFTests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !runRegisterTests(&cpu, &gGameboy.memory, subTestOutput) ||
+        !runInterruptTests(&cpu, &gGameboy.memory, subTestOutput) ||
         0)
     {
-        sprintf(testOutput, "runZ80CPU 0x%X\n%s", &runZ80CPU, subTestOutput);
+        sprintf(testOutput, "runCPUCPU 0x%X\n%s", &runCPUCPU, subTestOutput);
         return 0;
     }
 
-	sprintf(testOutput, "Tests Passed %X", &runZ80CPU);
+	sprintf(testOutput, "Tests Passed %X", &runCPUCPU);
 
     return 1;
 }

@@ -1,12 +1,12 @@
 
-#include "z80_test.h"
+#include "cpu_test.h"
 
-int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testLD_X_Y(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
     int expectedRunLength;
     int expectedValue;
-    struct Z80State expected;
+    struct CPUState expected;
     int targetRegister;
     int srcRegister;
     unsigned char* targetByte;
@@ -35,27 +35,27 @@ int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
                 expectedValue = 0x63;
             }
             
-            srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
+            srcByte = getRegisterPointer(cpu, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
             targetByte = getRegisterPointer(&expected, memory->internalRam + 0x20, memory->internalRam + 1, targetRegister);
 
-            initializeZ80(z80);
+            initializeCPU(cpu);
             memory->internalRam[0x20] = 0x0;
-            z80->h = 0x80;
-            z80->l = 0x20;
+            cpu->h = 0x80;
+            cpu->l = 0x20;
             *srcByte = expectedValue;
-            expected = *z80;
+            expected = *cpu;
             expected.pc = 1;
             *targetByte = expectedValue;
             expectedRunLength = (srcRegister == HL_REGISTER_INDEX || targetRegister == HL_REGISTER_INDEX) ? 2 : 1;
 
-            memory->internalRam[0] = Z80_LD_B_B + REGISTER_COUNT * targetRegister + srcRegister;
+            memory->internalRam[0] = CPU_LD_B_B + REGISTER_COUNT * targetRegister + srcRegister;
 
-            run = runZ80CPU(z80, memory, 1);
+            run = runCPUCPU(cpu, memory, 1);
 
             sprintf(instructionName, "LD %s %s", registerNames[targetRegister], registerNames[srcRegister]);
 
             if (
-                !testZ80State(instructionName, testOutput, z80, &expected) ||
+                !testCPUState(instructionName, testOutput, cpu, &expected) ||
                 !testInt(instructionName, testOutput, run, expectedRunLength) ||
                 !testInt(instructionName, testOutput, *targetByte, expectedValue)
             )
@@ -68,31 +68,31 @@ int testLD_X_Y(struct Z80State* z80, struct Memory* memory, char* testOutput)
     return 1;
 }
 
-int testHALT(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testHALT(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int run;
-    struct Z80State expected;
-    initializeZ80(z80);
-    expected = *z80;
+    struct CPUState expected;
+    initializeCPU(cpu);
+    expected = *cpu;
     expected.pc = 1;
     expected.stopReason = STOP_REASON_HALT;
 
-    memory->internalRam[0] = Z80_HALT;
+    memory->internalRam[0] = CPU_HALT;
 
-    run = runZ80CPU(z80, memory, 1);
+    run = runCPUCPU(cpu, memory, 1);
 
     return 
-        testZ80State("HALT", testOutput, z80, &expected) &&
+        testCPUState("HALT", testOutput, cpu, &expected) &&
         testInt("HALT run result", testOutput, run, 1) &&
         1
     ;
 }
 
-int run0x4_7Tests(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int run0x4_7Tests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     return 
-        testLD_X_Y(z80, memory, testOutput) &&
-        // testHALT(z80, memory, testOutput) &&
+        testLD_X_Y(cpu, memory, testOutput) &&
+        // testHALT(cpu, memory, testOutput) &&
         1
     ;
 }

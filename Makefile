@@ -34,27 +34,27 @@ TEXHFILES =	RGBA16foliageMM.h
 
 HFILES =	$(TEXHFILES) boot.h game.h controller.h font.h font_ext.h \
 		letters_img.h static.h \
-		src/test/z80_test.h    \
-		src/z80.h              \
+		src/test/cpu_test.h    \
+		src/cpu.h              \
 		src/memory_map.h
 
 CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
-       src/test/z80_test.c                   \
-       src/test/z80_tests_0.c                \
-       src/test/z80_tests_1.c                \
-       src/test/z80_tests_2.c                \
-       src/test/z80_tests_3.c                \
-       src/test/z80_tests_4_7.c              \
-       src/test/z80_tests_8_9.c              \
-       src/test/z80_tests_A_B.c              \
-       src/test/z80_tests_C.c                \
-       src/test/z80_tests_D.c                \
-       src/test/z80_tests_E.c                \
-       src/test/z80_tests_F.c                \
-       src/test/z80_tests_prefix_cb.c        \
+       src/test/cpu_test.c                   \
+       src/test/cpu_tests_0.c                \
+       src/test/cpu_tests_1.c                \
+       src/test/cpu_tests_2.c                \
+       src/test/cpu_tests_3.c                \
+       src/test/cpu_tests_4_7.c              \
+       src/test/cpu_tests_8_9.c              \
+       src/test/cpu_tests_A_B.c              \
+       src/test/cpu_tests_C.c                \
+       src/test/cpu_tests_D.c                \
+       src/test/cpu_tests_E.c                \
+       src/test/cpu_tests_F.c                \
+       src/test/cpu_tests_prefix_cb.c        \
        src/test/register_test.c              \
        src/test/interrupt_test.c             \
-       src/z80.c                             \
+       src/cpu.c                             \
        src/rom.c                             \
        src/memory_map.c                      \
        src/gameboy.c                         \

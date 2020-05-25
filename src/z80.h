@@ -1,6 +1,6 @@
 
-#ifndef _Z80_H
-#define _Z80_H
+#ifndef _CPU_H
+#define _CPU_H
 
 #include "memory_map.h"
 
@@ -28,7 +28,7 @@ enum GB_INTERRUPTS {
     GB_INTERRUPTS_ENABLED   = 0x80,
 };
 
-struct Z80State {
+struct CPUState {
     unsigned char a;
     unsigned char f;
     unsigned char b;
@@ -47,8 +47,8 @@ struct Z80State {
     unsigned long nextTimerTrigger;
 };
 
-extern int runZ80CPU(struct Z80State* state, struct Memory* memory, int cyclesToRun);
+extern int runCPUCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);
 
-extern void initializeZ80(struct Z80State* state);
+extern void initializeCPU(struct CPUState* state);
 
 #endif

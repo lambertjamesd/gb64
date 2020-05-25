@@ -1,8 +1,8 @@
 
-#include "z80_test.h"
+#include "cpu_test.h"
 
 int testSingleADD(
-    struct Z80State* z80, 
+    struct CPUState* cpu, 
     struct Memory* memory, 
     char* testOutput,
     int srcRegister,
@@ -12,7 +12,7 @@ int testSingleADD(
     int run;
     unsigned char* srcByte;
     char instructionName[32];
-    struct Z80State expected;
+    struct CPUState expected;
     int aValue;
     int srcValue;
     int aResult;
@@ -27,10 +27,10 @@ int testSingleADD(
                 srcValue = aValue;
             }
 
-            srcByte = getRegisterPointer(z80, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
+            srcByte = getRegisterPointer(cpu, memory->internalRam + 0x20, memory->internalRam + 1, srcRegister);
 
-            if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADC_A_B || 
-                baseInstruction == Z80_ADD_A_d8 || baseInstruction == Z80_ADC_A_d8)
+            if (baseInstruction == CPU_ADD_A_B || baseInstruction == CPU_ADC_A_B || 
+                baseInstruction == CPU_ADD_A_d8 || baseInstruction == CPU_ADC_A_d8)
             {
                 aResult = aValue + srcValue;
             }
@@ -39,29 +39,29 @@ int testSingleADD(
                 aResult = aValue - srcValue;
             }
 
-            if ((baseInstruction == Z80_ADC_A_B || baseInstruction == Z80_ADC_A_d8) && cFlag)
+            if ((baseInstruction == CPU_ADC_A_B || baseInstruction == CPU_ADC_A_d8) && cFlag)
             {
                 ++aResult;
             }
-            else if ((baseInstruction == Z80_SBC_A_B || (baseInstruction == Z80_SBC_A_d8)) && cFlag)
+            else if ((baseInstruction == CPU_SBC_A_B || (baseInstruction == CPU_SBC_A_d8)) && cFlag)
             {
                 --aResult;
             }
 
-            initializeZ80(z80);
-            z80->a = aValue;
-            z80->h = 0x80;
-            z80->l = 0x20;
+            initializeCPU(cpu);
+            cpu->a = aValue;
+            cpu->h = 0x80;
+            cpu->l = 0x20;
             *srcByte = srcValue;
 
             if (cFlag)
             {
-                z80->f = GB_FLAGS_C;
+                cpu->f = GB_FLAGS_C;
             }
 
-            expected = *z80;
+            expected = *cpu;
             expected.pc = (srcRegister == d8_REGISTER_INDEX) ? 2 : 1;
-            if (baseInstruction != Z80_CP_A_B && baseInstruction != Z80_CP_A_d8)
+            if (baseInstruction != CPU_CP_A_B && baseInstruction != CPU_CP_A_d8)
             {
                 expected.a = 0xFF & aResult;
             }
@@ -83,8 +83,8 @@ int testSingleADD(
                 expected.f |= GB_FLAGS_H;
             }
 
-            if (baseInstruction == Z80_SUB_A_B || baseInstruction == Z80_SBC_A_B || baseInstruction == Z80_CP_A_B ||
-                baseInstruction == Z80_SUB_A_d8 || baseInstruction == Z80_SBC_A_d8 || baseInstruction == Z80_CP_A_d8)
+            if (baseInstruction == CPU_SUB_A_B || baseInstruction == CPU_SBC_A_B || baseInstruction == CPU_CP_A_B ||
+                baseInstruction == CPU_SUB_A_d8 || baseInstruction == CPU_SBC_A_d8 || baseInstruction == CPU_CP_A_d8)
             {
                 expected.f |= GB_FLAGS_N;
             }
@@ -98,25 +98,25 @@ int testSingleADD(
                 memory->internalRam[0] = baseInstruction;
             }
 
-            run = runZ80CPU(z80, memory, 1);
+            run = runCPUCPU(cpu, memory, 1);
 
-            if (baseInstruction == Z80_ADD_A_B || baseInstruction == Z80_ADD_A_d8) 
+            if (baseInstruction == CPU_ADD_A_B || baseInstruction == CPU_ADD_A_d8) 
             {
                 sprintf(instructionName, "ADD A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_ADC_A_B || baseInstruction == Z80_ADC_A_d8) 
+            else if (baseInstruction == CPU_ADC_A_B || baseInstruction == CPU_ADC_A_d8) 
             {
                 sprintf(instructionName, "ADC A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_SUB_A_B || baseInstruction == Z80_SUB_A_d8) 
+            else if (baseInstruction == CPU_SUB_A_B || baseInstruction == CPU_SUB_A_d8) 
             {
                 sprintf(instructionName, "SUB A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_SBC_A_B || baseInstruction == Z80_SBC_A_d8) 
+            else if (baseInstruction == CPU_SBC_A_B || baseInstruction == CPU_SBC_A_d8) 
             {
                 sprintf(instructionName, "SBC A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
-            else if (baseInstruction == Z80_CP_A_B || baseInstruction == Z80_CP_A_d8) 
+            else if (baseInstruction == CPU_CP_A_B || baseInstruction == CPU_CP_A_d8) 
             {
                 sprintf(instructionName, "CP A (%X) %s (%X) C (%d)", aValue, registerNames[srcRegister], srcValue, cFlag);
             } 
@@ -127,7 +127,7 @@ int testSingleADD(
             }
 
             if (
-                !testZ80State(instructionName, testOutput, z80, &expected) ||
+                !testCPUState(instructionName, testOutput, cpu, &expected) ||
                 !testInt(instructionName, testOutput, run, expectedRunLength)
             )
             {
@@ -144,17 +144,17 @@ int testSingleADD(
     return 1;
 }
 
-int testADD_ADC(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testADD_ADC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADD_A_B, 0) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADD_A_B, 1) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADC_A_B, 0) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_ADC_A_B, 1) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_ADD_A_B, 0) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_ADD_A_B, 1) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_ADC_A_B, 0) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_ADC_A_B, 1) ||
             0
         )
         {
@@ -165,17 +165,17 @@ int testADD_ADC(struct Z80State* z80, struct Memory* memory, char* testOutput)
     return 1;
 }
 
-int testSUB_SBC(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int testSUB_SBC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     int srcRegister;
 
     for (srcRegister = 0; srcRegister < REGISTER_COUNT; ++srcRegister)
     {       
         if (
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SUB_A_B, 0) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SUB_A_B, 1) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SBC_A_B, 0) ||
-            !testSingleADD( z80, memory, testOutput, srcRegister, Z80_SBC_A_B, 1) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_SUB_A_B, 0) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_SUB_A_B, 1) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_SBC_A_B, 0) ||
+            !testSingleADD( cpu, memory, testOutput, srcRegister, CPU_SBC_A_B, 1) ||
             0
         )
         {
@@ -186,11 +186,11 @@ int testSUB_SBC(struct Z80State* z80, struct Memory* memory, char* testOutput)
     return 1;
 }
 
-int run0x8_9Tests(struct Z80State* z80, struct Memory* memory, char* testOutput)
+int run0x8_9Tests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 {
     return 
-        testADD_ADC(z80, memory, testOutput) &&
-        testSUB_SBC(z80, memory, testOutput) &&
+        testADD_ADC(cpu, memory, testOutput) &&
+        testSUB_SBC(cpu, memory, testOutput) &&
         1
     ;
 }

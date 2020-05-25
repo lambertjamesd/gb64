@@ -3,13 +3,13 @@
 #define _GAMEBOY_H
 
 #include "rom.h"
-#include "z80.h"
+#include "cpu.h"
 #include "memory_map.h"
 
 struct GameBoy
 {
     struct Memory memory;
-    struct Z80State cpu;
+    struct CPUState cpu;
 };
 
 extern struct GameBoy gGameboy;

@@ -35,7 +35,7 @@
 #include "font_ext.h"
 #include "src/gameboy.h"
 #include "src/graphics.h"
-#include "src/test/z80_test.h"
+#include "src/test/cpu_test.h"
 
 /*
  * Task header.
@@ -211,7 +211,7 @@ game(void)
 
 		while (cyclesToRun > 0 && gGameboy.cpu.stopReason != STOP_REASON_STOP)
 		{
-			int cyclesRun = runZ80CPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
+			int cyclesRun = runCPUCPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
 
 			cyclesToRun -= cyclesRun;
 
@@ -227,7 +227,7 @@ game(void)
 		sprintf(cstring, "Cycles run %d Time %d %X\n%d", 
 			gGameboy.cpu.cyclesRun, 
 			(int)(100 * lastDrawTime / frameTime), 
-			runZ80CPU,
+			runCPUCPU,
 			gGameboy.cpu.stopReason
 		);
 #endif
