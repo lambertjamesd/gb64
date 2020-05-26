@@ -64,7 +64,7 @@ int runDIVTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     return testInt("DIV select second", testOutput, 
         READ_REGISTER_DIRECT(memory, REG_DIV), 
-        0x1
+        0x0
     );
 }
 

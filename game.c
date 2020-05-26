@@ -210,7 +210,7 @@ game(void)
 
 		if (pad[0]->button && !lastButton)
 		{
-			// cycleStep = 1024 * 1024 / 30;
+			cycleStep = 1024 * 1024 / 30;
 
 			if (pad[0]->button & CONT_A)
 			{
@@ -237,41 +237,26 @@ game(void)
 
 		frameTime = lastTime - frameTime;
 
-		if (frameTime && !offset)
-		{
-			// sprintf(str, "Render Time: %d%% %lld\n%X", (int)(100 * lastDrawTime / frameTime), frameTime, renderPixelRow);
-		}
-
-		offset = (offset + 1) & 0x20;
-
-		lastButton = pad[0]->button;
-
 		cstring=str;
-
-		cyclesToRun += cycleStep;
 
 		lastDrawTime = -osGetTime();
 
-		while (cyclesToRun > 0 && gGameboy.cpu.stopReason != STOP_REASON_STOP)
-		{
-			int cyclesRun = runCPU(&gGameboy.cpu, &gGameboy.memory, cyclesToRun);
+		// gameboy is 60 fps N64 is 30
+		// we need to emulator two frames
+		// for every one frame rendered
+		emulateFrame(&gGameboy, NULL);
+		emulateFrame(&gGameboy, cfb[draw_buffer]);
 
-			cyclesToRun -= cyclesRun;
-
-			if (!cyclesRun)
-			{
-				break;
-			}
-		}
+		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
 		
 #if !RUN_TESTS
-		sprintf(cstring, "Cycles run %d Time %d %X\n%d", 
+		sprintf(cstring, "Cycles run %d Time %d %X\n%X", 
 			gGameboy.cpu.cyclesRun, 
 			(int)(100 * lastDrawTime / frameTime), 
 			runCPU,
-			gGameboy.cpu.stopReason
+			&gGameboy
 		);
 #endif
 
@@ -356,24 +341,6 @@ game(void)
 					y += 20;
 			}
 		}
-
-		lastDrawTime = -osGetTime();
-
-		for (loop = 0; loop < GB_SCREEN_H; ++loop)
-		{
-			if (line == -1 || line == loop)
-			{
-				renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 0);
-			}
-			else
-			{
-				zeroMemory(cfb[draw_buffer] + (loop + 48) * SCREEN_WD, SCREEN_WD * sizeof(u16));
-			}
-		}
-
-		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
-
-		lastDrawTime += osGetTime();
 
 		font_finish( &glistp );
 

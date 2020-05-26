@@ -43,15 +43,15 @@ runCPU:
     jal SET_GB_PC
     # make sure GB_PC doesn't match Param0 to force bank load
     xori GB_PC, Param0, 0xFFFF 
-    
-    lbu $at, CPU_STATE_STOP_REASON(CPUState)
-    bnez $at, GB_BREAK_LOOP
 
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
     add $at, CycleTo, CYCLES_RUN    # calculate upper bound of execution
     sw $at, ST_CYCLE_TO($sp)
+    
+    lbu $at, CPU_STATE_STOP_REASON(CPUState)
+    bnez $at, GB_SIMULATE_HALTED
 
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
@@ -2423,21 +2423,11 @@ GB_RST_38H:
 # Return instructions left to run
 ######################
 GB_BREAK_LOOP:
-    lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
-    la $at, 0x7FFFFFFF
-    and $v0, $v0, $at
-    sub $v0, CYCLES_RUN, $v0
-_GB_EXIT_EARLY:
-    # DIV = ((CYCLES_RUN >> 6) + _REG_DIV_OFFSET) & 0xFF
-    srl $at, CYCLES_RUN, 6
-    read_register_direct TMP2, _REG_DIV_OFFSET
-    add $at, $at, TMP2
-    write_register_direct $at, REG_DIV
-
-    jal CALCULATE_TIMA_VALUE
-
+    jal CALCULATE_DIV_VALUE
     sb GB_A, CPU_STATE_A(CPUState)
+    jal CALCULATE_TIMA_VALUE
     sb GB_F, CPU_STATE_F(CPUState)
+
     sb GB_B, CPU_STATE_B(CPUState)
     sb GB_C, CPU_STATE_C(CPUState)
 
@@ -2448,6 +2438,10 @@ _GB_EXIT_EARLY:
 
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
+    
+    # calculate the number of cycles run
+    lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
+    sub $v0, CYCLES_RUN, $v0
 
     # We don't want CYCLES_RUN
     # to overflow while emulating the CPU
@@ -2571,33 +2565,47 @@ _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
 
 ########################
+# Update DIV register to the correct value
+# Stomps on TMP2
+########################
+
+CALCULATE_DIV_VALUE:
+    # DIV = (((CYCLES_RUN << 2) + _REG_DIV_OFFSET) >> 8) & 0xFF
+    sll $v0, CYCLES_RUN, 2
+    read_register16_direct $at, _REG_DIV_OFFSET
+    add $v0, $v0, $at
+    srl $v0, $v0, 8
+    jr $ra
+    write_register_direct $v0, REG_DIV
+
+########################
 # Update TIMA register to the correct value
-# Stomps on TMP2 and TMP3
+# Stomps on TMP2
 ########################
 
 CALCULATE_TIMA_VALUE:
-    lw TMP3, CPU_STATE_NEXT_TIMER(CPUState)
-    addiu $at, TMP3, 1 
+    lw TMP2, CPU_STATE_NEXT_TIMER(CPUState)
+    addiu $v0, TMP2, 1 
     # if there is no timer running, do nothing
-    beq $at, $zero, _CALCULATE_TIMA_VALUE_NONE 
+    beq $v0, $zero, _CALCULATE_TIMA_VALUE_NONE 
     
-    read_register_direct TMP2, REG_TAC # load the timer attributes table
+    read_register_direct $at, REG_TAC # load the timer attributes table
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
-    addi TMP2, TMP2, -1 # 
-    andi TMP2, TMP2, REG_TAC_CLOCK_SELECT
-    addi TMP2, TMP2, 1
-    sll TMP2, TMP2, 1
+    addi $at, $at, -1 # 
+    andi $at, $at, REG_TAC_CLOCK_SELECT
+    addi $at, $at, 1
+    sll $at, $at, 1
 
     # calculate cycles until next interrupt
     # operands intentionally swapped to avoid needing
     # to negate the result later
-    sub $at, CYCLES_RUN, TMP3
+    sub $v0, CYCLES_RUN, TMP2
     # shift the diffence by the clock divider
-    srlv $at, $at, TMP2
+    srlv $v0, $v0, $at
 
     # write TIMA register
-    write_register_direct $at, REG_TIMA
+    write_register_direct $v0, REG_TIMA
 
 _CALCULATE_TIMA_VALUE_NONE:
     jr $ra
@@ -2751,7 +2759,7 @@ GB_SIMULATE_HALTED:
     # todo timer values
     lw $at, ST_CYCLE_TO($sp)
     j GB_BREAK_LOOP
-    move CYCLES_RUN, TMP2 # catch cpu clock up to requested cycles to run
+    move CYCLES_RUN, $at # catch cpu clock up to requested cycles to run
 
 #######################
 # Reads the address HL into $v0
@@ -3506,13 +3514,12 @@ _GB_WRITE_REG_JOYP_BUTTONS:
     write_register_direct $at, REG_JOYP 
     
 _GB_WRITE_REG_DIV:
-    # DIV = ((CYCLES_RUN >> 6) + _REG_DIV_OFFSET) & 0xFF
-    # _REG_DIV_OFFSET = -(CYCLES_RUN >> 6) & 0xFF
-    srl $at, CYCLES_RUN, 6
+    # DIV = (((CYCLES_RUN << 2) + _REG_DIV_OFFSET) >> 8) & 0xFFFF
+    # _REG_DIV_OFFSET = -(CYCLES_RUN << 2) & 0xFFFF
+    sll $at, CYCLES_RUN, 2
     sub $at, $zero, $at
-    andi $at, $at, 0xFF
     jr $ra
-    write_register_direct $at, _REG_DIV_OFFSET
+    write_register16_direct $at, _REG_DIV_OFFSET
     
 _GB_WRITE_REG_TIMA:
     j CALCULATE_NEXT_TIMER_INTERRUPT
@@ -3676,6 +3683,15 @@ GB_DO_READ:
 ######################
 
 GB_DO_READ_REGISTERS:
+    # check for DIV recalculation
+    ori $at, $zero, REG_DIV
+    beq $at, ADDR, CALCULATE_DIV_VALUE
+
+    #check for TIMA recalculation
+    ori $at, $zero, REG_TIMA
+    beq $at, ADDR, CALCULATE_TIMA_VALUE
+    nop
+
     li $at, MEMORY_MISC_START-MM_REGISTER_START
     add ADDR, $at, ADDR # ADDR relative to MISC memory
     add ADDR, Memory, ADDR # Relative to memory

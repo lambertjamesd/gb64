@@ -43,3 +43,11 @@
 .macro write_register_direct target, register
     sb \target, (\register+MEMORY_MISC_START-MM_REGISTER_START)(Memory)
 .endm
+
+.macro read_register16_direct target, register
+    lhu \target, (\register+MEMORY_MISC_START-MM_REGISTER_START)(Memory)
+.endm
+
+.macro write_register16_direct target, register
+    sh \target, (\register+MEMORY_MISC_START-MM_REGISTER_START)(Memory)
+.endm

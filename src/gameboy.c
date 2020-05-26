@@ -1,5 +1,6 @@
 
 #include "gameboy.h"
+#include "graphics.h"
 
 struct GameBoy gGameboy;
 
@@ -74,4 +75,33 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
             gameboy->cpu.stopReason = STOP_REASON_NONE;
         }
     }
+}
+
+void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
+{
+    int line = 0;
+    int lcdStatus = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCD_STAT);
+
+    for (line = 0; line < GB_SCREEN_H; ++line)
+    {
+        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_LY, line);
+
+        runCPU(&gameboy->cpu, &gameboy->memory, 114);
+        if (targetMemory)
+        {
+		    renderPixelRow(&gameboy->memory, targetMemory, line, 0);
+        }
+    }
+
+    if (READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E)
+    {
+        requestInterrupt(gameboy, GB_INTERRUPTS_V_BLANK);
+    }
+
+    for (; line < GB_SCREEN_H + 10; ++line)
+    {
+        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_LY, line);
+        runCPU(&gameboy->cpu, &gameboy->memory, 114);
+    }
+
 }

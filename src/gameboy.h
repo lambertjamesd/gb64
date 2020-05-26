@@ -18,4 +18,9 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 
 void requestInterrupt(struct GameBoy* gameboy, int interrupt);
 
+/**
+ * if targetMemory is null then the drawing routines are skipped
+ */
+void emulateFrame(struct GameBoy* gameboy, void* targetMemory);
+
 #endif

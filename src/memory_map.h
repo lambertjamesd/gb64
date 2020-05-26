@@ -30,8 +30,11 @@
 #define REG_TAC         0xFF07
 
 #define REG_LCDC        0xFF40
+#define REG_LCD_STAT    0xFF41
 #define REG_SCY         0xFF42
 #define REG_SCX         0xFF43
+#define REG_LY          0xFF44
+#define REG_LCY         0xFF45
 
 #define REG_INT_REQUESTED   0xFF0F
 #define REG_INT_ENABLED     0xFFFF

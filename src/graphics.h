@@ -23,7 +23,7 @@
 #define LCDC_BG_TILE_DATA       0x10
 #define LCDC_WIN_E              0x20
 #define LCDC_WIN_TILE_MAP       0x40
-#define LCDC_LDC_E              0x80
+#define LCDC_LCD_E              0x80
 
 #define READ_PIXEL_INDEX(pixel, x) (x == 7) ? ((((pixel) >> 8) & 0x1) | (((pixel) << 1) & 0x2)) : ((((pixel) >> (15 - x)) & 0x1) | (((pixel) >> (6 - x)) & 0x2))
 
