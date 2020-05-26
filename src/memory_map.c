@@ -9,6 +9,8 @@ u16 palleteColors[] = {
     0x9DC2,
 };
 
+// background color? 0xCADC9F
+
 void nopBankSwitch(struct Memory* memory, int addr, unsigned char value)
 {
 

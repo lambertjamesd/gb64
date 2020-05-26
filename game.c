@@ -108,6 +108,7 @@ game(void)
 	int lastButton;
 	int cyclesToRun;
 	int cycleStep;
+	int line = 0;
 	OSTime lastTime;
 	OSTime lastDrawTime;
 	OSTime frameTime;
@@ -118,6 +119,7 @@ game(void)
 	offset = 0;
 	color = 0;
 	lastButton = 0;
+	line = -1;
 
 	frameTime = 0;
 	lastDrawTime = 0;
@@ -185,10 +187,12 @@ game(void)
 	gGameboy.memory.vram.tiles[32].rows[6] = 0x5555;
 	gGameboy.memory.vram.tiles[32].rows[7] = 0xAAAA;
 
-	for (loop = 0; loop < 256; ++loop)
+	for (loop = 0; loop < 1024; ++loop)
 	{
-		gGameboy.memory.vram.tilemap0[loop] = loop;
+		gGameboy.memory.vram.tilemap0[loop] = 0;
 	}
+
+	gGameboy.memory.vram.tilemap0[0] = 1;
 
 	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
@@ -206,7 +210,24 @@ game(void)
 
 		if (pad[0]->button && !lastButton)
 		{
-			cycleStep = 1024 * 1024 / 30;
+			// cycleStep = 1024 * 1024 / 30;
+
+			if (pad[0]->button & CONT_A)
+			{
+				WRITE_REGISTER_DIRECT(
+					&gGameboy.memory, 
+					REG_SCY, 
+					READ_REGISTER_DIRECT(&gGameboy.memory, REG_SCY) + 1
+				);
+			}
+			else if (pad[0]->button & CONT_B)
+			{
+				WRITE_REGISTER_DIRECT(
+					&gGameboy.memory, 
+					REG_SCY, 
+					READ_REGISTER_DIRECT(&gGameboy.memory, REG_SCY) - 1
+				);
+			}
 		}
 
 		lastButton = pad[0]->button;
@@ -340,7 +361,14 @@ game(void)
 
 		for (loop = 0; loop < GB_SCREEN_H; ++loop)
 		{
-			renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 0);
+			if (line == -1 || line == loop)
+			{
+				renderPixelRow(&gGameboy.memory, cfb[draw_buffer], loop, 0);
+			}
+			else
+			{
+				zeroMemory(cfb[draw_buffer] + (loop + 48) * SCREEN_WD, SCREEN_WD * sizeof(u16));
+			}
 		}
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);

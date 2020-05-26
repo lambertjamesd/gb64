@@ -50,7 +50,9 @@ void renderPixelRow(
 
     for (x = 0; x < GB_SCREEN_W;)
     {
+        windowX = (x + offsetX) & 0xFF;
         tilemapIndex = tilemapRow + (windowX >> 3);
+
         if (gbc)
         {
             tileInfo = memory->vram.tilemap0Atts[tilemapIndex];
@@ -58,7 +60,6 @@ void renderPixelRow(
             tilemapSource = (tileInfo & TILE_ATTR_VRAM_BANK) ? memory->vram.gbcTiles : memory->vram.tiles;
         }
 
-        windowX = (x + offsetX) & 0xFF;
         tileIndex = memory->vram.tilemap0[tilemapIndex];
         
         if (!dataSelect)
@@ -75,7 +76,7 @@ void renderPixelRow(
         // A bit of a hack here
         // set the h flip flag to bit 3 and put the 
         // case range 8-15 to render the tile flipped
-        switch (windowX & 0x7 | ((tileInfo & TILE_ATTR_H_FLIP) >> 1))
+        switch ((windowX & 0x7) | ((tileInfo & TILE_ATTR_H_FLIP) >> 1))
         {
             case 0:
                 WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0);
