@@ -44,6 +44,7 @@
 .eqv MEMORY_REGISTER_TABLE, 0x40
 .eqv MEMORY_BANK_SWITCHING, 0x60
 .eqv MEMORY_MISC_START, 0x64
+.eqv MEMORY_SCREEN_CYCLE_START, 0x124
 .eqv MEMORY_RAM_START, 0x2DC
 .eqv MEMORY_CART_RAM, 0x82DC
 .eqv MEMORY_VRAM, 0x82E0
@@ -59,7 +60,7 @@
 .eqv H_FLAG, 0x20
 .eqv C_FLAG, 0x10
 
-.eqv STACK_SIZE, 0x2C
+.eqv STACK_SIZE, 0x30
 .eqv ST_RA, 0x0
 # hole here
 .eqv ST_S0, 0x8
@@ -71,6 +72,7 @@
 .eqv ST_S6, 0x20
 .eqv ST_S7, 0x24
 .eqv ST_CYCLE_TO, 0x28
+.eqv ST_NEXT_V_INT, 0x2C
 
 .eqv SAVE_TMP_SIZE, 0x28
 

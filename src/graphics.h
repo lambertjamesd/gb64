@@ -25,6 +25,10 @@
 #define LCDC_WIN_TILE_MAP       0x40
 #define LCDC_LCD_E              0x80
 
+#define CYCLES_PER_LINE         114
+#define V_BLANK_LINES           10
+#define CYCLES_PER_FRAME        (CYCLES_PER_LINE * (GB_SCREEN_H + V_BLANK_LINES))
+
 #define READ_PIXEL_INDEX(pixel, x) (x == 7) ? ((((pixel) >> 8) & 0x1) | (((pixel) << 1) & 0x2)) : ((((pixel) >> (15 - x)) & 0x1) | (((pixel) >> (6 - x)) & 0x2))
 
 void renderPixelRow(

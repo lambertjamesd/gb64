@@ -26,6 +26,7 @@ runCPU:
     sw $s5, ST_S5($sp) 
     sw $s6, ST_S6($sp) 
     sw $s7, ST_S7($sp) 
+    sw $zero, ST_NEXT_V_INT($sp)
 
     lbu GB_A, CPU_STATE_A(CPUState)
     lbu GB_F, CPU_STATE_F(CPUState)
@@ -77,11 +78,9 @@ DECODE_NEXT:
     sltu $at, TMP4, $at
     bne $at, $zero, _DEBUG_SKIP
     nop
-
     la TMP4, 0x80700000
 
 _DEBUG_SKIP:
-
 
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
@@ -2612,6 +2611,82 @@ _CALCULATE_TIMA_VALUE_NONE:
     nop
 
 ########################
+# Update LCDC_STATUS and LYC registers to the correct value
+# Stomps on TMP2 and TMP3
+# returns LCDC_STATUS in $v0
+########################
+
+CALCULATE_LCDC_STATUS_VALUE:
+    # TODO check gb speed mode
+    lw $at, MEMORY_SCREEN_CYCLE_START(Memory)
+    sub $at, CYCLES_RUN, $at
+    # equal to 0x100000000 / 114
+    # mulitplying the cycle offset will result in 
+    # the high word being LY and the low byte
+    # holding the scanx position
+    la TMP2, 0x23EE090 
+    multu $at, TMP2
+    read_register_direct $v0, REG_LCDC_STATUS
+    andi $v0, $v0, 0xF8 # mask out read only data
+    li $v1, REG_LCDC_STATUS_MODE_1
+
+    read_register_direct $at, REG_LCDC
+    andi TMP2, $at, REG_LCDC_LCD_ENABLE
+    
+    beqz TMP2, _CALCULATE_LCDC_STATUS_MODE
+    mfhi TMP2
+
+    # check if in v blank
+    sltiu $at, TMP2, 144
+    beq $at, $zero, _CALCULATE_LCDC_STATUS_MODE
+    mflo TMP3
+    
+    # check if in OAM mode (2)
+    sltiu $at, TMP3, 0x2CEA
+    bne $at, $zero, _CALCULATE_LCDC_STATUS_MODE
+    li $v1, REG_LCDC_STATUS_MODE_2
+
+    # check if in OAM/VRAM mode (3)
+    sltiu $at, TMP3, 0x6090
+    bne $at, $zero, _CALCULATE_LCDC_STATUS_MODE
+    li $v1, REG_LCDC_STATUS_MODE_3
+
+    # must be in h blank
+    li $v1, REG_LCDC_STATUS_MODE_0
+
+_CALCULATE_LCDC_STATUS_MODE:
+    or $v0, $v0, $v1
+_CALCULATE_LCDC_STATUS_VALUE_LY:
+    write_register_direct TMP2, REG_LY
+    read_register_direct $at, REG_LCY
+    bne TMP2, $at, _CALCULATE_LCDC_STATUS_VALUE_SKIP_LCY
+    nop
+    ori $v0, $v0, REG_LCDC_STATUS_COINCIDENCE
+_CALCULATE_LCDC_STATUS_VALUE_SKIP_LCY:
+    jr $ra
+    nop
+    
+########################
+# Update LYC register to the correct value
+# Stomps on TMP2 and TMP3
+# returns LCDC_STATUS in $v0
+########################
+
+CALCULATE_LY_VALUE:
+    # TODO check gb speed mode
+    lw $at, MEMORY_SCREEN_CYCLE_START(Memory)
+    sub $at, CYCLES_RUN, $at
+    # equal to 0x100000000 / 114
+    # mulitplying the cycle offset will result in 
+    # the high word being LY and the low byte
+    # holding the scanx position
+    la TMP2, 0x23EE090 
+    multu $at, TMP2
+    mfhi $v0
+    jr $ra
+    write_register_direct $v0, REG_LY
+
+########################
 # Determines the next time a special action
 # Needs to occur which can be
 #    Finished running cycles
@@ -2693,7 +2768,18 @@ _CHECK_FOR_INTERRUPT_EXIT:
 ########################
 
 HANDLE_STOPPING_POINT:
-    # check timer first
+    # check for video interrupts first 
+    lw $at, ST_NEXT_V_INT($sp)
+    beqz $at, _HANDLE_STOPPING_POINT_CHECK_TIMER
+    nop
+    sw $zero, ST_NEXT_V_INT($sp)
+    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    or TMP2, TMP2, $at
+    j CALCULATE_NEXT_STOPPING_POINT
+    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+_HANDLE_STOPPING_POINT_CHECK_TIMER:
+    # check timer second
     lw $at, CPU_STATE_NEXT_TIMER(CPUState)
     sltu TMP2, CYCLES_RUN, $at
     bne TMP2, $zero, _HANDLE_STOPPING_POINT_CHECK_INTERRUPT
@@ -2732,9 +2818,8 @@ _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
     and TMP2, TMP2, $at
     write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
 
-    addi $at, $zero, 0
-    sb $at, CPU_STATE_NEXT_INTERRUPT(CPUState) # clear pending interrupt
-    sb $at, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
+    sb $zero, CPU_STATE_NEXT_INTERRUPT(CPUState) # clear pending interrupt
+    sb $zero, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
     
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
@@ -3684,12 +3769,21 @@ GB_DO_READ:
 
 GB_DO_READ_REGISTERS:
     # check for DIV recalculation
-    ori $at, $zero, REG_DIV
+    li $at, REG_DIV
     beq $at, ADDR, CALCULATE_DIV_VALUE
 
-    #check for TIMA recalculation
-    ori $at, $zero, REG_TIMA
+    # check for TIMA recalculation
+    li $at, REG_TIMA
     beq $at, ADDR, CALCULATE_TIMA_VALUE
+
+    # check for LCDC recalculation
+    li $at, REG_LCDC_STATUS
+    beq $at, ADDR, CALCULATE_LCDC_STATUS_VALUE
+
+    # check for LC recalculation
+    li $at, REG_LC
+    beq $at, ADDR, CALCULATE_LY_VALUE
+
     nop
 
     li $at, MEMORY_MISC_START-MM_REGISTER_START

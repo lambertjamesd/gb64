@@ -60,7 +60,8 @@ struct MiscMemory {
     u16 colorPalletes[64];
     u16 monochromePallete[4];
     u16 monochromePalleteSource[4];
-    unsigned char unused[0x48];
+    u32 screenCycleStart;
+    unsigned char unused[0x44];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };

@@ -79,29 +79,41 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
 
 void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 {
-    int line = 0;
-    int lcdStatus = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCD_STAT);
+    int line;
+    int catchupCycles;
+    int screenEnabled;
 
-    for (line = 0; line < GB_SCREEN_H; ++line)
+    screenEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
+
+    if (screenEnabled)
     {
-        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_LY, line);
+        gameboy->memory.misc.screenCycleStart = gameboy->cpu.cyclesRun;
+    }
 
-        runCPU(&gameboy->cpu, &gameboy->memory, 114);
-        if (targetMemory)
+    if (targetMemory && screenEnabled)
+    {
+        for (line = 0; line < GB_SCREEN_H; ++line)
         {
 		    renderPixelRow(&gameboy->memory, targetMemory, line, 0);
+            runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE);
         }
-    }
 
-    if (READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E)
+        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES);
+    }
+    else
     {
-        requestInterrupt(gameboy, GB_INTERRUPTS_V_BLANK);
+        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
     }
 
-    for (; line < GB_SCREEN_H + 10; ++line)
+    // If the screen was enabled while emuluating this frame
+    // then we need to sync the gameboy frames to the N64 frames
+    // to do this we just need to simulate to the end of the
+    // current frame
+    catchupCycles = CYCLES_PER_FRAME - 
+        (gameboy->cpu.cyclesRun - gameboy->memory.misc.screenCycleStart);
+
+    if (catchupCycles > 0)
     {
-        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_LY, line);
-        runCPU(&gameboy->cpu, &gameboy->memory, 114);
+        runCPU(&gameboy->cpu, &gameboy->memory, catchupCycles);
     }
-
 }
