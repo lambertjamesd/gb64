@@ -3764,8 +3764,8 @@ _GB_WRITE_REG_4X_TABLE:
     jr $ra
     nop
     # LYC
-    jr $ra
-    write_register_direct VAL, REG_LYC
+    j _GB_WRITE_REG_LCY
+    nop
     # DMA
     jr $ra
     nop # TODO
@@ -3808,9 +3808,9 @@ _GB_WRITE_REG_LCDC:
     beqz $at, _GB_WRITE_REG_LCDC_WRITE # if the LCD status didn't change do nothing
     andi $at, VAL, REG_LCDC_LCD_ENABLE
     beqz $at, _GB_WRITE_REG_LCDC_OFF
+    addi $sp, $sp, -4
 
 _GB_WRITE_REG_LCDC_ON:
-    addi $sp, $sp, -4
     sw $ra, 0($sp)
 
     read_register_direct $at, REG_LCDC_STATUS
@@ -3838,8 +3838,9 @@ _GB_WRITE_REG_LCDC_OFF:
     sw $ra, 0($sp)
     
     read_register_direct $at, REG_LCDC_STATUS
-    andi $at, $at, %lo(~REG_LCDC_STATUS_MODE)
+    andi $at, $at, %lo(~(REG_LCDC_STATUS_MODE | REG_LCDC_STATUS_LYC))
     ori $at, $at, REG_LCDC_STATUS_MODE_1
+    # todo check if LYC is 0
     write_register_direct $at, REG_LCDC_STATUS # set mode to 1
 
     write_register_direct $zero, REG_LY # set LY to 0
@@ -3855,12 +3856,33 @@ _GB_WRITE_REG_LCDC_WRITE:
 ############################
 
 _GB_WRITE_REG_LCDC_STATUS:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    # todo check for rising edge for LCD_STAT interrupt
+
     read_register_direct $at, REG_LCDC_STATUS
     andi $at, $at, 0x7
     andi VAL, VAL, 0xF8
     or VAL, VAL, $at
+
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4 
+
     jr $ra
     write_register_direct VAL, REG_LCDC_STATUS
+
+############################
+
+_GB_WRITE_REG_LCY:
+    # todo check for rising edge for LCD_STAT interrupt 
+    read_register_direct TMP2, REG_LCDC_STATUS
+    andi TMP2, TMP2, %lo(~REG_LCDC_STATUS_LYC)
+    read_register_direct $at, REG_LY
+    sub $at, VAL, $at
+    
+    jr $ra
+    write_register_direct VAL, REG_LYC
     
 ############################
 
