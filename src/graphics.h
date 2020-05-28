@@ -4,8 +4,9 @@
 
 #include "memory_map.h"
 
-#define GB_SCREEN_W    160
-#define GB_SCREEN_H    144
+#define GB_SCREEN_W         160
+#define GB_SCREEN_H         144
+#define GB_SCREEN_LINES     154
 
 #define RENDER_TO_X 80
 #define RENDER_TO_Y 48
@@ -25,6 +26,7 @@
 #define LCDC_WIN_TILE_MAP       0x40
 #define LCDC_LCD_E              0x80
 
+#define MODE_2_CYCLES           20
 #define CYCLES_PER_LINE         114
 #define V_BLANK_LINES           10
 #define CYCLES_PER_FRAME        (CYCLES_PER_LINE * (GB_SCREEN_H + V_BLANK_LINES))

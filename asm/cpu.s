@@ -26,7 +26,6 @@ runCPU:
     sw $s5, ST_S5($sp) 
     sw $s6, ST_S6($sp) 
     sw $s7, ST_S7($sp) 
-    sw $zero, ST_NEXT_V_INT($sp)
 
     lbu GB_A, CPU_STATE_A(CPUState)
     lbu GB_F, CPU_STATE_F(CPUState)
@@ -2611,80 +2610,55 @@ _CALCULATE_TIMA_VALUE_NONE:
     nop
 
 ########################
-# Update LCDC_STATUS and LYC registers to the correct value
-# Stomps on TMP2 and TMP3
-# returns LCDC_STATUS in $v0
+# Determines the next time a screen event happens
 ########################
 
-CALCULATE_LCDC_STATUS_VALUE:
-    # TODO check gb speed mode
-    lw $at, MEMORY_SCREEN_CYCLE_START(Memory)
-    sub $at, CYCLES_RUN, $at
-    # equal to 0x100000000 / 114
-    # mulitplying the cycle offset will result in 
-    # the high word being LY and the low byte
-    # holding the scanx position
-    la TMP2, 0x23EE090 
-    multu $at, TMP2
-    read_register_direct $v0, REG_LCDC_STATUS
-    andi $v0, $v0, 0xF8 # mask out read only data
-    li $v1, REG_LCDC_STATUS_MODE_1
+# The following are typical when the display is enabled:
+#   Mode 2  2_____2_____2_____2_____2_____2___________________2____
+#   Mode 3  _33____33____33____33____33____33__________________3___
+#   Mode 0  ___000___000___000___000___000___000________________000
+#   Mode 1  ____________________________________11111111111111_____
 
+# Mode 2    Mode 3      Mode 0
+# 20        43          51  
+# Mode 1 line
+# 1140
+
+CALCULATE_NEXT_SCREEN_INTERRUPT:
     read_register_direct $at, REG_LCDC
-    andi TMP2, $at, REG_LCDC_LCD_ENABLE
+    andi $at, $at, REG_LCDC_LCD_ENABLE
+    beqz $at, _CALCULATE_NEXT_SCREEN_INTERRUPT_OFF
+
+    read_register_direct TMP2, REG_LCDC_STATUS
+    slti $at, TMP2, 144
+    beqz $at, _CALCULATE_NEXT_SCREEN_INTERRUPT_V_BLANK
+
+    read_register_direct TMP2, REG_LCDC_STATUS
+    andi TMP2, TMP2, REG_LCDC_STATUS_MODE
+
+    li $at, REG_LCDC_STATUS_MODE_2
+    beq TMP2, $at, _CALCULATE_NEXT_SCREEN_FINISH
+    li $v0, REG_LCDC_STATUS_MODE_2_CYCLES
     
-    beqz TMP2, _CALCULATE_LCDC_STATUS_MODE
-    mfhi TMP2
+    li $at, REG_LCDC_STATUS_MODE_3
+    beq TMP2, $at, _CALCULATE_NEXT_SCREEN_FINISH
+    li $v0, REG_LCDC_STATUS_MODE_3_CYCLES
 
-    # check if in v blank
-    sltiu $at, TMP2, 144
-    beq $at, $zero, _CALCULATE_LCDC_STATUS_MODE
-    mflo TMP3
-    
-    # check if in OAM mode (2)
-    sltiu $at, TMP3, 0x2CEA
-    bne $at, $zero, _CALCULATE_LCDC_STATUS_MODE
-    li $v1, REG_LCDC_STATUS_MODE_2
+    j _CALCULATE_NEXT_SCREEN_FINISH
+    li $v0, REG_LCDC_STATUS_MODE_0_CYCLES
 
-    # check if in OAM/VRAM mode (3)
-    sltiu $at, TMP3, 0x6090
-    bne $at, $zero, _CALCULATE_LCDC_STATUS_MODE
-    li $v1, REG_LCDC_STATUS_MODE_3
-
-    # must be in h blank
-    li $v1, REG_LCDC_STATUS_MODE_0
-
-_CALCULATE_LCDC_STATUS_MODE:
-    or $v0, $v0, $v1
-_CALCULATE_LCDC_STATUS_VALUE_LY:
-    write_register_direct TMP2, REG_LY
-    read_register_direct $at, REG_LCY
-    bne TMP2, $at, _CALCULATE_LCDC_STATUS_VALUE_SKIP_LCY
-    nop
-    ori $v0, $v0, REG_LCDC_STATUS_COINCIDENCE
-_CALCULATE_LCDC_STATUS_VALUE_SKIP_LCY:
+_CALCULATE_NEXT_SCREEN_INTERRUPT_V_BLANK:
+    li $v0, REG_LCDC_STATUS_MODE_1_CYCLES
+_CALCULATE_NEXT_SCREEN_FINISH:
+    # todo check for double speed mode
+    add $v0, $v0, CYCLES_RUN
     jr $ra
-    nop
+    sw $v0, CPU_STATE_NEXT_SCREEN(CPUState)
     
-########################
-# Update LYC register to the correct value
-# Stomps on TMP2 and TMP3
-# returns LCDC_STATUS in $v0
-########################
-
-CALCULATE_LY_VALUE:
-    # TODO check gb speed mode
-    lw $at, MEMORY_SCREEN_CYCLE_START(Memory)
-    sub $at, CYCLES_RUN, $at
-    # equal to 0x100000000 / 114
-    # mulitplying the cycle offset will result in 
-    # the high word being LY and the low byte
-    # holding the scanx position
-    la TMP2, 0x23EE090 
-    multu $at, TMP2
-    mfhi $v0
+_CALCULATE_NEXT_SCREEN_INTERRUPT_OFF:
+    la $v0, ~0
     jr $ra
-    write_register_direct $v0, REG_LY
+    sw $v0, CPU_STATE_NEXT_SCREEN(CPUState)
 
 ########################
 # Determines the next time a special action
@@ -2692,7 +2666,7 @@ CALCULATE_LY_VALUE:
 #    Finished running cycles
 #    Timer overflow
 #    Interrupt
-# Stomps on TMP2
+# Stomps on TMP2 and TMP3
 ########################
 
 CALCULATE_NEXT_STOPPING_POINT:
@@ -2700,18 +2674,24 @@ CALCULATE_NEXT_STOPPING_POINT:
     # then then always stop
     lbu TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
     bne TMP2, $zero, _CALCULATE_NEXT_STOPPING_POINT_FINISH
-    ori $at, $zero, 0
+    li CycleTo, 0
     
     # deterime if CycleTo or NextTimer is smaller
     lw $at, CPU_STATE_NEXT_TIMER(CPUState)
     lw CycleTo, ST_CYCLE_TO($sp)
     sltu TMP2, CycleTo, $at
-    beq TMP2, $zero, _CALCULATE_NEXT_STOPPING_POINT_FINISH
+    bnez TMP2, _CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN
+    lw TMP2, CPU_STATE_NEXT_SCREEN(CPUState)
+    move CycleTo, $at
+    # compare current CycleTo to next screen event
+_CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN:
+    sltu TMP3, TMP2, CycleTo
+    beqz TMP3, _CALCULATE_NEXT_STOPPING_POINT_FINISH
     nop
-    move $at, CycleTo
+    move CycleTo, TMP2
 _CALCULATE_NEXT_STOPPING_POINT_FINISH:
     jr $ra
-    move CycleTo, $at
+    nop
 
 
 #############################
@@ -2761,22 +2741,146 @@ _CHECK_FOR_INTERRUPT_EXIT:
     jr $ra
     sb TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
 
+
+########################
+# Checks Param0 = REG_LCDC_STAT
+#        TMP3 = REG_LY
+# 
+########################
+
+CHECK_LCDC_STAT_FLAG:
+    # read the mode
+    andi $at, Param0, REG_LCDC_STATUS_MODE
+    li $v0, REG_LCDC_H_BLANK_INT
+    sllv $at, $v0, $at # flag to check by mode
+    move $v0, Param0
+    andi $at, $v0, (REG_LCDC_H_BLANK_INT | REG_LCDC_V_BLANK_INT | REG_LCDC_OAM_INT)
+    bnez $at, _CHECK_LCDC_STAT_FLAG_1
+    andi $at, Param0, REG_LCDC_LYC_INT
+    beqz $at, _CHECK_LCDC_STAT_FLAG_0
+    nop
+    # check if LYC == LY
+    read_register_direct $v0, REG_LYC
+    beq $v0, TMP3, _CHECK_LCDC_STAT_FLAG_1
+    nop
+
+    # check weird corner case where mode = 1 and ENABLE_OAM
+    andi $at, Param0, REG_LCDC_OAM_INT
+    beqz $at, _CHECK_LCDC_STAT_FLAG_0
+    andi $at, Param0, REG_LCDC_STATUS_MODE
+    addi $at, $at, -1
+    beqz $at, _CHECK_LCDC_STAT_FLAG_1
+    nop
+
+_CHECK_LCDC_STAT_FLAG_0:
+    jr $ra
+    li $v0, 0
+
+_CHECK_LCDC_STAT_FLAG_1:
+    jr $ra
+    li $v0, 1
+
 ########################
 # Determines the action to take now that
 # CycleTo has been reached
-# Stomps on TMP2
+# Stomps on Param0
 ########################
 
 HANDLE_STOPPING_POINT:
     # check for video interrupts first 
-    lw $at, ST_NEXT_V_INT($sp)
-    beqz $at, _HANDLE_STOPPING_POINT_CHECK_TIMER
+    lw $at, CPU_STATE_NEXT_SCREEN(CPUState)
+    sltu TMP2, CYCLES_RUN, $at
+    bnez $at, _HANDLE_STOPPING_POINT_CHECK_TIMER
     nop
-    sw $zero, ST_NEXT_V_INT($sp)
+    
+########################
+
+_HANDLE_STOPPING_POINT_SCREEN:
+    read_register_direct TMP3, REG_LY
+    # load current LCDC status flag
+    jal CHECK_LCDC_STAT_FLAG
+    read_register_direct Param0, REG_LCDC_STATUS
+
+    # check if current in V_BLANK
+    slti $at, TMP3, GB_SCREEN_H
+    beqz $at, _HANDLE_STOPPING_POINT_SCREEN_V_BLANK
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_LYC) # clear LYC flag
+
+    andi $at, Param0, REG_LCDC_STATUS_MODE
+    # if current mode is 0 check for screen wrap
+    beqz $at, _HANDLE_STOPPING_POINT_SCREEN_ROW_WRAP
+    addi Param0, Param0, 1 #increment mode
+
+    # clear LYC flag again in case previous mode was 0x3
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_LYC)
+
+    j _HANDLE_STOPPING_POINT_SCREEN_FINISH
+    nop
+_HANDLE_STOPPING_POINT_SCREEN_ROW_WRAP:
+    addi TMP3, TMP3, 1 # increment LY
+    li $at, GB_SCREEN_H
+    bne $at, TMP3, _HANDLE_STOPPING_POINT_SCREEN_FINISH
+    addi Param0, Param0, 1 # set Param0 to 2 for wrap to next row
+    
+    # request v blank interrupt
     read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
-    or TMP2, TMP2, $at
-    j CALCULATE_NEXT_STOPPING_POINT
+    ori TMP2, TMP2, INTERRUPT_V_BLANK
     write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+    j _HANDLE_STOPPING_POINT_SCREEN_FINISH
+    addi Param0, Param0, -1 # put mode back to mode 1
+_HANDLE_STOPPING_POINT_SCREEN_V_BLANK:
+    addi TMP3, TMP3, 1
+    slti $at, TMP3, GB_SCREEN_LINES
+    bnez $at, _HANDLE_STOPPING_POINT_SCREEN_FINISH
+    nop
+    # wrap back around to top of LCD
+    addi Param0, Param0, 1 # mode 2
+    move TMP3, $zero   # set LY to 0
+
+    # if the cpu should only run until the next frame
+    # then update CYCLE_TO to be CYCLES_RUN
+    lbu $at, CPU_STATE_RUN_UNTIL_FRAME(CPUState)
+    beqz $at, _HANDLE_STOPPING_POINT_SCREEN_FINISH
+    move $at, CYCLES_RUN
+    sw $at, ST_CYCLE_TO($sp)
+_HANDLE_STOPPING_POINT_SCREEN_FINISH:
+    # save new LY
+    write_register_direct TMP3, REG_LY
+    # check if LYC flag should be set
+    read_register_direct $at, REG_LCY
+
+    bne $at, TMP3, _HANDLE_STOPPING_POINT_SCREEN_SKIP_LYC
+    nop
+    ori Param0, Param0, REG_LCDC_STATUS_LYC
+_HANDLE_STOPPING_POINT_SCREEN_SKIP_LYC:
+    # save new STATUS
+    write_register_direct Param0, REG_LCDC_STATUS
+
+    # check if LCDC_STAT interrupt flag should be set
+    # $v0 holds the previous STAT_FLAG
+    jal CHECK_LCDC_STAT_FLAG # calculate current STAT_FLAG
+    move TMP2, $v0 # store previous valg to TMP2
+    slt $at, TMP2, $v0 # if previous stat < current state then trigger interrupt
+    beqz $at, _HANDLE_STOPPING_POINT_SCREEN_SKIP_INT
+    nop
+    # request interrupt
+    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    ori TMP2, TMP2, INTERRUPT_LCD_STAT
+    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+    jal CHECK_FOR_INTERRUPT
+    nop
+
+_HANDLE_STOPPING_POINT_SCREEN_SKIP_INT:
+    jal CALCULATE_NEXT_SCREEN_INTERRUPT
+    nop
+    jal CALCULATE_NEXT_STOPPING_POINT
+    nop
+    j DECODE_NEXT
+    nop
+    
+########################
 
 _HANDLE_STOPPING_POINT_CHECK_TIMER:
     # check timer second
@@ -2797,6 +2901,8 @@ _HANDLE_STOPPING_POINT_CHECK_TIMER:
 
     j DECODE_NEXT
     nop
+    
+########################
 
 _HANDLE_STOPPING_POINT_CHECK_INTERRUPT:
     lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
@@ -2831,6 +2937,8 @@ _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
     move Param0, ADDR # set the new PC
     j GB_DO_WRITE_16
     move ADDR, GB_SP # set the write address
+    
+########################
 
 _HANDLE_STOPPING_POINT_BREAK:
     j GB_BREAK_LOOP
@@ -3641,8 +3749,8 @@ _GB_WRITE_REG_4X:
     nop
 _GB_WRITE_REG_4X_TABLE:
     # LCDC
-    jr $ra
-    write_register_direct VAL, REG_LCDC
+    j _GB_WRITE_REG_LCDC
+    nop
     # LCDC Status
     j _GB_WRITE_REG_LCDC_STATUS
     nop
@@ -3692,6 +3800,59 @@ _GB_WRITE_REG_4X_TABLE:
     addi $at, $at, 0x1000
     jr $ra
     sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_VRAM_BANK_INDEX + 1))(Memory)
+
+_GB_WRITE_REG_LCDC:
+    read_register_direct $at, REG_LCDC
+    xor $at, VAL, $at
+    andi $at, $at, REG_LCDC_LCD_ENABLE
+    beqz $at, _GB_WRITE_REG_LCDC_WRITE # if the LCD status didn't change do nothing
+    andi $at, VAL, REG_LCDC_LCD_ENABLE
+    beqz $at, _GB_WRITE_REG_LCDC_OFF
+
+_GB_WRITE_REG_LCDC_ON:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    read_register_direct $at, REG_LCDC_STATUS
+    andi $at, $at, %lo(~REG_LCDC_STATUS_MODE)
+    ori $at, $at, REG_LCDC_STATUS_MODE_1
+    write_register_direct $at, REG_LCDC_STATUS # set mode to 1
+
+    # set up next stopping point to be the current cycle
+    # with LY at the last line to update the current
+    # lcd state on DECODE_NEXT
+    move $at, CYCLES_RUN
+    sw $at, CPU_STATE_NEXT_SCREEN(CPUState)
+
+    # this will put the cpu in a state where the next cycle
+    # will start the frame
+    li $at, GB_SCREEN_LINES - 1 
+    jal CALCULATE_NEXT_STOPPING_POINT
+    write_register_direct $at, REG_LY
+      
+    lw $ra, 0($sp)
+    j _GB_WRITE_REG_LCDC_WRITE
+    addi $sp, $sp, 4 
+
+_GB_WRITE_REG_LCDC_OFF:
+    sw $ra, 0($sp)
+    
+    read_register_direct $at, REG_LCDC_STATUS
+    andi $at, $at, %lo(~REG_LCDC_STATUS_MODE)
+    ori $at, $at, REG_LCDC_STATUS_MODE_1
+    write_register_direct $at, REG_LCDC_STATUS # set mode to 1
+
+    write_register_direct $zero, REG_LY # set LY to 0
+    la $at, ~0
+    jal CALCULATE_NEXT_STOPPING_POINT # update stopping point
+    sw $at, CPU_STATE_NEXT_SCREEN(CPUState) # clear screen event   
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4 
+_GB_WRITE_REG_LCDC_WRITE:
+    jr $ra
+    write_register_direct VAL, REG_LCDC
+    
+############################
 
 _GB_WRITE_REG_LCDC_STATUS:
     read_register_direct $at, REG_LCDC_STATUS

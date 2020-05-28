@@ -41,7 +41,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF24, 0x77);
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF25, 0xF3);
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF26, 0xF1);
-    WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF40, 0x91);
+    WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF40, 0x11);
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF42, 0x00);
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF43, 0x00);
     WRITE_REGISTER_DIRECT(&gameboy->memory, 0xFF45, 0x00);
@@ -81,39 +81,38 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 {
     int line;
     int catchupCycles;
-    int screenEnabled;
+    int screenWasEnabled;
+    int ly;
 
-    screenEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
+    screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
 
-    if (screenEnabled)
+    if (targetMemory && screenWasEnabled)
     {
-        gameboy->memory.misc.screenCycleStart = gameboy->cpu.cyclesRun;
-    }
+        ly = READ_REGISTER_DIRECT(&gameboy->memory, REG_LY);
 
-    if (targetMemory && screenEnabled)
-    {
+        if (ly != 0 || (READ_REGISTER_DIRECT(&gameboy->memory, REG_LCD_STAT) & REG_LCD_STAT_MODE) != 2)
+        {
+            // Run the CPU until the start of the next frame
+            gameboy->cpu.runUntilNextFrame = 1;
+            runCPU(
+                &gameboy->cpu, 
+                &gameboy->memory, 
+                (GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
+            );
+            gameboy->cpu.runUntilNextFrame = 0;
+        }
+
+        runCPU(&gameboy->cpu, &gameboy->memory, MODE_2_CYCLES);
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
 		    renderPixelRow(&gameboy->memory, targetMemory, line, 0);
             runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE);
         }
 
-        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES);
+        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES - MODE_2_CYCLES);
     }
     else
     {
         runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
-    }
-
-    // If the screen was enabled while emuluating this frame
-    // then we need to sync the gameboy frames to the N64 frames
-    // to do this we just need to simulate to the end of the
-    // current frame
-    catchupCycles = CYCLES_PER_FRAME - 
-        (gameboy->cpu.cyclesRun - gameboy->memory.misc.screenCycleStart);
-
-    if (catchupCycles > 0)
-    {
-        runCPU(&gameboy->cpu, &gameboy->memory, catchupCycles);
     }
 }

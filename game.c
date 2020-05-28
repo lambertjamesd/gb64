@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 0
+#define RUN_TESTS 1
 				
 /*
  * macros 
@@ -238,7 +238,8 @@ game(void)
 		frameTime = lastTime - frameTime;
 
 		cstring=str;
-
+		
+#if !RUN_TESTS
 		lastDrawTime = -osGetTime();
 
 		// gameboy is 60 fps N64 is 30
@@ -250,8 +251,6 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		
-#if !RUN_TESTS
 		sprintf(cstring, "Cycles run %d Time %d %X\n%X", 
 			gGameboy.cpu.cyclesRun, 
 			(int)(100 * lastDrawTime / frameTime), 

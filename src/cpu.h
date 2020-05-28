@@ -42,9 +42,10 @@ struct CPUState {
     unsigned char stopReason;
     unsigned char interrupts;
     unsigned char nextInterrupt;
-    unsigned char unused1;
+    unsigned char runUntilNextFrame;
     unsigned long cyclesRun;
     unsigned long nextTimerTrigger;
+    unsigned long nextScreenTrigger;
 };
 
 extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);

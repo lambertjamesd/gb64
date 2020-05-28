@@ -8,6 +8,8 @@ void initializeCPU(struct CPUState* state)
     state->stopReason = STOP_REASON_NONE;
     state->interrupts = 0;
     state->nextInterrupt = 0;
+    state->runUntilNextFrame = 0;
     state->cyclesRun = 0;
     state->nextTimerTrigger = ~0;
+    state->nextScreenTrigger = ~0;
 }
