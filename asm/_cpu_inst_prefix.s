@@ -170,8 +170,10 @@ _GB_SET_BIT_7:
     ori Param0, Param0, 0x80
 
 _GB_PREFIX_FINISH_BIT:
+    clear_flags Z_FLAG | N_FLAG
     andi Param0, Param0, Z_FLAG # clear all but the z flag position
-    xori GB_F, Param0, Z_FLAG # set the z flag
+    xori Param0, Param0, Z_FLAG # negate the z flag
+    or GB_F, GB_F, Param0
     j DECODE_NEXT # don't jr since bit checks don't need to store back
     set_flags H_FLAG # set h flag
     

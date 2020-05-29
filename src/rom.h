@@ -9,6 +9,9 @@
 #define GB_ROM_H_SIZE       0x148
 #define GB_ROM_H_RAM_SIZE   0x149
 
+extern char     _dmg_bootSegmentRomStart[];
+extern char     _dmg_bootSegmentRomEnd[];
+
 struct VirtualBank
 {
     unsigned char bankMemory[ROM_BANK_SIZE];
@@ -38,5 +41,8 @@ char* getROMBank(struct ROMLayout* romLayout, int bankIndex);
 int getROMBankCount(struct ROMLayout* romLayout);
 int getRAMBankCount(struct ROMLayout* romLayout);
 int getCartType(struct ROMLayout* romLayout);
+
+void loadBIOS(struct ROMLayout* romLayout, int gbc);
+void unloadBIOS(struct ROMLayout* romLayout);
 
 #endif

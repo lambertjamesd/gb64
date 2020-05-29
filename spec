@@ -54,6 +54,12 @@ beginseg
 endseg
 
 beginseg
+	name "dmg_boot"
+	flags RAW
+	include "data/dmg_boot.bin"
+endseg
+
+beginseg
 	name "gbrom"
 	flags RAW
 	include "data/game.gb"
@@ -65,6 +71,7 @@ beginwave
 	include "static"
 	include "texture"
 	include "gbrom"
+	include "dmg_boot"
 	include "cfb"
 	include "rsp_cfb"
 	include "zbuffer"

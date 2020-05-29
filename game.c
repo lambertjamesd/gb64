@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 1
+#define RUN_TESTS 0
 				
 /*
  * macros 
@@ -135,7 +135,7 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
-	WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_LCDC, LCDC_BG_TILE_DATA);
+	// WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_LCDC, LCDC_BG_TILE_DATA);
 
 	gGameboy.memory.misc.colorPalletes[0] = 0x0842;
 	gGameboy.memory.misc.colorPalletes[1] = 0x1084;
