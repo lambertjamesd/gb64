@@ -1,4 +1,13 @@
 
+#######################
+# Reads the address HL into $v0
+#######################
+
+READ_HL:
+    sll ADDR, GB_H, 8 # load high order bits
+    j GB_DO_READ
+    or ADDR, ADDR, GB_L # load low order bits
+
 ######################
 # Writes 16 bit VAL to ADDR
 # stomps on VAL, ADDR, TMP2

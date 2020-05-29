@@ -345,3 +345,4 @@ _GB_DAA_ADJUST_HIGH:
     set_flags C_FLAG
     j DECODE_NEXT
     addi GB_A, GB_A, 0x60
+    

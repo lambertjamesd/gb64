@@ -174,3 +174,4 @@ _GB_PREFIX_FINISH_BIT:
     xori GB_F, Param0, Z_FLAG # set the z flag
     j DECODE_NEXT # don't jr since bit checks don't need to store back
     set_flags H_FLAG # set h flag
+    
