@@ -58,8 +58,8 @@ GB_OR_A_d8:
     jal READ_NEXT_INSTRUCTION
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     or GB_A, GB_A, $v0
-    bne GB_A, $zero, DECODE_NEXT
-    ori GB_F, $zero, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop

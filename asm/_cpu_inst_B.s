@@ -2,8 +2,8 @@
 # 0xBX
 GB_OR_B:
     or GB_A, GB_A, GB_B
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -11,8 +11,8 @@ GB_OR_B:
     nop
 GB_OR_C:
     or GB_A, GB_A, GB_C
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -20,8 +20,8 @@ GB_OR_C:
     nop
 GB_OR_D:
     or GB_A, GB_A, GB_D
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -29,8 +29,8 @@ GB_OR_D:
     nop
 GB_OR_E:
     or GB_A, GB_A, GB_E
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -38,8 +38,8 @@ GB_OR_E:
     nop
 GB_OR_H:
     or GB_A, GB_A, GB_H
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -47,8 +47,8 @@ GB_OR_H:
     nop
 GB_OR_L:
     or GB_A, GB_A, GB_L
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
@@ -58,14 +58,14 @@ GB_OR_HL:
     jal READ_HL
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     or GB_A, GB_A, $v0
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop
 GB_OR_A:
-    bne GB_A, $zero, DECODE_NEXT
-    addi GB_F, GB_F, 0
+    bnez GB_A, DECODE_NEXT
+    li GB_F, 0
     j DECODE_NEXT
     set_flags Z_FLAG
     nop

@@ -98,10 +98,11 @@ void finishRomLoad(struct ROMLayout* romLayout)
 
     if (bankIndex-1 == romLayout->lastVirtualBank->bankIndex)
     {
-        // if all banks were loaded set romLocation to null
+        // if all banks were loaded set firstVirtualBank to null
         // to indicate that there is no need to load from
         // the rom
-        romLayout->romLocation = 0;
+        romLayout->firstVirtualBank = NULL;
+        romLayout->lastVirtualBank = NULL;
     }
 }
 
@@ -120,7 +121,7 @@ char* getROMBank(struct ROMLayout* romLayout, int bankIndex)
 
     useBank = romLayout->romBankToVirtualBank[bankIndex-1];
 
-    if (romLayout->romLocation)
+    if (romLayout->firstVirtualBank && romLayout->lastVirtualBank)
     {
         if (!useBank)
         {
