@@ -75,6 +75,13 @@ _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
 
+    andi $at, GB_F, 0xFF00
+    beqz $at, SKIP_F_CHECK
+    nop
+    la ADDR, 0x807FFFF0
+    sw $at, 0(ADDR)
+SKIP_F_CHECK:
+
 # DEBUG_START:
 #     la $at, 0x80700000 - 4
 #     lw TMP4, 0($at)
@@ -211,17 +218,19 @@ SET_GB_PC:
     move GB_PC, Param0
 
     # if memory is within register memory
-    sltiu $at, GB_PC, MM_REGISTER_START
-    bnez $at, _SET_GB_PC_REGUALR_BANK 
+    la $at, MM_REGISTER_START
+    sltu $at, GB_PC, $at
+    bnez $at, _SET_GB_PC_REGULAR_BANK 
     nop
     j _SET_GB_PC_UPDATE_BANK
-    addi $at, Memory, MEMORY_MISC_START
+    # 0xE00 since memory is indexed relative to 0xF000 and not 0xFE00
+    addi $at, Memory, (MEMORY_MISC_START - 0xE00) 
 
-_SET_GB_PC_REGUALR_BANK:
-    srl $at, GB_PC, 12
-    sll $at, $at, 2
-    add $at, Memory, $at
-    lw $at, 0($at)
+_SET_GB_PC_REGULAR_BANK:
+    srl $at, GB_PC, 12 # git top 4 bits
+    sll $at, $at, 2 # multiply by 4
+    add $at, Memory, $at # access relative to memory map
+    lw $at, 0($at) # load bank pointer
     
 _SET_GB_PC_UPDATE_BANK:
     andi Param0, GB_PC, 0xF000

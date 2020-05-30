@@ -14,7 +14,7 @@ READ_HL:
 ######################
 
 GB_DO_WRITE_16:
-    la $ra, GB_DO_WRITE
+    la $ra, DECODE_NEXT
 GB_DO_WRITE_16_CALL:
     addi $sp, $sp, -8
     sh VAL, 0($sp)
@@ -275,7 +275,7 @@ _GB_WRITE_REG_4X_TABLE:
     j _GB_WRITE_REG_LCY
     nop
     # DMA
-    jr $ra
+    j _GB_WRITE_DMA
     nop # TODO
     # BGP
     jr $ra
@@ -425,6 +425,27 @@ _GB_CHECK_RISING_STAT_FINISH:
     lw $ra, 0($sp)
     jr $ra
     addi $sp, $sp, 4 
+
+_GB_WRITE_DMA:
+    andi $at, VAL, 0xF0 # calculate memory bank address offset
+    srl $at, $at, 2
+    add $at, Memory, $at # offset from memory bank start
+    lw ADDR, 0($at) # load the memory bank
+    sll TMP2, VAL, 8 # calculate offset from bank
+    andi TMP2, TMP2, 0xFFF # mask away upper bits
+    add ADDR, ADDR, TMP2 # calucate starting point inside memory bank
+    addi TMP3, Memory, MEMORY_MISC_START # load start of misc memory
+    li TMP2, 0x100 # loop 256 times
+_GB_DMA_LOOP:
+    lw $at, 0(ADDR)
+    sw $at, 0(TMP3)
+    addi TMP2, TMP2, -4 # decrease counter
+    addi ADDR, ADDR, 4 # increase read address
+    bnez TMP2, _GB_DMA_LOOP # loop until zero
+    addi TMP3, TMP3, 4 # increase write address
+    jr $ra
+    nop
+    
     
 ############################
 
