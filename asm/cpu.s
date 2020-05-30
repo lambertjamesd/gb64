@@ -236,9 +236,8 @@ _SET_GB_PC_FINISH:
 ######################
 
 GB_SIMULATE_HALTED:
-    move CYCLES_RUN, CycleTo # update the clock
     jal HANDLE_STOPPING_POINT # handle the next stopping point
-    nop
+    move CYCLES_RUN, CycleTo # update the clock
     j GB_SIMULATE_HALTED # loop, HANDLE_STOPPING_POINT will break the loop once it has been simulated
     nop
 
