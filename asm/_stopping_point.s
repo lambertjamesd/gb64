@@ -9,6 +9,8 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
     beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
+    lbu $at, CPU_STATE_STOP_REASON(CPUState) # if the cpu is stopped, then stop the timer too
+    bnez $at, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
     addi TMP2, TMP2, -1 # 
@@ -148,7 +150,7 @@ CALCULATE_NEXT_STOPPING_POINT:
     
     # deterime if CycleTo or NextTimer is smaller
     lw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    lw CycleTo, ST_CYCLE_TO($sp)
+    lw CycleTo, ST_CYCLE_TO($fp)
     sltu TMP2, CycleTo, $at
     bnez TMP2, _CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN
     lw TMP2, CPU_STATE_NEXT_SCREEN(CPUState)
@@ -257,10 +259,12 @@ _CHECK_LCDC_STAT_FLAG_1:
 ########################
 
 HANDLE_STOPPING_POINT:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
     # check for video interrupts first 
     lw $at, CPU_STATE_NEXT_SCREEN(CPUState)
     sltu TMP2, CYCLES_RUN, $at
-    bnez $at, _HANDLE_STOPPING_POINT_CHECK_TIMER
+    bnez TMP2, _HANDLE_STOPPING_POINT_CHECK_TIMER
     nop
     
 ########################
@@ -313,7 +317,7 @@ _HANDLE_STOPPING_POINT_SCREEN_V_BLANK:
     lbu $at, CPU_STATE_RUN_UNTIL_FRAME(CPUState)
     beqz $at, _HANDLE_STOPPING_POINT_SCREEN_FINISH
     move $at, CYCLES_RUN
-    sw $at, ST_CYCLE_TO($sp)
+    sw $at, ST_CYCLE_TO($fp)
 _HANDLE_STOPPING_POINT_SCREEN_FINISH:
     # save new LY
     write_register_direct TMP3, REG_LY
@@ -347,8 +351,9 @@ _HANDLE_STOPPING_POINT_SCREEN_SKIP_INT:
     nop
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
-    j DECODE_NEXT
-    nop
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 4
     
 ########################
 
@@ -369,8 +374,9 @@ _HANDLE_STOPPING_POINT_CHECK_TIMER:
     jal CALCULATE_NEXT_TIMER_INTERRUPT
     nop
 
-    j DECODE_NEXT
-    nop
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 4
     
 ########################
 
@@ -405,8 +411,12 @@ _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
     move VAL, GB_PC # set current PC to be saved
     jal SET_GB_PC
     move Param0, ADDR # set the new PC
-    j GB_DO_WRITE_16
+    jal GB_DO_WRITE_16_CALL
     move ADDR, GB_SP # set the write address
+    
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 4
     
 ########################
 

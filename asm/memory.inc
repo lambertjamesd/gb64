@@ -50,7 +50,7 @@
 .eqv MEMORY_RAM_START, 0x2DC
 .eqv MEMORY_CART_RAM, 0x82DC
 .eqv MEMORY_VRAM, 0x82E0
-.eqv VRAM_BANK_SIZE, 0xC2E0
+.eqv MEMORY_ROM, 0xC2E0
 
 .eqv MEMORY_VRAM_BANK_INDEX, 0x8
 .eqv MEMORY_RAM_BANK_INDEX, 0xD
@@ -62,7 +62,7 @@
 .eqv H_FLAG, 0x20
 .eqv C_FLAG, 0x10
 
-.eqv STACK_SIZE, 0x30
+.eqv STACK_SIZE, 0x34
 .eqv ST_RA, 0x0
 # hole here
 .eqv ST_S0, 0x8
@@ -73,10 +73,9 @@
 .eqv ST_S5, 0x1C
 .eqv ST_S6, 0x20
 .eqv ST_S7, 0x24
-.eqv ST_CYCLE_TO, 0x28
-.eqv ST_NEXT_V_INT, 0x2C
-
-.eqv SAVE_TMP_SIZE, 0x28
+.eqv ST_FP, 0x28
+.eqv ST_CYCLE_TO, 0x2C
+.eqv ST_NEXT_V_INT, 0x30
 
 .eqv CYCLES_PER_INSTR, 0x1
 
@@ -92,3 +91,5 @@
 .eqv INTERRUPTS_SERIAL, 0x08;
 .eqv INTERRUPTS_INPUT, 0x10;
 .eqv INTERRUPTS_ENABLED, 0x80;
+
+.extern unloadBIOS 4

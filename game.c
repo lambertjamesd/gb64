@@ -112,6 +112,7 @@ game(void)
 	OSTime lastTime;
 	OSTime lastDrawTime;
 	OSTime frameTime;
+	void* debugWrite;
 
 	x = 18;
 	y = 18;
@@ -196,6 +197,11 @@ game(void)
 
 	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
+	debugWrite = (void*)(0x80700000 - 12);
+	*((u32*)debugWrite) = (int)gGameboy.memory.rom;
+	debugWrite = (void*)(0x80700000 - 16);
+	*((u32*)debugWrite) = (int)unloadBIOS;
+
     /*
      * Main game loop
      */
@@ -251,11 +257,11 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		sprintf(cstring, "Cycles run %d Time %d %X\n%X", 
+		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
 			gGameboy.cpu.cyclesRun, 
-			(int)(100 * lastDrawTime / frameTime), 
-			runCPU,
-			&gGameboy
+			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
+			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000, 
+			runCPU
 		);
 #endif
 

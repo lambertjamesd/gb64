@@ -26,6 +26,7 @@ runCPU:
     sw $s5, ST_S5($sp) 
     sw $s6, ST_S6($sp) 
     sw $s7, ST_S7($sp) 
+    sw $fp, ST_FP($sp)
 
     lbu GB_A, CPU_STATE_A(CPUState)
     lbu GB_F, CPU_STATE_F(CPUState)
@@ -40,6 +41,8 @@ runCPU:
     lhu GB_SP, CPU_STATE_SP(CPUState)
     lhu Param0, CPU_STATE_PC(CPUState)
 
+    move $fp, $sp
+
     jal SET_GB_PC
     # make sure GB_PC doesn't match Param0 to force bank load
     xori GB_PC, Param0, 0xFFFF 
@@ -48,38 +51,47 @@ runCPU:
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
     add $at, CycleTo, CYCLES_RUN    # calculate upper bound of execution
-    sw $at, ST_CYCLE_TO($sp)
-    
-    lbu $at, CPU_STATE_STOP_REASON(CPUState)
-    bnez $at, GB_SIMULATE_HALTED
+    sw $at, ST_CYCLE_TO($fp)
 
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
 
-    la TMP4, 0x80700000
+    lbu $at, CPU_STATE_STOP_REASON(CPUState)
+    bnez $at, GB_SIMULATE_HALTED
+
+    # la $at, 0x80700000 - 4
+    # la TMP4, 0x80700000
+    # sw TMP4, 0($at)
 
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
-    beq $at, $zero, HANDLE_STOPPING_POINT
+    bnez $at, _DECODE_NEXT_READ
     nop
-
+    jal HANDLE_STOPPING_POINT
+    nop
+    j DECODE_NEXT
+    nop
+_DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
 
-    la $at, 0x80700000 - 4
-    sw Memory, -4($at)
-    sw TMP4, 0($at)
-    sb $v0, 0(TMP4)
-    sh GB_PC, 2(TMP4)
-    addi TMP4, TMP4, 4
+# DEBUG_START:
+#     la $at, 0x80700000 - 4
+#     lw TMP4, 0($at)
+#     sw Memory, -4($at)
+#     sb $v0, 0(TMP4)
+#     sh GB_PC, 2(TMP4)
+#     addi TMP4, TMP4, 4
 
-    la $at, 0x80800000
-    sltu $at, TMP4, $at
-    bne $at, $zero, _DEBUG_SKIP
-    nop
-    la TMP4, 0x80700000
+#     la $at, 0x80800000
+#     sltu $at, TMP4, $at
+#     bne $at, $zero, _DEBUG_SKIP
+#     nop
+#     la TMP4, 0x80700000
 
-_DEBUG_SKIP:
+# _DEBUG_SKIP:
+#     la $at, 0x80700000 - 4
+#     sw TMP4, 0($at)
 
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
@@ -161,6 +173,7 @@ _GB_BREAK_LOOP_SAVE_CYCLES:
     lw $s6, ST_S6($sp) 
     lw $s7, ST_S7($sp) 
     lw $ra, ST_RA($sp) # load return address
+    lw $fp, ST_FP($sp)
     jr $ra
     addi $sp, $sp, STACK_SIZE
     
@@ -223,11 +236,11 @@ _SET_GB_PC_FINISH:
 ######################
 
 GB_SIMULATE_HALTED:
-    # todo timer values
-    # check for screen interrupts
-    lw $at, ST_CYCLE_TO($sp)
-    j GB_BREAK_LOOP
-    move CYCLES_RUN, $at # catch cpu clock up to requested cycles to run
+    move CYCLES_RUN, CycleTo # update the clock
+    jal HANDLE_STOPPING_POINT # handle the next stopping point
+    nop
+    j GB_SIMULATE_HALTED # loop, HANDLE_STOPPING_POINT will break the loop once it has been simulated
+    nop
 
 .include "asm/_stopping_point.s"
 .include "asm/_branch.s"

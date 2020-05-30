@@ -33,8 +33,8 @@ void renderPixelRow(
     int dataSelect;
 
     targetMemory = memoryBuffer + RENDER_TO_X + (row + RENDER_TO_Y) * SCREEN_WD;
-    offsetX = -READ_REGISTER_DIRECT(memory, REG_SCX);
-    windowY = (row - READ_REGISTER_DIRECT(memory, REG_SCY)) & 0xFF;
+    offsetX = READ_REGISTER_DIRECT(memory, REG_SCX);
+    windowY = (row + READ_REGISTER_DIRECT(memory, REG_SCY)) & 0xFF;
 
     tilemapRow = (windowY >> 3) * TILEMAP_W;
 

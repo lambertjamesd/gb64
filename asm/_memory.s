@@ -14,21 +14,27 @@ READ_HL:
 ######################
 
 GB_DO_WRITE_16:
-    addi $sp, $sp, -4
+    la $ra, GB_DO_WRITE
+GB_DO_WRITE_16_CALL:
+    addi $sp, $sp, -8
     sh VAL, 0($sp)
     sh ADDR, 2($sp)
+    sw $ra, 4($sp)
     jal GB_DO_WRITE_CALL
     andi VAL, VAL, 0xFF
 
     lhu VAL, 0($sp)
     lhu ADDR, 2($sp)
-    addi $sp, $sp, 4
 
     srl VAL, VAL, 8
     addi ADDR, ADDR, 1
 
-    j GB_DO_WRITE
+    jal GB_DO_WRITE_CALL
     andi ADDR, ADDR, 0xFFFF
+
+    lw $ra, 4($sp)
+    jr $ra
+    addi $sp, $sp, 8
 
 ######################
 # Writes VAL to ADDR
@@ -58,7 +64,7 @@ _GB_DO_WRITE:
     jr $ra
     sb VAL, 0(ADDR) # store the byte
 
-.eqv _WRITE_CALLBACK_FRAME_SIZE, 0x24
+.eqv _WRITE_CALLBACK_FRAME_SIZE, 0x28
 
 _GB_CALL_WRITE_CALLBACK:
     addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
@@ -81,18 +87,12 @@ _GB_CALL_WRITE_CALLBACK:
     sw CycleTo, 0x18($sp)
     sw PC_MEMORY_BANK, 0x1C($sp)
     sw $ra, 0x20($sp)
+    sw $fp, 0x24($sp)
 
     move $a0, Memory
     move $a1, ADDR
     jalr $ra, Param0
     move $a2, VAL
-
-    lw CYCLES_RUN, 0xC($sp)
-    lw CPUState, 0x10($sp)
-    lw Memory, 0x14($sp)
-    lw CycleTo, 0x18($sp)
-    lw PC_MEMORY_BANK, 0x1C($sp)
-    lw $ra, 0x20($sp)
 
     lbu GB_A, 0x0($sp)
     lbu GB_F, 0x1($sp)
@@ -106,6 +106,14 @@ _GB_CALL_WRITE_CALLBACK:
 
     lhu GB_PC, 0x8($sp)
     lhu GB_SP, 0xA($sp)
+
+    lw CYCLES_RUN, 0xC($sp)
+    lw CPUState, 0x10($sp)
+    lw Memory, 0x14($sp)
+    lw CycleTo, 0x18($sp)
+    lw PC_MEMORY_BANK, 0x1C($sp)
+    lw $ra, 0x20($sp)
+    lw $fp, 0x24($sp)
 
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
@@ -144,7 +152,7 @@ _GB_WRITE_JUMP_TABLE:
     nop
     j _GB_WRITE_REG_4X
     nop
-    jr $ra # TODO
+    j _GB_WRITE_REG_5X
     nop
     jr $ra # TODO
     nop
@@ -163,11 +171,13 @@ _GB_BASIC_REGISTER_WRITE:
     sb VAL, 0(ADDR)
 
 _GB_WRITE_INTERRUPTS_ENABLED:
-    sw $ra, -4($sp)
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_ENABLED # set requested interrupts
+    lw $ra, 0($sp)
     j CALCULATE_NEXT_STOPPING_POINT
-    lw $ra, -4($sp)
+    addi $sp, $sp, 4
 
 ########################
 
@@ -217,19 +227,23 @@ _GB_WRITE_REG_TMA:
     write_register_direct VAL, REG_TMA
     
 _GB_WRITE_REG_TAC:
-    sw $ra, -4($sp)
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
     jal CALCULATE_TIMA_VALUE
     nop
-    lw $ra, -4($sp)
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TAC
     
 _GB_WRITE_REG_INT_REQ:
-    sw $ra, -4($sp)
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
+    lw $ra, 0($sp)
     j CALCULATE_NEXT_STOPPING_POINT
-    lw $ra, -4($sp)
+    addi $sp, $sp, 4
 
 
 ############################
@@ -301,11 +315,11 @@ _GB_WRITE_REG_LCDC:
     andi $at, $at, REG_LCDC_LCD_ENABLE
     beqz $at, _GB_WRITE_REG_LCDC_WRITE # if the LCD status didn't change do nothing
     andi $at, VAL, REG_LCDC_LCD_ENABLE
-    beqz $at, _GB_WRITE_REG_LCDC_OFF
     addi $sp, $sp, -4
+    beqz $at, _GB_WRITE_REG_LCDC_OFF
+    sw $ra, 0($sp)
 
 _GB_WRITE_REG_LCDC_ON:
-    sw $ra, 0($sp)
 
     read_register_direct $at, REG_LCDC_STATUS
     andi $at, $at, %lo(~REG_LCDC_STATUS_MODE)
@@ -329,7 +343,6 @@ _GB_WRITE_REG_LCDC_ON:
     addi $sp, $sp, 4 
 
 _GB_WRITE_REG_LCDC_OFF:
-    sw $ra, 0($sp)
     
     read_register_direct $at, REG_LCDC_STATUS
     andi $at, $at, %lo(~(REG_LCDC_STATUS_MODE | REG_LCDC_STATUS_LYC))
@@ -412,6 +425,70 @@ _GB_CHECK_RISING_STAT_FINISH:
     lw $ra, 0($sp)
     jr $ra
     addi $sp, $sp, 4 
+    
+############################
+
+_GB_WRITE_REG_5X:
+    li $at, REG_UNLOAD_BIOS
+    beq $at, ADDR, _GB_WRITE_REG_UNLOAD_BIOS
+    nop
+    jr $ra
+    nop
+
+_GB_WRITE_REG_UNLOAD_BIOS:
+    addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
+    sb GB_A, 0x0($sp)
+    sb GB_F, 0x1($sp)
+    sb GB_B, 0x2($sp)
+    sb GB_C, 0x3($sp)
+
+    sb GB_D, 0x4($sp)
+    sb GB_E, 0x5($sp)
+    sb GB_H, 0x6($sp)
+    sb GB_L, 0x7($sp)
+
+    sh GB_PC, 0x8($sp)
+    sh GB_SP, 0xA($sp)
+
+    sw CYCLES_RUN, 0xC($sp)
+    sw CPUState, 0x10($sp)
+    sw Memory, 0x14($sp)
+    sw CycleTo, 0x18($sp)
+    sw PC_MEMORY_BANK, 0x1C($sp)
+    sw $ra, 0x20($sp)
+    sw $fp, 0x24($sp)
+
+    lui $at, %hi(unloadBIOS)
+    addiu $at, $at, %lo(unloadBIOS)
+    la $a0, MEMORY_ROM
+    add $a0, Memory, $a0
+    jalr $ra, $at
+    lw $a0, 0($a0)
+
+    lbu GB_A, 0x0($sp)
+    lbu GB_F, 0x1($sp)
+    lbu GB_B, 0x2($sp)
+    lbu GB_C, 0x3($sp)
+
+    lbu GB_D, 0x4($sp)
+    lbu GB_E, 0x5($sp)
+    lbu GB_H, 0x6($sp)
+    lbu GB_L, 0x7($sp)
+
+    lhu GB_PC, 0x8($sp)
+    lhu GB_SP, 0xA($sp)
+
+    lw CYCLES_RUN, 0xC($sp)
+    lw CPUState, 0x10($sp)
+    lw Memory, 0x14($sp)
+    lw CycleTo, 0x18($sp)
+    lw PC_MEMORY_BANK, 0x1C($sp)
+    lw $ra, 0x20($sp)
+    lw $fp, 0x24($sp)
+
+    jr $ra
+    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+
     
 ############################
 
