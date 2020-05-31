@@ -92,6 +92,7 @@ void handleInput(struct GameBoy* gameboy, OSContPad* pad)
 {
     int button;
     int joy;
+    int nextJoy;
 
     button = 0xFF;
 
@@ -119,26 +120,23 @@ void handleInput(struct GameBoy* gameboy, OSContPad* pad)
     if ((pad->button & D_JPAD) || pad->stick_y < -0x40)
         button &= ~GB_BUTTON_DOWN;
 
-    if (READ_REGISTER_DIRECT(&gameboy->memory, _REG_JOYSTATE) ^ button)
-    {
-        requestInterrupt(gameboy, GB_INTERRUPTS_INPUT);
-    }
-
     WRITE_REGISTER_DIRECT(&gameboy->memory, _REG_JOYSTATE, button);
 
     joy = READ_REGISTER_DIRECT(&gameboy->memory, REG_JOYP);
 
     if (joy & 0x20)
     {
-        joy = (joy & 0xF0) | (button & 0xF);
+        nextJoy = (joy & 0xF0) | (button & 0xF);
     }
     else
     {
-        joy = (joy & 0xF0) | ((button >> 4) & 0xF);
+        nextJoy = (joy & 0xF0) | ((button >> 4) & 0xF);
     }
 
-    // tmp = (void*)0x80700000;
-    // *((int*)tmp) = button;
+    if ((joy ^ nextJoy) & ~nextJoy & 0xF)
+    {
+        requestInterrupt(gameboy, GB_INTERRUPTS_INPUT);
+    }
     
-    WRITE_REGISTER_DIRECT(&gameboy->memory, REG_JOYP, joy);
+    WRITE_REGISTER_DIRECT(&gameboy->memory, REG_JOYP, nextJoy);
 }

@@ -324,25 +324,56 @@ _CP_A:
 # Decimal encodes GB_A
 #######################
 
+.global _GB_DAA
+.balign 4
 _GB_DAA:
-    clear_flags C_FLAG | Z_FLAG
-    andi $at, GB_F, H_FLAG 
-    bnez $at, _GB_DAA_ADJUST_LOW # if H_FLAG then adjust lower
-    andi $at, GB_A, 0xF
-    addi $at, $at, -9
-    blez $at, _GB_DAA_HIGH_NIBBLE # if (A & 0xF <= 9) goto _GB_DAA_HIGH_NIBBLE 
-    nop
-_GB_DAA_ADJUST_LOW:
-    set_flags H_FLAG
-    addi GB_A, GB_A, 6
-_GB_DAA_HIGH_NIBBLE:
+    li TMP2, 0
+    andi $at, GB_F, N_FLAG
+    bnez $at, _GB_DAA_NEGATIVE
     andi $at, GB_F, C_FLAG
-    bnez $at, _GB_DAA_ADJUST_HIGH # if C_FLAG then adjust upper
-    addi $at, GB_A, -0x99
-    blez $at, DECODE_NEXT # if (A <= 0x99) goto next instruction
+
+_GB_DAA_POSITIVE:
+    bnez $at, _GB_DAA_POSITIVE_ADJUST_UPPER
+    sltiu $at, GB_A, 0x9A
+    bnez $at, _GB_DAA_POSITIVE_LOWER
     nop
-_GB_DAA_ADJUST_HIGH:
-    set_flags C_FLAG
-    j DECODE_NEXT
+_GB_DAA_POSITIVE_ADJUST_UPPER:
+    li TMP2, C_FLAG
     addi GB_A, GB_A, 0x60
-    
+_GB_DAA_POSITIVE_LOWER:
+    andi $at, GB_F, H_FLAG
+    bnez $at, _GB_DAA_POSITIVE_ADJUST_LOWER
+    andi $at, GB_A, 0xF
+    sltiu $at, $at, 0xA
+    bnez $at, _GB_DAA_FINISH
+    nop
+_GB_DAA_POSITIVE_ADJUST_LOWER:
+    j _GB_DAA_FINISH
+    addi GB_A, GB_A, 0x06
+
+_GB_DAA_NEGATIVE:
+    beqz $at, _GB_DAA_NEGATIVE_LOWER
+    nop
+    li TMP2, C_FLAG
+
+    andi $at, GB_F, H_FLAG
+    beqz $at, _GB_DAA_NEGATIVE_ADJUST_UPPER
+    nop
+    j _GB_DAA_FINISH
+    addi GB_A, GB_A, 0x9A
+_GB_DAA_NEGATIVE_ADJUST_UPPER:
+    j _GB_DAA_FINISH
+    addi GB_A, GB_A, 0xA0
+_GB_DAA_NEGATIVE_LOWER:
+    andi $at, GB_F, H_FLAG
+    beqz $at, _GB_DAA_FINISH
+    nop
+    addi GB_A, GB_A, 0xFA
+_GB_DAA_FINISH:
+    andi GB_A, GB_A, 0xFF
+    clear_flags Z_FLAG | H_FLAG | C_FLAG
+    or GB_F, GB_F, TMP2 # set the C_FLAG
+    bnez GB_A, DECODE_NEXT # check for Z_FLAG
+    nop
+    j DECODE_NEXT
+    set_flags Z_FLAG

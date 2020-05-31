@@ -8,3 +8,4 @@ data/*.hex
 data/dmg_boot.bin
 data/cgb_bios.bin
 data/*.s
+data/tests/*
