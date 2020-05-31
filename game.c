@@ -37,7 +37,7 @@
 #include "src/graphics.h"
 #include "src/test/cpu_test.h"
 
-extern void _GB_DAA();
+extern void GB_SIMULATE_HALTED();
 
 /*
  * Task header.
@@ -237,7 +237,7 @@ game(void)
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
 			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000, 
-			_GB_DAA
+			GB_SIMULATE_HALTED
 			// *((unsigned int*)0x80700000)
 		);
 #endif

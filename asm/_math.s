@@ -324,8 +324,6 @@ _CP_A:
 # Decimal encodes GB_A
 #######################
 
-.global _GB_DAA
-.balign 4
 _GB_DAA:
     li TMP2, 0
     andi $at, GB_F, N_FLAG

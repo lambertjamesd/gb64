@@ -28,9 +28,9 @@ GB_LDH_A_C:
     nop
     nop
 GB_DI:
-    addi $at, $zero, 0
     j DECODE_NEXT
-    sb $at, CPU_STATE_INTERRUPTS(CPUState)
+    sb $zero, CPU_STATE_INTERRUPTS(CPUState)
+    nop
     nop
     nop
     nop

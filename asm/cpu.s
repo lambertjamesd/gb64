@@ -236,9 +236,14 @@ _SET_GB_PC_FINISH:
 # Checks to see if a timer interrupt would wake up the CPU
 ######################
 
+.global GB_SIMULATE_HALTED
+.balign 4
 GB_SIMULATE_HALTED:
     jal HANDLE_STOPPING_POINT # handle the next stopping point
     move CYCLES_RUN, CycleTo # update the clock
+    lbu $at, CPU_STATE_STOP_REASON(CPUState) # check if CPU was woken up by an interrupt
+    beqz $at, DECODE_NEXT
+    nop
     j GB_SIMULATE_HALTED # loop, HANDLE_STOPPING_POINT will break the loop once it has been simulated
     nop
 

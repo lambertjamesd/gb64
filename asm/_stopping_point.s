@@ -9,8 +9,6 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
     beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
-    lbu $at, CPU_STATE_STOP_REASON(CPUState) # if the cpu is stopped, then stop the timer too
-    bnez $at, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
     addi TMP2, TMP2, -1 # 
@@ -166,12 +164,35 @@ _CALCULATE_NEXT_STOPPING_POINT_FINISH:
     nop
 
 
+
+#############################
+# Sets the interrupt request flag and wakes up cpu if this is a new interrupt
+# VAL is the requested interrupt
+#############################
+REQUEST_INTERRUPT:
+    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    and $at, TMP2, VAL
+    bnez $at, _REQUEST_INTERRUPT_FINISH # check if the interrupt was already requested
+    or TMP2, TMP2, VAL
+    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+    read_register_direct $at, REG_INTERRUPTS_ENABLED
+    and $at, $at, VAL
+    beqz $at, _REQUEST_INTERRUPT_FINISH
+    nop
+    j CHECK_FOR_INTERRUPT
+    sb $zero, CPU_STATE_STOP_REASON(CPUState)
+_REQUEST_INTERRUPT_FINISH:
+    jr $ra
+    nop
 #############################
 # Check if any interrupts have been requested
 # And saves the requested interrupt CPU_STATE_NEXT_INTERRUPT
 #############################
 
 CHECK_FOR_INTERRUPT:
+    # default to no next interrupt
+    la TMP3, ~0
     # first check if interrupts are enabled
     lbu $at, CPU_STATE_INTERRUPTS(CPUState)
     beqz $at, _CHECK_FOR_INTERRUPT_EXIT
@@ -180,9 +201,6 @@ CHECK_FOR_INTERRUPT:
     lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
     bnez $at, _CHECK_FOR_INTERRUPT_EXIT
     nop
-
-    # default to no next interrupt
-    la TMP3, ~0
     # see if any individual interrupts have been triggered
     read_register_direct $at, REG_INTERRUPTS_REQUESTED
     read_register_direct TMP2, REG_INTERRUPTS_ENABLED
@@ -311,9 +329,8 @@ _HANDLE_STOPPING_POINT_SCREEN_ROW_WRAP:
     addi Param0, Param0, 1 # set Param0 to 2 for wrap to next row
     
     # request v blank interrupt
-    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
-    ori TMP2, TMP2, INTERRUPT_V_BLANK
-    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPT_V_BLANK
 
     j _HANDLE_STOPPING_POINT_SCREEN_FINISH
     addi Param0, Param0, -1 # put mode back to mode 1
@@ -353,9 +370,8 @@ _HANDLE_STOPPING_POINT_SCREEN_SKIP_LYC:
     beqz $at, _HANDLE_STOPPING_POINT_SCREEN_SKIP_INT
     nop
     # request interrupt
-    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
-    ori TMP2, TMP2, INTERRUPT_LCD_STAT
-    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPT_LCD_STAT
 
     jal CHECK_FOR_INTERRUPT
     nop
@@ -380,10 +396,8 @@ _HANDLE_STOPPING_POINT_CHECK_TIMER:
     read_register_direct TMP2, REG_TMA
     write_register_direct TMP2, REG_TIMA
 
-    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
-    ori TMP2, TMP2, INTERRUPTS_TIMER
-    jal CHECK_FOR_INTERRUPT
-    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPTS_TIMER
 
     jal CALCULATE_NEXT_TIMER_INTERRUPT
     nop
@@ -421,6 +435,7 @@ _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
     sw $at, CPU_STATE_NEXT_INTERRUPT_TIME(CPUState) # clear pending interrupt
     sb $zero, CPU_STATE_NEXT_INTERRUPT(CPUState)
     sb $zero, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
+    sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
     
     jal CALCULATE_NEXT_STOPPING_POINT
     nop

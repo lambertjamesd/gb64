@@ -55,7 +55,7 @@ GB_LD_HL_L:
     nop
     nop
 GB_HALT:
-    addi $at, $zero, STOP_REASON_HALT
+    li $at, STOP_REASON_HALT
     j GB_SIMULATE_HALTED
     sb $at, CPU_STATE_STOP_REASON(CPUState)
     nop
