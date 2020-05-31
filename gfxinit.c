@@ -108,6 +108,7 @@ Gfx clearcfb_dl[] = {
 		     GPACK_RGBA5551(64,64,255,1)),
 #endif
     gsDPFillRectangle(0, 0, SCREEN_WD-1, 47),
+    gsDPFillRectangle(0, 47, 80, SCREEN_HT-1),
     gsSPEndDisplayList(),
 };
 

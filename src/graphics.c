@@ -29,7 +29,7 @@ void renderPixelRow(
     u16* targetMemory;
     u16* pallete;
     u16 spriteRow;
-    struct Tile* tilemapSource;
+    struct Tile* tileSource;
     int dataSelect;
 
     targetMemory = memoryBuffer + RENDER_TO_X + (row + RENDER_TO_Y) * SCREEN_WD;
@@ -44,7 +44,7 @@ void renderPixelRow(
     if (!gbc)
     {
         pallete = (u16*)memory->misc.monochromePallete;
-        tilemapSource = memory->vram.tiles;
+        tileSource = memory->vram.tiles;
         tileInfo = 0;
     }
 
@@ -57,17 +57,17 @@ void renderPixelRow(
         {
             tileInfo = memory->vram.tilemap0Atts[tilemapIndex];
             pallete = (u16*)memory->misc.colorPalletes + ((tileInfo & TILE_ATTR_PALLETE) << 2);
-            tilemapSource = (tileInfo & TILE_ATTR_VRAM_BANK) ? memory->vram.gbcTiles : memory->vram.tiles;
+            tileSource = (tileInfo & TILE_ATTR_VRAM_BANK) ? memory->vram.gbcTiles : memory->vram.tiles;
         }
 
         tileIndex = memory->vram.tilemap0[tilemapIndex];
         
         if (!dataSelect)
         {
-            tileIndex = 256 + (char)tileIndex;
+            //tileIndex = ((tileIndex + 0x80) & 0xFF) + 0x80;
         }
 
-        spriteRow = memory->vram.tiles[tileIndex].rows[
+        spriteRow = tileSource[tileIndex].rows[
             (tileInfo & TILE_ATTR_V_FLIP) ?
                 (7 - (windowY & 0x7)) :
                 (windowY & 0x7)

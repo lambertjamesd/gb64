@@ -106,8 +106,6 @@ game(void)
 	int x, y;
 	int loop, offset, color;
 	int lastButton;
-	int cyclesToRun;
-	int cycleStep;
 	int line = 0;
 	OSTime lastTime;
 	OSTime lastDrawTime;
@@ -125,9 +123,7 @@ game(void)
 	frameTime = 0;
 	lastDrawTime = 0;
 	lastTime = 0;
-	cyclesToRun = 0;
 	gGameboy.cpu.cyclesRun = 0;
-	cycleStep = 0;// 1024 * 1024 / 30;
 
 	sprintf(str, "Didn't run tests %X", &gGameboy);
 #if RUN_TESTS
@@ -209,33 +205,6 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-		if (gGameboy.cpu.cyclesRun == 314568)
-		{
-			// cycleStep = 1;
-		}
-
-		if (pad[0]->button && !lastButton)
-		{
-			cycleStep = 1024 * 1024 / 30;
-
-			if (pad[0]->button & CONT_A)
-			{
-				WRITE_REGISTER_DIRECT(
-					&gGameboy.memory, 
-					REG_SCY, 
-					READ_REGISTER_DIRECT(&gGameboy.memory, REG_SCY) + 1
-				);
-			}
-			else if (pad[0]->button & CONT_B)
-			{
-				WRITE_REGISTER_DIRECT(
-					&gGameboy.memory, 
-					REG_SCY, 
-					READ_REGISTER_DIRECT(&gGameboy.memory, REG_SCY) - 1
-				);
-			}
-		}
-
 		lastButton = pad[0]->button;
 
 		frameTime = lastTime;
@@ -251,7 +220,12 @@ game(void)
 		// gameboy is 60 fps N64 is 30
 		// we need to emulator two frames
 		// for every one frame rendered
+		
+		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, NULL);
+
+		pad = ReadController(0);
+		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, cfb[draw_buffer]);
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
@@ -261,7 +235,8 @@ game(void)
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
 			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000, 
-			runCPU
+			// pad[0]->button
+			*((unsigned int*)0x80700000)
 		);
 #endif
 

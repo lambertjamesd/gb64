@@ -72,16 +72,14 @@ DECODE_NEXT:
     j DECODE_NEXT
     nop
 _DECODE_NEXT_READ:
+    jal GB_DO_READ
+    li ADDR, REG_JOYP
+    # read_register_direct $v0, _REG_JOYSTATE
+    la $at, 0x80700000
+    sb $v0, 0($at)
+
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
-
-    andi $at, GB_F, 0xFF00
-    beqz $at, SKIP_F_CHECK
-    nop
-    la ADDR, 0x807FFFF0
-    sw $at, 0(ADDR)
-SKIP_F_CHECK:
-
 # DEBUG_START:
 #     la $at, 0x80700000 - 4
 #     lw TMP4, 0($at)

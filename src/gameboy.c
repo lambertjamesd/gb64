@@ -41,7 +41,7 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
             gameboy->cpu.nextInterrupt = interrupt;
         }
         
-        if (gameboy->cpu.stopReason == STOP_REASON_HALT)
+        if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
         {
             gameboy->cpu.stopReason = STOP_REASON_NONE;
         }
@@ -86,4 +86,59 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     {
         runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
     }
+}
+
+void handleInput(struct GameBoy* gameboy, OSContPad* pad)
+{
+    int button;
+    int joy;
+
+    button = 0xFF;
+
+    if (pad->button & CONT_A)
+        button &= ~GB_BUTTON_A;
+
+    if (pad->button & CONT_B)
+        button &= ~GB_BUTTON_B;
+
+    if (pad->button & CONT_START)
+        button &= ~GB_BUTTON_START;
+
+    if (pad->button & Z_TRIG)
+        button &= ~GB_BUTTON_SELECT;
+
+    if ((pad->button & U_JPAD) || pad->stick_y > 0x40)
+        button &= ~GB_BUTTON_UP;
+    
+    if ((pad->button & L_JPAD) || pad->stick_x < -0x40)
+        button &= ~GB_BUTTON_LEFT;
+    
+    if ((pad->button & R_JPAD) || pad->stick_x > 0x40)
+        button &= ~GB_BUTTON_RIGHT;
+    
+    if ((pad->button & D_JPAD) || pad->stick_y < -0x40)
+        button &= ~GB_BUTTON_DOWN;
+
+    if (READ_REGISTER_DIRECT(&gameboy->memory, _REG_JOYSTATE) ^ button)
+    {
+        requestInterrupt(gameboy, GB_INTERRUPTS_INPUT);
+    }
+
+    WRITE_REGISTER_DIRECT(&gameboy->memory, _REG_JOYSTATE, button);
+
+    joy = READ_REGISTER_DIRECT(&gameboy->memory, REG_JOYP);
+
+    if (joy & 0x20)
+    {
+        joy = (joy & 0xF0) | (button & 0xF);
+    }
+    else
+    {
+        joy = (joy & 0xF0) | ((button >> 4) & 0xF);
+    }
+
+    // tmp = (void*)0x80700000;
+    // *((int*)tmp) = button;
+    
+    WRITE_REGISTER_DIRECT(&gameboy->memory, REG_JOYP, joy);
 }
