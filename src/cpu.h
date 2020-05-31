@@ -46,6 +46,7 @@ struct CPUState {
     unsigned long cyclesRun;
     unsigned long nextTimerTrigger;
     unsigned long nextScreenTrigger;
+    unsigned long nextInterruptTrigger;
 };
 
 extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);

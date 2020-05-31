@@ -142,15 +142,16 @@ _CALCULATE_NEXT_SCREEN_INTERRUPT_OFF:
 ########################
 
 CALCULATE_NEXT_STOPPING_POINT:
-    # if an interrupt has been requested
-    # then then always stop
-    lbu TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
-    bne TMP2, $zero, _CALCULATE_NEXT_STOPPING_POINT_FINISH
-    li CycleTo, 0
-    
+    #determine if interrupt time is smallest
+    lw $at, CPU_STATE_NEXT_INTERRUPT_TIME(CPUState)
+    lw CycleTo, ST_CYCLE_TO($fp)
+    sltu TMP2, CycleTo, $at
+    bnez TMP2, _CALCULATE_NEXT_STOPPING_POINT_CHECK_TIMER
+    lw TMP2, CPU_STATE_NEXT_TIMER(CPUState)
+    move CycleTo, $at
+_CALCULATE_NEXT_STOPPING_POINT_CHECK_TIMER:
     # deterime if CycleTo or NextTimer is smaller
     lw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    lw CycleTo, ST_CYCLE_TO($fp)
     sltu TMP2, CycleTo, $at
     bnez TMP2, _CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN
     lw TMP2, CPU_STATE_NEXT_SCREEN(CPUState)
@@ -176,7 +177,13 @@ CHECK_FOR_INTERRUPT:
     lbu $at, CPU_STATE_INTERRUPTS(CPUState)
     beq $at, $zero, _CHECK_FOR_INTERRUPT_EXIT
     addi TMP2, $zero, 0
+    # check if an interrupt was already requested
+    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
+    bnez $at, _CHECK_FOR_INTERRUPT_EXIT
+    nop
 
+    # default to no next interrupt
+    la TMP3, ~0
     # see if any individual interrupts have been triggered
     read_register_direct $at, REG_INTERRUPTS_REQUESTED
     read_register_direct TMP2, REG_INTERRUPTS_ENABLED
@@ -208,8 +215,16 @@ CHECK_FOR_INTERRUPT:
     addi TMP2, $zero, 0
 
 _CHECK_FOR_INTERRUPT_SAVE:
-    ori CycleTo, $zero, 0 # run interrupt next cycle
+    # set next interrupt time to be 1 frame ahead
+    addi TMP3, CYCLES_RUN, 1
+    sltu $at, TMP3, CycleTo
+    # check to see if interrupt is new stopping point
+    beqz $at, _CHECK_FOR_INTERRUPT_EXIT
+    nop
+    move CycleTo, TMP3
 _CHECK_FOR_INTERRUPT_EXIT:
+    # save next interrupt time
+    sw TMP3, CPU_STATE_NEXT_INTERRUPT_TIME(CPUState)
     jr $ra
     sb TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
 
@@ -381,10 +396,13 @@ _HANDLE_STOPPING_POINT_CHECK_TIMER:
 ########################
 
 _HANDLE_STOPPING_POINT_CHECK_INTERRUPT:
-    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
-    beq $at, $zero, _HANDLE_STOPPING_POINT_BREAK
+    lw $at, CPU_STATE_NEXT_INTERRUPT_TIME(CPUState)
+    sltu $at, CYCLES_RUN, $at
+    bnez $at, _HANDLE_STOPPING_POINT_BREAK
 
-    ori ADDR, $zero, 0x40 # load the base address for interrupt jumps
+    li ADDR, 0x40 # load the base address for interrupt jumps
+    # load interrupt requested
+    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
     andi $at, $at, 0x1F # mask bits
     srl TMP2, $at, 1 # calculte which bit to jump tp
 _HANDLE_STOPPING_POINT_INT_JUMP_LOOP:
@@ -400,7 +418,9 @@ _HANDLE_STOPPING_POINT_CLEAR_INTERRUPT:
     and TMP2, TMP2, $at
     write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
 
-    sb $zero, CPU_STATE_NEXT_INTERRUPT(CPUState) # clear pending interrupt
+    la $at, ~0
+    sw $at, CPU_STATE_NEXT_INTERRUPT_TIME(CPUState) # clear pending interrupt
+    sb $zero, CPU_STATE_NEXT_INTERRUPT(CPUState)
     sb $zero, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
     
     jal CALCULATE_NEXT_STOPPING_POINT

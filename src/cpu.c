@@ -12,4 +12,5 @@ void initializeCPU(struct CPUState* state)
     state->cyclesRun = 0;
     state->nextTimerTrigger = ~0;
     state->nextScreenTrigger = ~0;
+    state->nextInterruptTrigger = ~0;
 }

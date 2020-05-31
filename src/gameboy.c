@@ -35,10 +35,10 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
         (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED))
     )
     {
-        if (gameboy->cpu.interrupts &&
-            (!gameboy->cpu.nextInterrupt || gameboy->cpu.nextInterrupt > interrupt))
+        if (gameboy->cpu.interrupts && !gameboy->cpu.nextInterrupt)
         {
             gameboy->cpu.nextInterrupt = interrupt;
+            gameboy->cpu.nextInterruptTrigger = gameboy->cpu.cyclesRun + 1;
         }
         
         if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
