@@ -215,7 +215,7 @@ CHECK_FOR_INTERRUPT:
 
 _CHECK_FOR_INTERRUPT_SAVE:
     # set next interrupt time to be 1 frame ahead
-    addi TMP3, CYCLES_RUN, 1
+    addi TMP3, CYCLES_RUN, 0 # TODO different timing with EI vs set interrupt flag
     sltu $at, CycleTo, TMP3
     # check to see if interrupt is new stopping point
     bnez $at, _CHECK_FOR_INTERRUPT_EXIT
