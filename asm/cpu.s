@@ -72,12 +72,6 @@ DECODE_NEXT:
     j DECODE_NEXT
     nop
 _DECODE_NEXT_READ:
-    jal GB_DO_READ
-    li ADDR, REG_JOYP
-    # read_register_direct $v0, _REG_JOYSTATE
-    la $at, 0x80700000
-    sb $v0, 0($at)
-
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
 # DEBUG_START:

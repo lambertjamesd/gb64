@@ -82,7 +82,7 @@ GB_RET_C:
     nop
     nop
 GB_RETI:
-    addi $at, $zero, INTERRUPTS_ENABLED
+    li $at, INTERRUPTS_ENABLED
     jal CHECK_FOR_INTERRUPT
     sb $at, CPU_STATE_INTERRUPTS(CPUState)
     jal CALCULATE_NEXT_STOPPING_POINT

@@ -151,17 +151,16 @@ CALCULATE_NEXT_STOPPING_POINT:
     move CycleTo, $at
 _CALCULATE_NEXT_STOPPING_POINT_CHECK_TIMER:
     # deterime if CycleTo or NextTimer is smaller
-    lw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    sltu TMP2, CycleTo, $at
-    bnez TMP2, _CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN
-    lw TMP2, CPU_STATE_NEXT_SCREEN(CPUState)
-    move CycleTo, $at
+    sltu $at, CycleTo, TMP2
+    bnez $at, _CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN
+    lw $at, CPU_STATE_NEXT_SCREEN(CPUState)
+    move CycleTo, TMP2
     # compare current CycleTo to next screen event
 _CALCULATE_NEXT_STOPPING_POINT_CHECK_SCREEN:
-    sltu TMP3, TMP2, CycleTo
-    beqz TMP3, _CALCULATE_NEXT_STOPPING_POINT_FINISH
+    sltu TMP2, CycleTo, $at
+    bnez TMP2, _CALCULATE_NEXT_STOPPING_POINT_FINISH
     nop
-    move CycleTo, TMP2
+    move CycleTo, $at
 _CALCULATE_NEXT_STOPPING_POINT_FINISH:
     jr $ra
     nop
@@ -175,8 +174,8 @@ _CALCULATE_NEXT_STOPPING_POINT_FINISH:
 CHECK_FOR_INTERRUPT:
     # first check if interrupts are enabled
     lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    beq $at, $zero, _CHECK_FOR_INTERRUPT_EXIT
-    addi TMP2, $zero, 0
+    beqz $at, _CHECK_FOR_INTERRUPT_EXIT
+    li TMP2, 0
     # check if an interrupt was already requested
     lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
     bnez $at, _CHECK_FOR_INTERRUPT_EXIT
@@ -188,27 +187,27 @@ CHECK_FOR_INTERRUPT:
     read_register_direct $at, REG_INTERRUPTS_REQUESTED
     read_register_direct TMP2, REG_INTERRUPTS_ENABLED
     and $at, TMP2, $at
-    beq $at, $zero, _CHECK_FOR_INTERRUPT_EXIT
-    addi TMP2, $zero, 0
+    beqz $at, _CHECK_FOR_INTERRUPT_EXIT
+    li TMP2, 0
 
     andi TMP2, $at, INTERRUPTS_V_BLANK
-    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
     nop
     
     andi TMP2, $at, INTERRUPTS_LCDC
-    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
     nop
     
     andi TMP2, $at, INTERRUPTS_TIMER
-    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
     nop
     
     andi TMP2, $at, INTERRUPTS_SERIAL
-    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
     nop
     
     andi TMP2, $at, INTERRUPTS_INPUT
-    bne TMP2, $zero, _CHECK_FOR_INTERRUPT_SAVE
+    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
     nop
     
     j _CHECK_FOR_INTERRUPT_EXIT
@@ -217,9 +216,9 @@ CHECK_FOR_INTERRUPT:
 _CHECK_FOR_INTERRUPT_SAVE:
     # set next interrupt time to be 1 frame ahead
     addi TMP3, CYCLES_RUN, 1
-    sltu $at, TMP3, CycleTo
+    sltu $at, CycleTo, TMP3
     # check to see if interrupt is new stopping point
-    beqz $at, _CHECK_FOR_INTERRUPT_EXIT
+    bnez $at, _CHECK_FOR_INTERRUPT_EXIT
     nop
     move CycleTo, TMP3
 _CHECK_FOR_INTERRUPT_EXIT:
