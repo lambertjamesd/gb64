@@ -11,6 +11,44 @@
     if (x == GB_SCREEN_W)                                           \
         break;
 
+int compareSprites(struct Sprite a, struct Sprite b)
+{
+    return a.x - b.x;
+}
+
+void sortSprites(struct Sprite* input, struct Sprite* output, int count)
+{
+    if (count == 1)
+    {
+        *output = *input;
+    }
+    else if (count == 2)
+    {
+        if (compareSprites(input[0], input[1]) <= 0)
+        {
+            output[0] = input[0];
+            output[1] = input[1];
+        }
+        else
+        {
+            output[0] = input[1];
+            output[1] = input[0];
+        }
+    }
+    else
+    {
+        int midpoint = count / 2;
+        sortSprites(input, output, midpoint);
+        sortSprites(input + midpoint, output + midpoint, count - midpoint);
+        
+    }
+}
+
+void sortSprites(struct Sprite* input, struct Sprite* output, int outputCount)
+{
+
+}
+
 void renderPixelRow(
     struct Memory* memory,
     u16* memoryBuffer, 
