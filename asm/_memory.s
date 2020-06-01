@@ -199,16 +199,21 @@ _GB_WRITE_REG_0X:
     nop
 
 _GB_WRITE_REG_JOYP:
+    ori VAL, VAL, 0xF # set all buttons to high
+    andi $at, VAL, 0x10
+    bnez $at, _GB_WRITE_REG_JOYP_NEXT
+    read_register_direct TMP2, _REG_JOYSTATE
+    ori $at, $at, 0xF0
+    and VAL, VAL, $at # mask some bits low
+_GB_WRITE_REG_JOYP_NEXT:
     andi $at, VAL, 0x20
-    bne $at, $zero, _GB_WRITE_REG_JOYP_BUTTONS
-    read_register_direct $at, _REG_JOYSTATE
-    srl $at, $at, 4
-_GB_WRITE_REG_JOYP_BUTTONS:
-    andi $at, $at, 0xF
-    andi VAL, VAL, 0xF0
-    or $at, $at, VAL
+    bnez $at, _GB_WRITE_REG_JOYP_FINISH
+    srl $at, TMP2, 4
+    ori $at, $at, 0xF0
+    and VAL, VAL, $at # mask some bits low
+_GB_WRITE_REG_JOYP_FINISH:
     jr $ra
-    write_register_direct $at, REG_JOYP 
+    write_register_direct VAL, REG_JOYP 
     
 _GB_WRITE_REG_DIV:
     # DIV = (((CYCLES_RUN << 2) + _REG_DIV_OFFSET) >> 8) & 0xFFFF

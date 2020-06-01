@@ -124,13 +124,16 @@ void handleInput(struct GameBoy* gameboy, OSContPad* pad)
 
     joy = READ_REGISTER_DIRECT(&gameboy->memory, REG_JOYP);
 
-    if (joy & 0x20)
+    nextJoy = joy & 0xF0;
+
+    if (!(joy & 0x10))
     {
-        nextJoy = (joy & 0xF0) | (button & 0xF);
+        nextJoy &= button | 0xF0;
     }
-    else
+
+    if (!(joy & 0x20))
     {
-        nextJoy = (joy & 0xF0) | ((button >> 4) & 0xF);
+        nextJoy &= (button >> 4) | 0xF0;
     }
 
     if ((joy ^ nextJoy) & ~nextJoy & 0xF)
