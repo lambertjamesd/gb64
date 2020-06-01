@@ -66,9 +66,9 @@ GB_LD_D_D8:
 GB_RLA:
     jal GB_RL_IMPL # do RLC
     addi Param0, GB_A, 0 # store A into param
-    j DECODE_NEXT
     addi GB_A, Param0, 0 # store result back into A
-    nop
+    j DECODE_NEXT
+    clear_flags Z_FLAG
     nop
     nop
     nop
@@ -138,9 +138,9 @@ GB_LD_E_D8:
 GB_RRA:
     jal GB_RR_IMPL
     addi Param0, GB_A, 0
-    j DECODE_NEXT
     addi GB_A, Param0, 0
-    nop
+    j DECODE_NEXT
+    clear_flags Z_FLAG
     nop
     nop
     nop

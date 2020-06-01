@@ -86,7 +86,7 @@ GB_JR_C:
 GB_ADD_HL_SP:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j _ADD_TO_HL
-    addi Param0, GB_SP, 0
+    move Param0, GB_SP
     nop
     nop
     nop

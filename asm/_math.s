@@ -13,7 +13,7 @@ GB_INC:
     set_flags Z_FLAG | H_FLAG # set ZH flags
 
 _GB_INC_CHECK_HALF:
-    andi $at, Param0, 0x3 # check if h flag should be set
+    andi $at, Param0, 0xF # check if h flag should be set
     bne $at, $zero, _GB_INC_DONE
     nop
     jr $ra
@@ -28,26 +28,22 @@ _GB_INC_DONE:
 # and sets any associated flags
 #######################
 GB_DEC:
+    clear_flags H_FLAG
+    andi $at, Param0, 0xF
+    bnez $at, _GB_DEC_DO_DEC
+    nop
+    set_flags H_FLAG
+_GB_DEC_DO_DEC:
     addi Param0, Param0, 0xFF
     andi Param0, Param0, 0xFF # keep register at 8 bits
-    bne Param0, $zero, _GB_DEC_CHECK_HALF
+    bne Param0, $zero, _GB_DEC_NOT_Z
     set_flags N_FLAG # set N flag
+    jr $ra 
+    set_flags Z_FLAG
 
-    clear_flags H_FLAG # clear H flag
+_GB_DEC_NOT_Z:
     jr $ra
-    set_flags Z_FLAG # set Z flag
-
-_GB_DEC_CHECK_HALF:
-    andi $at, Param0, 0x3 # check if h flag should be set
-    addi $at, $at, -0x3
-    bne $at, $zero, _GB_DEC_DONE
-    clear_flags Z_FLAG
-    jr $ra
-    clear_flags H_FLAG # clear H flag
-
-_GB_DEC_DONE:
-    jr $ra
-    set_flags H_FLAG # set H flag
+    clear_flags Z_FLAG # set H flag
 
 #######################
 # Rotates Param0 1 bit left and 
@@ -65,7 +61,7 @@ GB_RLC_IMPL:
     andi GB_F, GB_F, C_FLAG # mask c flag
 _GB_BITWISE_IMPL_IS_ZERO:
     jr $ra
-    ori GB_F, $zero, Z_FLAG # set Z_FLAG
+    li GB_F, Z_FLAG # set Z_FLAG
 
 #######################
 # Rotates Param0 1 bit left and 
@@ -182,12 +178,13 @@ _ADD_TO_HL:
     add GB_L, GB_L, Param0          # add to L
     srl $at, GB_L, 8                # get upper bits
     andi GB_L, GB_L, 0xFF           # mask to 8 bits
-    add Param0, GB_H, $at           # add upper bits to h
+    add TMP2, GB_H, $at           # add upper bits to h
+    sra Param0, Param0, 8
 
-    xor $at, Param0, $at            # determine half carry bit
+    xor $at, Param0, TMP2           # determine half carry bit
     xor $at, GB_H, $at
 
-    addi GB_H, Param0, 0            # store final result into GB_H
+    move GB_H, TMP2            # store final result into GB_H
 
     andi $at, $at, 0x10             # mask carry bit
     sll $at, $at, 1                 # move carry bit into H flag position
@@ -198,7 +195,29 @@ _ADD_TO_HL:
     andi $at, $at, 0x10             # mask carry bit
     or GB_F, GB_F, $at              # set carry git
     j DECODE_NEXT
-    andi GB_F, GB_F, 0xFF           # mask to 8 bits
+    andi GB_H, GB_H, 0xFF           # mask to 8 bits
+
+#######################
+# Adds Param0 to HL
+#######################
+
+_ADD_TO_HL_SP:
+    add GB_L, GB_SP, Param0         # add to L
+    srl GB_H, GB_L, 8               # get upper bits
+
+    xor $at, Param0, GB_SP          # determine half carry bit
+    xor Param0, GB_L, $at
+
+    andi GB_L, GB_L, 0xFF           # mask to 8 bits
+    andi GB_H, GB_H, 0xFF           # mask to 8 bits
+
+    sll $at, Param0, 1                 # move carry bit into H flag position
+    andi GB_F, $at, H_FLAG
+
+    srl $at, Param0, 4                # shift carry bit to C flag position
+    andi $at, $at, C_FLAG             # mask carry bit
+    j DECODE_NEXT
+    or GB_F, GB_F, $at              # set carry git
 
 #######################
 # Adds Param0 to SP
@@ -209,9 +228,9 @@ _ADD_TO_SP:
     xor Param0, $at, Param0
     xor Param0, Param0, GB_SP # store half bit into Param0
     andi GB_SP, $at, 0xFFFF # move result into SP
-    srl $at, $at, 12 # shift carry bit into position
+    sra $at, Param0, 4 # shift carry bit into position
     andi GB_F, $at, C_FLAG # move carry bit into position 
-    srl Param0, Param0, 7 # move half flag into position
+    sll Param0, Param0, 1 # move half flag into position
     andi Param0, Param0, H_FLAG # mask half flag
     j DECODE_NEXT
     or GB_F, GB_F, Param0 # set half flag

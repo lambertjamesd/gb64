@@ -47,9 +47,9 @@ GB_INC_B:
     nop
 GB_DEC_B:
     jal GB_DEC # call decrement high bit
-    addi Param0, GB_B, 0 # move register to call parameter
+    move Param0, GB_B # move register to call parameter
     j DECODE_NEXT
-    addi GB_B, Param0, 0 # move register back from call parameter
+    move GB_B, Param0 # move register back from call parameter
     nop
     nop
     nop
@@ -66,9 +66,9 @@ GB_LD_B_D8:
 GB_RLCA:
     jal GB_RLC_IMPL # do RLC
     addi Param0, GB_A, 0 # store A into param
-    j DECODE_NEXT
     addi GB_A, Param0, 0 # store result back into A
-    nop
+    j DECODE_NEXT
+    clear_flags Z_FLAG
     nop
     nop
     nop
@@ -138,9 +138,9 @@ GB_LD_C_D8:
 GB_RRCA:
     jal GB_RRC_IMPL # call rotate
     addi Param0, GB_A, 0 # move register to call parameter
-    j DECODE_NEXT
     addi GB_A, Param0, 0 # store paramter back
-    nop
+    j DECODE_NEXT
+    clear_flags Z_FLAG
     nop
     nop
     nop

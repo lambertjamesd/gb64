@@ -236,8 +236,6 @@ _SET_GB_PC_FINISH:
 # Checks to see if a timer interrupt would wake up the CPU
 ######################
 
-.global GB_SIMULATE_HALTED
-.balign 4
 GB_SIMULATE_HALTED:
     jal HANDLE_STOPPING_POINT # handle the next stopping point
     move CYCLES_RUN, CycleTo # update the clock

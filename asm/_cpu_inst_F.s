@@ -76,10 +76,10 @@ GB_LD_HL_SP_d8:
     jal READ_NEXT_INSTRUCTION
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     sll $v0, $v0, 24 #sign extend
-    sra $v0, $v0, 24
-    add GB_L, GB_SP, $v0
-    j _MASK_HL
-    srl GB_H, GB_L, 8
+    j _ADD_TO_HL_SP
+    sra Param0, $v0, 24
+    nop
+    nop
     nop
 GB_LD_SP_HL:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
