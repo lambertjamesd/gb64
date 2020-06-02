@@ -74,6 +74,8 @@ DECODE_NEXT:
 _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
+    la $at, 0x80700000 - 4
+    sw GB_PC, 0($at)
 # DEBUG_START:
 #     la $at, 0x80700000 - 4
 #     lw TMP4, 0($at)

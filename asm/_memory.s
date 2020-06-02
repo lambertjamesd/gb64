@@ -203,7 +203,7 @@ _GB_WRITE_REG_JOYP:
     andi $at, VAL, 0x10
     bnez $at, _GB_WRITE_REG_JOYP_NEXT
     read_register_direct TMP2, _REG_JOYSTATE
-    ori $at, $at, 0xF0
+    ori $at, TMP2, 0xF0
     and VAL, VAL, $at # mask some bits low
 _GB_WRITE_REG_JOYP_NEXT:
     andi $at, VAL, 0x20
@@ -283,13 +283,13 @@ _GB_WRITE_REG_4X_TABLE:
     j _GB_WRITE_DMA
     nop # TODO
     # BGP
-    jr $ra
+    j _GB_WRITE_BGP
     nop # TODO
     # OBP0
-    jr $ra
+     j _GB_WRITE_OBP0
     nop # TODO
     # OBP1
-    jr $ra
+     j _GB_WRITE_OBP1
     nop # TODO
     # WY
     jr $ra
@@ -430,6 +430,8 @@ _GB_CHECK_RISING_STAT_FINISH:
     lw $ra, 0($sp)
     jr $ra
     addi $sp, $sp, 4 
+    
+############################
 
 _GB_WRITE_DMA:
     andi $at, VAL, 0xF0 # calculate memory bank address offset
@@ -451,7 +453,57 @@ _GB_DMA_LOOP:
     jr $ra
     nop
     
-    
+############################
+
+_GB_PALLETE_COLORS:
+    .data
+    .word 0b1110011111110100, 0b1000111000011100, 0b0011001101010100, 0b0000100011001000
+
+_GB_WRITE_BGP:
+    la $at, MEMORY_BG_PAL
+    jr $ra
+    add ADDR, Memory, $at
+
+_GB_WRITE_OBP0:
+    la $at, MEMORY_OBJ_PAL
+    jr $ra
+    add ADDR, Memory, $at
+
+_GB_WRITE_OBP1:
+    la $at, MEMORY_OBJ_PAL + 8 # second pallete index
+    jr $ra
+    add ADDR, Memory, $at
+
+_GB_WRITE_DMA_PAL:
+    la TMP2, _GB_PALLETE_COLORS
+
+    andi $at, VAL, 0x03
+    sll $at, $at, 1
+    add $at, TMP2, $at
+    lhu $at, 0($at)
+    sh $at, 0(ADDR)
+
+    andi $at, VAL, 0x0C
+    srl $at, $at, 1
+    add $at, TMP2, $at
+    lhu $at, 0($at)
+    sh $at, 2(ADDR)
+
+    andi $at, VAL, 0x30
+    srl $at, $at, 3
+    add $at, TMP2, $at
+    lhu $at, 0($at)
+    sh $at, 4(ADDR)
+
+    andi $at, VAL, 0xC0
+    srl $at, $at, 5
+    add $at, TMP2, $at
+    lhu $at, 0($at)
+    jr $ra
+    sh $at, 4(ADDR)
+
+
+
 ############################
 
 _GB_WRITE_REG_5X:

@@ -132,20 +132,19 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
-	// 081820
-	// 346856
-	// 88c070
-	// e0f8d0
-
-	gGameboy.memory.vram.bgColorPalletes[0] = 0x0842;
-	gGameboy.memory.vram.bgColorPalletes[1] = 0x1084;
-	gGameboy.memory.vram.bgColorPalletes[2] = 0x2108;
-	gGameboy.memory.vram.bgColorPalletes[3] = 0x4210;
+	gGameboy.memory.vram.bgColorPalletes[0] = 0b0000100011001000;
+	gGameboy.memory.vram.bgColorPalletes[1] = 0b0011001101010100;
+	gGameboy.memory.vram.bgColorPalletes[2] = 0b1000111000011100;
+	gGameboy.memory.vram.bgColorPalletes[3] = 0b1110011111110100;
 	
-	gGameboy.memory.vram.bgColorPalletes[0] = 0x0842;
-	gGameboy.memory.vram.bgColorPalletes[1] = 0x1084;
-	gGameboy.memory.vram.bgColorPalletes[2] = 0x2108;
-	gGameboy.memory.vram.bgColorPalletes[3] = 0x4210;
+	gGameboy.memory.vram.objColorPalletes[0] = 0b0000100011001000;
+	gGameboy.memory.vram.objColorPalletes[1] = 0b0011001101010100;
+	gGameboy.memory.vram.objColorPalletes[2] = 0b1000111000011100;
+	gGameboy.memory.vram.objColorPalletes[3] = 0b1110011111110100;
+	gGameboy.memory.vram.objColorPalletes[4] = 0b0000100011001000;
+	gGameboy.memory.vram.objColorPalletes[5] = 0b0011001101010100;
+	gGameboy.memory.vram.objColorPalletes[6] = 0b1000111000011100;
+	gGameboy.memory.vram.objColorPalletes[7] = 0b1110011111110100;
 
 	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
@@ -187,10 +186,11 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d", 
+		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
-			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000
+			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
+			offsetof(struct Memory, vram.objColorPalletes)
 		);
 #endif
 

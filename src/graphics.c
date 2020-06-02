@@ -4,21 +4,24 @@
 #include "graphics.h"
 #include "../boot.h"
 
-#define WRITE_PIXEL(spriteRow, pallete, x, targetMemory, pixel)     \
-    *targetMemory = pallete[READ_PIXEL_INDEX(spriteRow, pixel)];    \
-    ++x;                                                            \
-    ++targetMemory;                                                 \
-    if (x == GB_SCREEN_W)                                           \
+#define WRITE_PIXEL(spriteRow, pallete, x, targetMemory, pixel, spriteBuffer, spritePallete)    \
+    if (spriteBuffer[x])                                                                        \
+        *targetMemory = spritePallete[spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY];                \
+    else                                                                                        \
+        *targetMemory = pallete[READ_PIXEL_INDEX(spriteRow, pixel)];                            \
+    ++x;                                                                                        \
+    ++targetMemory;                                                                             \
+    if (x == GB_SCREEN_W)                                                                       \
         break;
 
-#define WRITE_SPRITE_PIXEL(spriteRow, palleteOffset, x, targetMemory, pixel)     \
-    if(READ_PIXEL_INDEX(spriteRow, pixel))                                          \
-        *targetMemory = READ_PIXEL_INDEX(spriteRow, pixel) + palleteOffset;  \
-    else                                                                            \
-        *targetMemory = 0;                                                          \
-    ++x;                                                                            \
-    ++targetMemory;                                                                 \
-    if (x == GB_SCREEN_W)                                                           \
+#define WRITE_SPRITE_PIXEL(spriteRow, palleteOffset, x, targetMemory, pixel)                    \
+    if (READ_PIXEL_INDEX(spriteRow, pixel))                                                     \
+        *targetMemory = READ_PIXEL_INDEX(spriteRow, pixel) + palleteOffset;                     \
+    else                                                                                        \
+        *targetMemory = 0;                                                                      \
+    ++x;                                                                                        \
+    ++targetMemory;                                                                             \
+    if (x == GB_SCREEN_W)                                                                       \
         break;
 
 int compareSprites(struct Sprite a, struct Sprite b)
@@ -95,8 +98,8 @@ void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, i
 
     for (currentInput = 0; currentInput < SPRITE_COUNT; ++currentInput)
     {
-        if (inputSprites[currentInput].y > 0 && inputSprites[currentInput].y < 160 &&
-            inputSprites[currentInput].x < 168)
+        // if (inputSprites[currentInput].y > 0 && inputSprites[currentInput].y < 160 &&
+        //     inputSprites[currentInput].x < 168)
         {
             sortedSprites[currentOutput++] = inputSprites[currentInput];
         }
@@ -129,11 +132,13 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
 {
     int x;
     int currentSpriteIndex;
-    int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT : SPRITE_BASE_HEIGHT * 2;
+    int renderedSprites = 0;
+    int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT * 2 : SPRITE_BASE_HEIGHT;
     u8* targetMemory = state->spriteIndexBuffer;
 
     x = 0;
     currentSpriteIndex = 0;
+    renderedSprites = 0;
 
     while (x < GB_SCREEN_W)
     {
@@ -147,13 +152,18 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
                 currentSprite.y - SPRITE_Y_OFFSET <= state->row && 
                 currentSprite.y - SPRITE_Y_OFFSET + spriteHeight > state->row
             )
+            {
                 sourceX = x - (currentSprite.x - SPRITE_WIDTH);
+                ++renderedSprites;
+            }
             else
+            {
                 sourceX = GB_SCREEN_W;
+            }
             ++currentSpriteIndex;
         } 
 
-        while (x < GB_SCREEN_W && (sourceX < 0 || currentSpriteIndex == state->spriteCount))
+        while (x < GB_SCREEN_W && (sourceX < 0 || currentSpriteIndex == state->spriteCount || renderedSprites > 10))
         {
             *targetMemory = 0;
             ++targetMemory;
@@ -168,7 +178,7 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
 
         u16 palleteIndex = state->gbc ? 
             (currentSprite.flags & SPRITE_FLAGS_GBC_PALLETE) * 4 : 
-            (((currentSprite.flags & SPRITE_FLAGS_DMA_PALLETE) >> 2) + 4);
+            ((currentSprite.flags & SPRITE_FLAGS_DMA_PALLETE) >> 2);
 
         if (currentSprite.flags & SPRITE_FLAGS_PRIORITY)
         {
@@ -259,10 +269,9 @@ void renderPixelRow(
 
     lcdcReg = READ_REGISTER_DIRECT(memory, REG_LCDC);
 
-    if (lcdcReg & LCDC_OBJ_ENABLE)
-    {
-        renderSprites(memory, state);
-    }
+    // is sprites are disabled then this just clears the
+    // sprite index memory
+    renderSprites(memory, state);
 
     targetMemory = memoryBuffer + RENDER_TO_X + (state->row + RENDER_TO_Y) * SCREEN_WD;
     offsetX = READ_REGISTER_DIRECT(memory, REG_SCX);
@@ -311,38 +320,38 @@ void renderPixelRow(
         switch ((windowX & 0x7) | ((tileInfo & TILE_ATTR_H_FLIP) >> 1))
         {
             case 0:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 1:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 2:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 3:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 4:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 5:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 6:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 7:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7, state->spriteIndexBuffer, memory->vram.objColorPalletes);
                 break;
             case 8:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 9:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 10:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 11:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 12:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 13:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 14:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1, state->spriteIndexBuffer, memory->vram.objColorPalletes);
             case 15:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0);
+                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0, state->spriteIndexBuffer, memory->vram.objColorPalletes);
                 break;
         }
     }

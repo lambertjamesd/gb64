@@ -108,7 +108,7 @@ struct Memory {
     RegisterWriter bankSwitch;
     union {
         struct MiscMemory misc;
-        unsigned char miscBytes[512];
+        unsigned char miscBytes[sizeof(struct MiscMemory)];
     };
     unsigned char internalRam[MAX_RAM_SIZE];
     unsigned char* cartRam;
