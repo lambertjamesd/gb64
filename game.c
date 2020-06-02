@@ -132,64 +132,20 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
-	// WRITE_REGISTER_DIRECT(&gGameboy.memory, REG_LCDC, LCDC_BG_TILE_DATA);
+	// 081820
+	// 346856
+	// 88c070
+	// e0f8d0
 
-	gGameboy.memory.misc.colorPalletes[0] = 0x0842;
-	gGameboy.memory.misc.colorPalletes[1] = 0x1084;
-	gGameboy.memory.misc.colorPalletes[2] = 0x2108;
-	gGameboy.memory.misc.colorPalletes[3] = 0x4210;
-
-	gGameboy.memory.misc.monochromePallete[0] = 
-		gGameboy.memory.misc.monochromePalleteSource[0];
-	gGameboy.memory.misc.monochromePallete[1] = 
-		gGameboy.memory.misc.monochromePalleteSource[1];
-	gGameboy.memory.misc.monochromePallete[2] = 
-		gGameboy.memory.misc.monochromePalleteSource[2];
-	gGameboy.memory.misc.monochromePallete[3] = 
-		gGameboy.memory.misc.monochromePalleteSource[3];
-
-	gGameboy.memory.vram.tiles[1].rows[0] = 0xFFFF;
-	gGameboy.memory.vram.tiles[1].rows[1] = 0x8181;
-	gGameboy.memory.vram.tiles[1].rows[2] = 0x8181;
-	gGameboy.memory.vram.tiles[1].rows[3] = 0x8181;
-	gGameboy.memory.vram.tiles[1].rows[4] = 0x8181;
-	gGameboy.memory.vram.tiles[1].rows[5] = 0x8181;
-	gGameboy.memory.vram.tiles[1].rows[6] = 0x8181;
-	gGameboy.memory.vram.tiles[1].rows[7] = 0xFFFF;
+	gGameboy.memory.vram.bgColorPalletes[0] = 0x0842;
+	gGameboy.memory.vram.bgColorPalletes[1] = 0x1084;
+	gGameboy.memory.vram.bgColorPalletes[2] = 0x2108;
+	gGameboy.memory.vram.bgColorPalletes[3] = 0x4210;
 	
-	gGameboy.memory.vram.tiles[2].rows[0] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[1] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[2] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[3] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[4] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[5] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[6] = 0x0F33;
-	gGameboy.memory.vram.tiles[2].rows[7] = 0x0F33;
-	
-	gGameboy.memory.vram.tiles[3].rows[0] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[1] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[2] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[3] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[4] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[5] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[6] = 0x330F;
-	gGameboy.memory.vram.tiles[3].rows[7] = 0x330F;
-
-	gGameboy.memory.vram.tiles[32].rows[0] = 0x5555;
-	gGameboy.memory.vram.tiles[32].rows[1] = 0xAAAA;
-	gGameboy.memory.vram.tiles[32].rows[2] = 0x5555;
-	gGameboy.memory.vram.tiles[32].rows[3] = 0xAAAA;
-	gGameboy.memory.vram.tiles[32].rows[4] = 0x5555;
-	gGameboy.memory.vram.tiles[32].rows[5] = 0xAAAA;
-	gGameboy.memory.vram.tiles[32].rows[6] = 0x5555;
-	gGameboy.memory.vram.tiles[32].rows[7] = 0xAAAA;
-
-	for (loop = 0; loop < 1024; ++loop)
-	{
-		gGameboy.memory.vram.tilemap0[loop] = 0;
-	}
-
-	gGameboy.memory.vram.tilemap0[0] = 1;
+	gGameboy.memory.vram.bgColorPalletes[0] = 0x0842;
+	gGameboy.memory.vram.bgColorPalletes[1] = 0x1084;
+	gGameboy.memory.vram.bgColorPalletes[2] = 0x2108;
+	gGameboy.memory.vram.bgColorPalletes[3] = 0x4210;
 
 	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 

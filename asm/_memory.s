@@ -306,7 +306,7 @@ _GB_WRITE_REG_4X_TABLE:
     # VBK
     andi VAL, VAL, 0x1
     sll VAL, VAL, 13 # mulitply by 0x8000 (VRAM bank size)
-    ori $at, $zero, MEMORY_VRAM
+    li $at, MEMORY_VRAM
     add $at, $at, Memory
     add $at, $at, VAL
     sw $at, (MEMORY_ADDR_TABLE + 4 * MEMORY_VRAM_BANK_INDEX)(Memory)

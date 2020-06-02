@@ -50,6 +50,7 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
 
 void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 {
+    struct GraphicsState graphicsState;
     int line;
     int catchupCycles;
     int screenWasEnabled;
@@ -73,10 +74,13 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             gameboy->cpu.runUntilNextFrame = 0;
         }
 
+        initGraphicsState(&gameboy->memory, &graphicsState, 0);
+
         runCPU(&gameboy->cpu, &gameboy->memory, MODE_2_CYCLES);
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
-		    renderPixelRow(&gameboy->memory, targetMemory, line, 0);
+            graphicsState.row = line;
+		    renderPixelRow(&gameboy->memory, &graphicsState, targetMemory);
             runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE);
         }
 

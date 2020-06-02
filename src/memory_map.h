@@ -30,7 +30,7 @@
 #define REG_TAC         0xFF07
 
 #define REG_LCDC        0xFF40
-#define REG_LCD_STAT        0xFF41
+#define REG_LCD_STAT    0xFF41
 #define REG_LCD_STAT_MODE 0x3
 #define REG_SCY         0xFF42
 #define REG_SCX         0xFF43
@@ -49,20 +49,34 @@
 #define WRITE_REGISTER_DIRECT(mm, addr, val) (mm)->miscBytes[(addr) - MISC_START] = (val)
 #define READ_REGISTER_DIRECT(mm, addr) ((mm)->miscBytes[(addr) - MISC_START])
 
+/*
+    Sprite.flags
+  Bit7   OBJ-to-BG Priority (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
+         (Used for both BG and Window. BG color 0 is always behind OBJ)
+  Bit6   Y flip          (0=Normal, 1=Vertically mirrored)
+  Bit5   X flip          (0=Normal, 1=Horizontally mirrored)
+  Bit4   Palette number  **Non CGB Mode Only** (0=OBP0, 1=OBP1)
+  Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
+  Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
+ */
+
+#define SPRITE_FLAGS_PRIORITY       0x80
+#define SPRITE_FLAGS_Y_FLIP         0x40
+#define SPRITE_FLAGS_X_FLIP         0x20
+#define SPRITE_FLAGS_DMA_PALLETE    0x10
+#define SPRITE_FLAGS_VRAM_BANK      0x08
+#define SPRITE_FLAGS_GBC_PALLETE    0x07
+
 struct Sprite {
-    unsigned char x;
     unsigned char y;
-    unsigned char pattern;
+    unsigned char x;
+    unsigned char tile;
     unsigned char flags;
 };
 
 struct MiscMemory {
     struct Sprite sprites[SPRITE_COUNT];
-    u16 colorPalletes[64];
-    u16 monochromePallete[4];
-    u16 monochromePalleteSource[4];
-    u32 screenCycleStart;
-    unsigned char unused[0x44];
+    unsigned char unused[0x60];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };
@@ -79,6 +93,9 @@ struct GraphicsMemory {
     struct Tile gbcTiles[384];
     unsigned char tilemap0Atts[1024];
     unsigned char tilemap1Atts[1024];
+    
+    u16 bgColorPalletes[32];
+    u16 objColorPalletes[32];
 };
 
 struct Memory;

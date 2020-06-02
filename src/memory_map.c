@@ -62,9 +62,4 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     }
 
     memory->bankSwitch = nopBankSwitch;
-    
-	memory->misc.monochromePalleteSource[0] = palleteColors[0];
-	memory->misc.monochromePalleteSource[1] = palleteColors[1];
-	memory->misc.monochromePalleteSource[2] = palleteColors[2];
-	memory->misc.monochromePalleteSource[3] = palleteColors[3];
 }
