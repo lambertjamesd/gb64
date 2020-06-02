@@ -26,6 +26,8 @@ ASFLAGS         = -mabi=32
 N64LIB          = -lultra_d
 endif
 
+RSPASM = $(N64_INST)/bin/rspasm
+
 APP =		bin/gb.out
 
 TARGETS =	bin/gb.n64
@@ -112,6 +114,9 @@ font.o:		./letters_img.h
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)
+
+rsp/%.o: rsp/%.s
+	$(RSPASM) $< -o $@
 
 # for exeGCC CELF
 ifeq ($(GCC_CELF), ON)
