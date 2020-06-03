@@ -62,7 +62,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/bgbtest.gb"
+	include "data/tetris.gb"
 endseg
 
 beginwave

@@ -56,7 +56,7 @@ int runInterruptTests(struct CPUState* cpu, struct Memory* memory, char* testOut
 extern char* registerNames[];
 extern int registerOffset[];
 
-int runTests(char* testOutput);
+int runCPUTests(char* testOutput);
 
 #define REGISTER_COUNT 8
 #define B_REGISTER_INDEX 0

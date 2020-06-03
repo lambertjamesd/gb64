@@ -124,7 +124,7 @@ int testADD_SP_r8(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     run = runCPU(cpu, memory, 1);
     expected.pc = 4;
     expected.sp = 0x8010;
-    expected.f = GB_FLAGS_H;
+    expected.f = GB_FLAGS_C;
 
     return testCPUState("ADD SP r8 HL", testOutput, cpu, &expected) &&
         testInt("ADD SP r8 run result", testOutput, run, 4) &&

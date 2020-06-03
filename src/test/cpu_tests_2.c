@@ -200,7 +200,7 @@ int testDEC_H(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     struct CPUState expected;
     initializeCPU(cpu);
     expected = *cpu;
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 1;
     expected.h = 0xFF;
 
@@ -234,7 +234,7 @@ int testDEC_H(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->h = 0x10;
     cpu->f = 0;
     run = runCPU(cpu, memory, 1);
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 3;
     expected.h = 0x0F;
     
@@ -429,7 +429,7 @@ int testDEC_L(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     struct CPUState expected;
     initializeCPU(cpu);
     expected = *cpu;
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 1;
     expected.l = 0xFF;
 
@@ -438,8 +438,8 @@ int testDEC_L(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     run = runCPU(cpu, memory, 1);
     
     return 
-        testCPUState("DEC E", testOutput, cpu, &expected) &
-        testInt("DEC E", testOutput, run, 1) &&
+        testCPUState("DEC L", testOutput, cpu, &expected) &
+        testInt("DEC L", testOutput, run, 1) &&
         1
     ;
 }

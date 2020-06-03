@@ -5,10 +5,9 @@ MAIN:
 LABEL:
     nop
     nop
-    j LABEL
-    nop
     
     .data
+
     .byte 0x48
     .byte 0x65
     .byte 0x6c

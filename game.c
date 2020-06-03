@@ -35,7 +35,7 @@
 #include "font_ext.h"
 #include "src/gameboy.h"
 #include "src/graphics.h"
-#include "src/test/cpu_test.h"
+#include "src/test/test.h"
 
 /*
  * Task header.
@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 0
+#define RUN_TESTS 1
 				
 /*
  * macros 
@@ -186,11 +186,10 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
+		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d", 
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
-			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
-			offsetof(struct Memory, vram.objColorPalletes)
+			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000
 		);
 #endif
 

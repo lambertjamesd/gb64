@@ -160,7 +160,7 @@ int testDEC_D(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     struct CPUState expected;
     initializeCPU(cpu);
     expected = *cpu;
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 1;
     expected.d = 0xFF;
 
@@ -194,7 +194,7 @@ int testDEC_D(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->d = 0x10;
     cpu->f = 0;
     run = runCPU(cpu, memory, 1);
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 3;
     expected.d = 0x0F;
     
@@ -251,7 +251,7 @@ int testRLA(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->a = 0x80;
     expected.pc = 2;
     expected.a = 0x0;
-    expected.f = 0x90;
+    expected.f = 0x10;
     run = runCPU(cpu, memory, 1);
     
     return 
@@ -440,7 +440,7 @@ int testDEC_E(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     struct CPUState expected;
     initializeCPU(cpu);
     expected = *cpu;
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 1;
     expected.e = 0xFF;
 
@@ -502,7 +502,7 @@ int testRRA(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->a = 0x01;
     expected.pc = 2;
     expected.a = 0x0;
-    expected.f = 0x90;
+    expected.f = 0x10;
     run = runCPU(cpu, memory, 1);
     
     return 

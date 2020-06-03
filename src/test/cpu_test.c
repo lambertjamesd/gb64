@@ -104,7 +104,7 @@ void BankSwitchingWriter(struct Memory* memory, int addr, unsigned char value)
     
 }
 
-int runTests(char* testOutput) {
+int runCPUTests(char* testOutput) {
     struct CPUState cpu;
     int i;
     char subTestOutput[200];

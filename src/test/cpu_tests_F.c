@@ -150,9 +150,10 @@ int testLD_HL_SP_r8(struct CPUState* cpu, struct Memory* memory, char* testOutpu
     expected.pc = 4;
     expected.h = 0x80;
     expected.l = 0x10;
+    expected.f = 0x10;
 
-    return testCPUState("LD HL SP r8", testOutput, cpu, &expected) &&
-        testInt("LD HL SP r8 run result", testOutput, run, 3) &&
+    return testCPUState("LD HL SP r8 2", testOutput, cpu, &expected) &&
+        testInt("LD HL SP r8 run result 2", testOutput, run, 3) &&
         1
     ;
 }

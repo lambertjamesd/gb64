@@ -161,7 +161,7 @@ int testDEC_HL_ADDR(struct CPUState* cpu, struct Memory* memory, char* testOutpu
     cpu->l = 0x30;
     expected = *cpu;
     expected.pc = 1;
-    expected.f = 0x60;
+    expected.f = 0x40;
 
     memory->internalRam[0] = CPU_DEC_HL_ADDR;
     memory->internalRam[0x130] = 0x31;
@@ -364,7 +364,7 @@ int testDEC_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     struct CPUState expected;
     initializeCPU(cpu);
     expected = *cpu;
-    expected.f = 0x40;
+    expected.f = 0x60;
     expected.pc = 1;
     expected.a = 0xFF;
 

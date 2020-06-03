@@ -98,8 +98,8 @@ void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, i
 
     for (currentInput = 0; currentInput < SPRITE_COUNT; ++currentInput)
     {
-        // if (inputSprites[currentInput].y > 0 && inputSprites[currentInput].y < 160 &&
-        //     inputSprites[currentInput].x < 168)
+        if (inputSprites[currentInput].y > 0 && inputSprites[currentInput].y < 160 &&
+            inputSprites[currentInput].x < 168)
         {
             sortedSprites[currentOutput++] = inputSprites[currentInput];
         }

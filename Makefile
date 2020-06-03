@@ -61,7 +61,9 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/memory_map.c                      \
        src/gameboy.c                         \
        src/graphics.c                        \
-       memory.c
+       memory.c                              \
+       src/test/graphics_test.c              \
+       src/test/test.c 
 
 S_FILES = asm/cpu.s
 
