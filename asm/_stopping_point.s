@@ -8,7 +8,7 @@
 CALCULATE_NEXT_TIMER_INTERRUPT:
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
-    beq $at, $zero, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
+    beqz $at, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
     addi TMP2, TMP2, -1 # 
@@ -55,8 +55,9 @@ CALCULATE_TIMA_VALUE:
     lw TMP2, CPU_STATE_NEXT_TIMER(CPUState)
     addiu $v0, TMP2, 1 
     # if there is no timer running, do nothing
-    beq $v0, $zero, _CALCULATE_TIMA_VALUE_NONE 
-    
+    beqz $v0, _CALCULATE_TIMA_VALUE_NONE 
+    nop
+
     read_register_direct $at, REG_TAC # load the timer attributes table
     # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
@@ -71,6 +72,7 @@ CALCULATE_TIMA_VALUE:
     sub $v0, CYCLES_RUN, TMP2
     # shift the diffence by the clock divider
     srlv $v0, $v0, $at
+    andi $v0, $v0, 0xFF # mask the result
 
     # write TIMA register
     write_register_direct $v0, REG_TIMA

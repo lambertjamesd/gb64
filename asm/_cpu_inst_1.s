@@ -137,10 +137,10 @@ GB_LD_E_D8:
     nop
 GB_RRA:
     jal GB_RR_IMPL
-    addi Param0, GB_A, 0
-    addi GB_A, Param0, 0
+    move Param0, GB_A
+    move GB_A, Param0
     j DECODE_NEXT
-    clear_flags Z_FLAG
+    clear_flags Z_FLAG | N_FLAG | H_FLAG
     nop
     nop
     nop

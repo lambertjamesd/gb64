@@ -40,11 +40,11 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
             gameboy->cpu.nextInterrupt = interrupt;
             gameboy->cpu.nextInterruptTrigger = gameboy->cpu.cyclesRun + 1;
         }
+    }
         
-        if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
-        {
-            gameboy->cpu.stopReason = STOP_REASON_NONE;
-        }
+    if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
+    {
+        gameboy->cpu.stopReason = STOP_REASON_NONE;
     }
 }
 

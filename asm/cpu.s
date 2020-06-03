@@ -74,8 +74,6 @@ DECODE_NEXT:
 _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
-    la $at, 0x80700000 - 4
-    sw GB_PC, 0($at)
 # DEBUG_START:
 #     la $at, 0x80700000 - 4
 #     lw TMP4, 0($at)
@@ -208,12 +206,18 @@ READ_NEXT_INSTRUCTION:
 SET_GB_PC:
     xor $at, GB_PC, Param0
     andi $at, $at, 0xF000
-    beq $zero, $at, _SET_GB_PC_FINISH
-    move GB_PC, Param0
-
+    bnez $at, _SET_GB_PC_CHANGE_BANK
+    nop
+    # check if PC jumped between 0xF000-0xFDFF and 0xFF80-0xFFFE
+    li $at, MEMORY_MISC_START
+    sltu TMP2, GB_PC, $at
+    sltu $at, Param0, $at
+    beq TMP2, $at, _SET_GB_PC_FINISH
+    nop
+_SET_GB_PC_CHANGE_BANK:
     # if memory is within register memory
     la $at, MM_REGISTER_START
-    sltu $at, GB_PC, $at
+    sltu $at, Param0, $at
     bnez $at, _SET_GB_PC_REGULAR_BANK 
     nop
     j _SET_GB_PC_UPDATE_BANK
@@ -221,18 +225,18 @@ SET_GB_PC:
     addi $at, Memory, (MEMORY_MISC_START - 0xE00) 
 
 _SET_GB_PC_REGULAR_BANK:
-    srl $at, GB_PC, 12 # git top 4 bits
+    srl $at, Param0, 12 # git top 4 bits
     sll $at, $at, 2 # multiply by 4
     add $at, Memory, $at # access relative to memory map
     lw $at, 0($at) # load bank pointer
     
 _SET_GB_PC_UPDATE_BANK:
-    andi Param0, GB_PC, 0xF000
-    sub PC_MEMORY_BANK, $at, Param0
+    andi TMP2, Param0, 0xF000
+    sub PC_MEMORY_BANK, $at, TMP2
     
 _SET_GB_PC_FINISH:
     jr $ra
-    nop
+    move GB_PC, Param0
 
 ######################
 # Checks to see if a timer interrupt would wake up the CPU

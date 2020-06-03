@@ -72,7 +72,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-#define RUN_TESTS 1
+#define RUN_TESTS 0
 				
 /*
  * macros 
@@ -186,10 +186,14 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d", 
+		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X\n%X\n%X\n%X", 
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
-			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000
+			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
+			gGameboy.cpu.nextTimerTrigger,
+			READ_REGISTER_DIRECT(&gGameboy.memory, REG_TIMA),
+			READ_REGISTER_DIRECT(&gGameboy.memory, REG_TAC),
+			gGameboy.cpu.pc
 		);
 #endif
 

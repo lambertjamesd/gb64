@@ -4,8 +4,15 @@
 
 int runTests(char* testOutput)
 {
-    return 
-        runCPUTests(testOutput) ||
-        testGraphics(testOutput) ||
-    1;
+    if (
+        // !runCPUTests(testOutput) ||
+        !testGraphics(testOutput)
+    )
+    {
+        return 0;
+    }
+    
+	sprintf(testOutput, "Tests Passed %X", &runCPU);
+
+    return 1;
 }

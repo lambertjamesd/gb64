@@ -108,13 +108,13 @@ GB_RR_IMPL:
     sll $at, GB_F, 4                        # shift carry bit into position
     or Param0, Param0, $at                  # set carry bit
     sll $at, Param0, 4                      # shift new carry bit into pos
-    andi GB_F, $at, 0x10                    # set carry bit
+    clear_flags C_FLAG                      # clear existing carry flag
+    andi $at, $at, C_FLAG                   # set carry new carry flag
+    or GB_F, GB_F, $at
 
     srl Param0, Param0, 1                   # shift the bit once
-    beq Param0, $zero, _GB_BITWISE_ADD_Z
-    andi Param0, Param0, 0xFF               # set to 8 bits
     jr $ra
-    nop
+    andi Param0, Param0, 0xFF               # set to 8 bits
 
 #######################
 # Shifts param left one bit

@@ -415,13 +415,8 @@ _GB_CHECK_RISING_STAT:
     beqz $v1, _GB_CHECK_RISING_STAT_FINISH
     nop
 
-    read_register_direct $at, REG_INTERRUPTS_REQUESTED
-    andi TMP2, $at, INTERRUPT_LCD_STAT
-    bnez TMP3, _GB_CHECK_RISING_STAT_FINISH
-
-    ori $at, $at, INTERRUPT_LCD_STAT
-    jal CHECK_FOR_INTERRUPT
-    write_register_direct $at, REG_INTERRUPTS_REQUESTED
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPT_LCD_STAT
 
     jal CALCULATE_NEXT_STOPPING_POINT
     nop
