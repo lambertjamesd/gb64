@@ -36,6 +36,10 @@
 #define REG_SCX         0xFF43
 #define REG_LY          0xFF44
 #define REG_LCY         0xFF45
+#define REG_KEY1        0xFF4D
+
+#define REG_KEY1_SPEED_REQUEST  0x1
+#define REG_KEY1_SPEED          0x80
 
 #define REG_INT_REQUESTED   0xFF0F
 #define REG_INT_ENABLED     0xFFFF
@@ -76,7 +80,10 @@ struct Sprite {
 
 struct MiscMemory {
     struct Sprite sprites[SPRITE_COUNT];
-    unsigned char unused[0x60];
+    int romBankLower;
+    int romBankUpper;
+    int ramRomSelect;
+    unsigned char unused[0x54];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };

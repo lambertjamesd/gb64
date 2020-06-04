@@ -301,8 +301,10 @@ _GB_WRITE_REG_4X_TABLE:
     jr $ra
     nop
     # KEY1
+    j _GB_SPEED_KEY1
+    nop
     jr $ra
-    nop # TODO
+    nop
     # VBK
     andi VAL, VAL, 0x1
     sll VAL, VAL, 13 # mulitply by 0x8000 (VRAM bank size)
@@ -447,12 +449,22 @@ _GB_DMA_LOOP:
     addi TMP3, TMP3, 4 # increase write address
     jr $ra
     nop
+
+############################
+
+_GB_SPEED_KEY1:
+    read_register_direct $at, REG_KEY1
+    addi $at, $at, 0xFE
+    andi VAL, VAL, 0x01
+    or VAL, VAL, $at
+    jr $ra
+    write_register_direct VAL, REG_KEY1
     
 ############################
 
 _GB_PALLETE_COLORS:
     .data
-    .word 0b1110011111110100, 0b1000111000011100, 0b0011001101010100, 0b0000100011001000
+    .word 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
 
 _GB_WRITE_BGP:
     la $at, MEMORY_BG_PAL
@@ -510,16 +522,6 @@ _GB_WRITE_REG_5X:
 
 _GB_WRITE_REG_UNLOAD_BIOS:
     addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
-    sb GB_A, 0x0($sp)
-    sb GB_F, 0x1($sp)
-    sb GB_B, 0x2($sp)
-    sb GB_C, 0x3($sp)
-
-    sb GB_D, 0x4($sp)
-    sb GB_E, 0x5($sp)
-    sb GB_H, 0x6($sp)
-    sb GB_L, 0x7($sp)
-
     sh GB_PC, 0x8($sp)
     sh GB_SP, 0xA($sp)
 
@@ -538,16 +540,6 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     jalr $ra, $at
     lw $a0, 0($a0)
 
-    lbu GB_A, 0x0($sp)
-    lbu GB_F, 0x1($sp)
-    lbu GB_B, 0x2($sp)
-    lbu GB_C, 0x3($sp)
-
-    lbu GB_D, 0x4($sp)
-    lbu GB_E, 0x5($sp)
-    lbu GB_H, 0x6($sp)
-    lbu GB_L, 0x7($sp)
-
     lhu GB_PC, 0x8($sp)
     lhu GB_SP, 0xA($sp)
 
@@ -558,6 +550,16 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     lw PC_MEMORY_BANK, 0x1C($sp)
     lw $ra, 0x20($sp)
     lw $fp, 0x24($sp)
+
+    # TODO different initial values in GBC mode
+    li GB_A, 0x01
+    li GB_F, 0xB0
+    li GB_B, 0x00
+    li GB_C, 0x13
+    li GB_D, 0x00
+    li GB_E, 0xD8
+    li GB_H, 0x01
+    li GB_L, 0x4D
 
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE

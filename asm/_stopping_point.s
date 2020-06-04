@@ -22,6 +22,7 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     addi $at, $at, 0x100
     # shift the diffence by the clock divider
     sllv $at, $at, TMP2
+    addi $at, $at, 1 # timer interrupt happens 1 cycle after overflow
     add $at, CYCLES_RUN, $at # make offset relative to cycles run
     j CALCULATE_NEXT_STOPPING_POINT
     # calculate the next interrupt time
@@ -235,7 +236,7 @@ CHECK_FOR_INTERRUPT:
 
 _CHECK_FOR_INTERRUPT_SAVE:
     # set next interrupt time to be 1 frame ahead
-    addi TMP3, CYCLES_RUN, 0 # TODO different timing with EI vs set interrupt flag
+    move TMP3, CYCLES_RUN # TODO different timing with EI vs set interrupt flag
     sltu $at, CycleTo, TMP3
     # check to see if interrupt is new stopping point
     bnez $at, _CHECK_FOR_INTERRUPT_EXIT

@@ -40,11 +40,11 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
             gameboy->cpu.nextInterrupt = interrupt;
             gameboy->cpu.nextInterruptTrigger = gameboy->cpu.cyclesRun + 1;
         }
-    }
         
-    if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
-    {
-        gameboy->cpu.stopReason = STOP_REASON_NONE;
+        if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
+        {
+            gameboy->cpu.stopReason = STOP_REASON_NONE;
+        }
     }
 }
 
@@ -57,6 +57,13 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     int ly;
 
     screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
+
+    if (gameboy->cpu.stopReason == STOP_REASON_STOP && (READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & REG_KEY1_SPEED_REQUEST))
+    {
+        // TODO change timing
+        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_KEY1, REG_KEY1_SPEED ^ READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1));
+        gameboy->cpu.stopReason = STOP_REASON_NONE;
+    }
 
     if (targetMemory && screenWasEnabled)
     {

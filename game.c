@@ -106,7 +106,6 @@ game(void)
 	int x, y;
 	int loop, offset, color;
 	int lastButton;
-	int line = 0;
 	OSTime lastTime;
 	OSTime lastDrawTime;
 	OSTime frameTime;
@@ -118,7 +117,6 @@ game(void)
 	offset = 0;
 	color = 0;
 	lastButton = 0;
-	line = -1;
 
 	frameTime = 0;
 	lastDrawTime = 0;
@@ -191,7 +189,7 @@ game(void)
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
 			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
 			gGameboy.cpu.nextTimerTrigger,
-			READ_REGISTER_DIRECT(&gGameboy.memory, REG_TIMA),
+			READ_REGISTER_DIRECT(&gGameboy.memory, REG_KEY1),
 			READ_REGISTER_DIRECT(&gGameboy.memory, REG_TAC),
 			gGameboy.cpu.pc
 		);
