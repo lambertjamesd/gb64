@@ -91,7 +91,7 @@ unsigned char* getRegisterPointer(struct CPUState* cpu, unsigned char* hlTarget,
     }
 }
 
-void DefaultRegisterWriter(struct Memory* memory, int addr, unsigned char value)
+void DefaultRegisterWriter(struct Memory* memory, int addr, int value)
 {
     if (addr >= MISC_START && addr < 0x10000)
     {
@@ -99,7 +99,7 @@ void DefaultRegisterWriter(struct Memory* memory, int addr, unsigned char value)
     }
 }
 
-void BankSwitchingWriter(struct Memory* memory, int addr, unsigned char value)
+void BankSwitchingWriter(struct Memory* memory, int addr, int value)
 {
     
 }

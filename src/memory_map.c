@@ -11,12 +11,12 @@ u16 palleteColors[] = {
 
 // background color? 0xCADC9F
 
-void nopBankSwitch(struct Memory* memory, int addr, unsigned char value)
+void nopBankSwitch(struct Memory* memory, int addr, int value)
 {
 
 }
 
-void handleMBC1Write(struct Memory* memory, int addr, unsigned char value)
+void handleMBC1Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
     if (writeRange == 0)
@@ -59,7 +59,7 @@ void handleMBC1Write(struct Memory* memory, int addr, unsigned char value)
     memory->memoryMap[0xB] = ramBank + MEMORY_MAP_SEGMENT_SIZE * 1;
 }
 
-void defaultRegisterWrite(struct Memory* memory, int addr, unsigned char value)
+void defaultRegisterWrite(struct Memory* memory, int addr, int value)
 {
     WRITE_REGISTER_DIRECT(memory, addr, value);
 }

@@ -85,7 +85,6 @@ _GB_CALL_WRITE_CALLBACK:
     sw CPUState, 0x10($sp)
     sw Memory, 0x14($sp)
     sw CycleTo, 0x18($sp)
-    sw PC_MEMORY_BANK, 0x1C($sp)
     sw $ra, 0x20($sp)
     sw $fp, 0x24($sp)
 
@@ -104,16 +103,22 @@ _GB_CALL_WRITE_CALLBACK:
     lbu GB_H, 0x6($sp)
     lbu GB_L, 0x7($sp)
 
-    lhu GB_PC, 0x8($sp)
+    lhu Param0, 0x8($sp)
     lhu GB_SP, 0xA($sp)
 
     lw CYCLES_RUN, 0xC($sp)
     lw CPUState, 0x10($sp)
     lw Memory, 0x14($sp)
     lw CycleTo, 0x18($sp)
-    lw PC_MEMORY_BANK, 0x1C($sp)
-    lw $ra, 0x20($sp)
     lw $fp, 0x24($sp)
+
+    # in case the program counter is inside the bank of 
+    # memory that was switched
+    jal SET_GB_PC
+    # make sure GB_PC doesn't match Param0 to force bank load
+    xori GB_PC, Param0, 0xFFFF 
+
+    lw $ra, 0x20($sp)
 
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE

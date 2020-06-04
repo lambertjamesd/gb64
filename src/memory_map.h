@@ -107,7 +107,7 @@ struct GraphicsMemory {
 
 struct Memory;
 
-typedef void (*RegisterWriter)(struct Memory*, int addr, unsigned char value);
+typedef void (*RegisterWriter)(struct Memory*, int addr, int value);
 
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];

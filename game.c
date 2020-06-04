@@ -188,9 +188,9 @@ game(void)
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
 			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
-			gGameboy.cpu.nextTimerTrigger,
-			READ_REGISTER_DIRECT(&gGameboy.memory, REG_KEY1),
-			READ_REGISTER_DIRECT(&gGameboy.memory, REG_TAC),
+			gGameboy.memory.misc.romBankLower,
+			gGameboy.memory.misc.romBankUpper,
+			gGameboy.memory.misc.ramRomSelect,
 			gGameboy.cpu.pc
 		);
 #endif
