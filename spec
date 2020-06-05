@@ -62,7 +62,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/tests/cpu_instrs/individual/09-op r,r.gb"
+	include "data/tetris.gb"
 endseg
 
 beginwave
