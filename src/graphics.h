@@ -57,6 +57,7 @@ struct GraphicsState {
 
 int compareSprites(struct Sprite a, struct Sprite b);
 void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount);
+void renderSprites(struct Memory* memory, struct GraphicsState* state);
 
 void initGraphicsState(
     struct Memory* memory,

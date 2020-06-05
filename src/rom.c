@@ -31,17 +31,15 @@ int _romBankSizes[] = {
 
 void loadRomSegment(void* target, void *romLocation, int bankNumber)
 {
-    dmaIOMessageBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIOMessageBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIOMessageBuf.dramAddr = target;
-    dmaIOMessageBuf.devAddr = (u32)romLocation + bankNumber * ROM_BANK_SIZE;
-    dmaIOMessageBuf.size = ROM_BANK_SIZE;
+	OSIoMesg dmaIoMesgBuf;
 
-    osEPiStartDma(handler, &dmaIOMessageBuf, OS_READ);
+    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+    dmaIoMesgBuf.dramAddr = target;
+    dmaIoMesgBuf.devAddr = (u32)romLocation + bankNumber * ROM_BANK_SIZE;
+    dmaIoMesgBuf.size = ROM_BANK_SIZE;
 
-	/*
-	 * Wait for DMA to finish
-	 */
+    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 }
 
@@ -195,17 +193,15 @@ int getCartType(struct ROMLayout* romLayout)
 
 void loadBIOS(struct ROMLayout* romLayout, int gbc)
 {
-    dmaIOMessageBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIOMessageBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIOMessageBuf.dramAddr = romLayout->mainBank;
-    dmaIOMessageBuf.devAddr = (u32)_dmg_bootSegmentRomStart;
-    dmaIOMessageBuf.size = (u32)_dmg_bootSegmentRomEnd - (u32)_dmg_bootSegmentRomStart;
+	OSIoMesg dmaIoMesgBuf;
 
-    osEPiStartDma(handler, &dmaIOMessageBuf, OS_READ);
+    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+    dmaIoMesgBuf.dramAddr = romLayout->mainBank;
+    dmaIoMesgBuf.devAddr = (u32)_dmg_bootSegmentRomStart;
+    dmaIoMesgBuf.size = (u32)_dmg_bootSegmentRomEnd - (u32)_dmg_bootSegmentRomStart;
 
-	/*
-	 * Wait for DMA to finish
-	 */
+    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 }
 

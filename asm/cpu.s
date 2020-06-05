@@ -13,6 +13,8 @@
     ori GB_F, GB_F, \flags
 .endm
 
+.set DEBUG_OUT, 0
+
 .global runCPU 
 .balign 4 
 runCPU:
@@ -59,9 +61,11 @@ runCPU:
     lbu $at, CPU_STATE_STOP_REASON(CPUState)
     bnez $at, GB_SIMULATE_HALTED
 
+.if DEBUG_OUT
     la $at, 0x80700000 - 4
     la TMP4, 0x80700000
     sw TMP4, 0($at)
+.endif
 
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
@@ -74,6 +78,8 @@ DECODE_NEXT:
 _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
+
+.if DEBUG_OUT
 DEBUG_START:
     la $at, 0x80700000 - 4
     lw TMP4, 0($at)
@@ -91,6 +97,7 @@ DEBUG_START:
 _DEBUG_SKIP:
     la $at, 0x80700000 - 4
     sw TMP4, 0($at)
+.endif
 
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
