@@ -59,9 +59,9 @@ runCPU:
     lbu $at, CPU_STATE_STOP_REASON(CPUState)
     bnez $at, GB_SIMULATE_HALTED
 
-    # la $at, 0x80700000 - 4
-    # la TMP4, 0x80700000
-    # sw TMP4, 0($at)
+    la $at, 0x80700000 - 4
+    la TMP4, 0x80700000
+    sw TMP4, 0($at)
 
 DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
@@ -74,23 +74,23 @@ DECODE_NEXT:
 _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
     nop
-# DEBUG_START:
-#     la $at, 0x80700000 - 4
-#     lw TMP4, 0($at)
-#     sw Memory, -4($at)
-#     sb $v0, 0(TMP4)
-#     sh GB_PC, 2(TMP4)
-#     addi TMP4, TMP4, 4
+DEBUG_START:
+    la $at, 0x80700000 - 4
+    lw TMP4, 0($at)
+    sw Memory, -4($at)
+    sb $v0, 0(TMP4)
+    sh GB_PC, 2(TMP4)
+    addi TMP4, TMP4, 4
 
-#     la $at, 0x80800000
-#     sltu $at, TMP4, $at
-#     bne $at, $zero, _DEBUG_SKIP
-#     nop
-#     la TMP4, 0x80700000
+    la $at, 0x80800000
+    sltu $at, TMP4, $at
+    bne $at, $zero, _DEBUG_SKIP
+    nop
+    la TMP4, 0x80700000
 
-# _DEBUG_SKIP:
-#     la $at, 0x80700000 - 4
-#     sw TMP4, 0($at)
+_DEBUG_SKIP:
+    la $at, 0x80700000 - 4
+    sw TMP4, 0($at)
 
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)

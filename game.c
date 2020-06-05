@@ -130,19 +130,19 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
-	gGameboy.memory.vram.bgColorPalletes[0] = 0b0000100011001000;
-	gGameboy.memory.vram.bgColorPalletes[1] = 0b0011001101010100;
-	gGameboy.memory.vram.bgColorPalletes[2] = 0b1000111000011100;
-	gGameboy.memory.vram.bgColorPalletes[3] = 0b1110011111110100;
+	gGameboy.memory.vram.bgColorPalletes[0] = 0b1100011110110100;
+	gGameboy.memory.vram.bgColorPalletes[1] = 0b1000111000011100;
+	gGameboy.memory.vram.bgColorPalletes[2] = 0b0011001101010100;
+	gGameboy.memory.vram.bgColorPalletes[3] = 0b0000100011001000;
 	
-	gGameboy.memory.vram.objColorPalletes[0] = 0b0000100011001000;
-	gGameboy.memory.vram.objColorPalletes[1] = 0b0011001101010100;
-	gGameboy.memory.vram.objColorPalletes[2] = 0b1000111000011100;
-	gGameboy.memory.vram.objColorPalletes[3] = 0b1110011111110100;
-	gGameboy.memory.vram.objColorPalletes[4] = 0b0000100011001000;
-	gGameboy.memory.vram.objColorPalletes[5] = 0b0011001101010100;
-	gGameboy.memory.vram.objColorPalletes[6] = 0b1000111000011100;
-	gGameboy.memory.vram.objColorPalletes[7] = 0b1110011111110100;
+	gGameboy.memory.vram.objColorPalletes[0] = 0b1100011110110100;
+	gGameboy.memory.vram.objColorPalletes[1] = 0b1000111000011100;
+	gGameboy.memory.vram.objColorPalletes[2] = 0b0011001101010100;
+	gGameboy.memory.vram.objColorPalletes[3] = 0b0000100011001000;
+	gGameboy.memory.vram.objColorPalletes[4] = 0b1100011110110100;
+	gGameboy.memory.vram.objColorPalletes[5] = 0b1000111000011100;
+	gGameboy.memory.vram.objColorPalletes[6] = 0b0011001101010100;
+	gGameboy.memory.vram.objColorPalletes[7] = 0b0000100011001000;
 
 	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
@@ -188,9 +188,9 @@ game(void)
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
 			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
-			gGameboy.memory.misc.romBankLower,
-			gGameboy.memory.misc.romBankUpper,
-			gGameboy.memory.misc.ramRomSelect,
+			READ_REGISTER_DIRECT(&gGameboy.memory, 0xFF80),
+			READ_REGISTER_DIRECT(&gGameboy.memory, 0xFF00),
+			READ_REGISTER_DIRECT(&gGameboy.memory, 0xFF03),
 			gGameboy.cpu.pc
 		);
 #endif

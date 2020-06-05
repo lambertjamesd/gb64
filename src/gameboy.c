@@ -135,7 +135,7 @@ void handleInput(struct GameBoy* gameboy, OSContPad* pad)
 
     joy = READ_REGISTER_DIRECT(&gameboy->memory, REG_JOYP);
 
-    nextJoy = joy & 0xF0;
+    nextJoy = joy | 0x0F;
 
     if (!(joy & 0x10))
     {
