@@ -6,6 +6,14 @@
 
 struct Memory;
 
+struct SquareWavePattern {
+    unsigned char sweep;
+    unsigned char length_pattern;
+    unsigned char volume;
+    unsigned char frequencyLo;
+    unsigned char frequencyHi;
+};
+
 struct AudioSample
 {
     short l;
@@ -15,9 +23,14 @@ struct AudioSample
 struct AudioState
 {
     struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
-    int frequency;
-    int samplesPerBuffer;
-    int currentBuffer;
+    unsigned short frequency;
+    unsigned short samplesPerBuffer;
+    unsigned short currentBuffer;
+    unsigned short currentBufferIndex;
+    unsigned short sound1Cycle;
+    unsigned short sound2Cycle;
+    unsigned short sound3Cycle;
+    unsigned short sound4Cycle;
     int apuTicks;
 };
 
