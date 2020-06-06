@@ -149,11 +149,11 @@ GB_DO_WRITE_REGISTERS_CALL:
 _GB_WRITE_JUMP_TABLE:
     j _GB_WRITE_REG_0X
     nop
-    jr $ra # TODO
+    j _GB_WRITE_SOUND_REG
     nop
-    jr $ra # TODO
+    j _GB_WRITE_SOUND_REG
     nop
-    jr $ra # TODO
+    j _GB_WRITE_SOUND_REG
     nop
     j _GB_WRITE_REG_4X
     nop
@@ -255,6 +255,12 @@ _GB_WRITE_REG_INT_REQ:
     j CALCULATE_NEXT_STOPPING_POINT
     addi $sp, $sp, 4
 
+
+############################
+
+_GB_WRITE_SOUND_REG:
+    j _GB_BASIC_REGISTER_WRITE
+    nop
 
 ############################
 

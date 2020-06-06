@@ -6,13 +6,9 @@
 
 struct Memory;
 
-struct SquareWavePattern {
-    unsigned char sweep;
-    unsigned char length_pattern;
-    unsigned char volume;
-    unsigned char frequencyLo;
-    unsigned char frequencyHi;
-};
+#define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)
+#define GET_VOLUME(volume) (((volume) >> 4) & 0xF)
+#define GET_FREQ(frequencyHi, frequencyLo) ((((int)(frequencyHi) & 0x7) << 8) | (int)(frequencyLo))
 
 struct AudioSample
 {
@@ -20,21 +16,29 @@ struct AudioSample
     short r;
 };
 
+struct SquareWaveSound {
+    unsigned short cycle;
+    unsigned short waveDuty;
+    unsigned short volume;
+    unsigned short frequency;
+    unsigned short length;
+    unsigned short unused;
+};
+
 struct AudioState
 {
     struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
-    unsigned short frequency;
-    unsigned short samplesPerBuffer;
-    unsigned short currentBuffer;
-    unsigned short currentBufferIndex;
-    unsigned short sound1Cycle;
-    unsigned short sound2Cycle;
-    unsigned short sound3Cycle;
-    unsigned short sound4Cycle;
+    struct SquareWaveSound sound1;
+    struct SquareWaveSound sound2;
     int apuTicks;
+    unsigned short sampleRate;
+    unsigned short samplesPerBuffer;
+    unsigned short currentWriteBuffer;
+    unsigned short currentSampleIndex;
+    unsigned short nextPlayBuffer;
 };
 
-void initAudio(struct AudioState* audioState, int frequency, int frameRate);
+void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
 void updateAudio(struct Memory* memoryMap, int apuTicks);
 
 #endif
