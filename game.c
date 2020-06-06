@@ -215,8 +215,6 @@ game(void)
 				OS_K0_TO_PHYSICAL(staticSegment));
 		gSPSegment(glistp++, CFB_SEGMENT, 
 				OS_K0_TO_PHYSICAL(cfb[draw_buffer]));
-		gSPSegment(glistp++, TEXTURE_SEGMENT, 
-				OS_K0_TO_PHYSICAL(textureSegment));
 
 		/*
 		* Clear z and color framebuffer.

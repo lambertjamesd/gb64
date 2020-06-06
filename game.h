@@ -31,7 +31,6 @@ extern OSMesgQueue
  */
 extern int	rdp_flag;
 extern char	*staticSegment;
-extern char	*textureSegment;
 
 #define	GLIST_LEN	2048
 
