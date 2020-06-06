@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "memory_map.h"
 #include "../memory.h"
 #include <ultra64.h>
 
@@ -10,7 +11,7 @@ void initAudio(struct AudioState* audioState, int frequency, int frameRate)
 	// align to 8 bytes
 	audioState->samplesPerBuffer = (2 * audioState->frequency / frameRate) & ~1;
 	audioState->currentBuffer = 0;
-	audioState->simulationTime = 0;
+	audioState->apuTicks = 0;
 
 	int index;
 	for (index = 0; index < AUDIO_BUFFER_COUNT; ++index)
@@ -21,8 +22,9 @@ void initAudio(struct AudioState* audioState, int frequency, int frameRate)
 }
 
 
-void updateAudio(struct AudioState* audioState)
+void updateAudio(struct Memory* memory, int apuTicks)
 {
+	struct AudioState* audio = &memory->audio;
 	u32 playbackState = osAiGetStatus();
 	u32 pendingBufferCount = 0;
 
@@ -42,18 +44,18 @@ void updateAudio(struct AudioState* audioState)
 	while (pendingBufferCount < 2)
 	{
 		int sample;
-		struct AudioSample* targetBuffer = audioState->buffers[audioState->currentBuffer];
+		struct AudioSample* targetBuffer = audio->buffers[audio->currentBuffer];
 		int multiplier = 1300;
 
-		for (sample = 0; sample < audioState->samplesPerBuffer;)
+		for (sample = 0; sample < audio->samplesPerBuffer;)
 		{
-			targetBuffer[sample++].l = (audioState->simulationTime * multiplier * 2) & 0xFFFF;
-			targetBuffer[sample++].r = (audioState->simulationTime * multiplier) & 0xFFFF;
-			++audioState->simulationTime;
+			targetBuffer[sample++].l = (audio->apuTicks * multiplier * 2) & 0xFFFF;
+			targetBuffer[sample++].r = (audio->apuTicks * multiplier) & 0xFFFF;
+			++audio->apuTicks;
 		}
 
-		osAiSetNextBuffer(targetBuffer, audioState->samplesPerBuffer * sizeof(struct AudioSample));
-		audioState->currentBuffer = (audioState->currentBuffer + 1) % AUDIO_BUFFER_COUNT;
+		osAiSetNextBuffer(targetBuffer, audio->samplesPerBuffer * sizeof(struct AudioSample));
+		audio->currentBuffer = (audio->currentBuffer + 1) % AUDIO_BUFFER_COUNT;
 		++pendingBufferCount;
 	}
 

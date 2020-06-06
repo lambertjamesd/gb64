@@ -4,6 +4,7 @@
 
 #include <ultra64.h>
 #include "rom.h"
+#include "audio.h"
 
 #define MEMORY_MAP_SIZE 16
 #define MEMORY_MAP_SEGMENT_SIZE 0x1000
@@ -124,6 +125,7 @@ struct Memory {
         unsigned char vramBytes[sizeof(struct GraphicsMemory)];
     };
     struct ROMLayout* rom;
+    struct AudioState audio;
 };
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);

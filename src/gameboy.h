@@ -23,7 +23,6 @@ struct GameBoy
 {
     struct Memory memory;
     struct CPUState cpu;
-    struct AudioState audio;
 };
 
 extern struct GameBoy gGameboy;

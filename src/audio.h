@@ -2,7 +2,9 @@
 #ifndef _AUDIO_H
 #define _AUDIO_H
 
-#define AUDIO_BUFFER_COUNT 3
+#define AUDIO_BUFFER_COUNT 4
+
+struct Memory;
 
 struct AudioSample
 {
@@ -16,10 +18,10 @@ struct AudioState
     int frequency;
     int samplesPerBuffer;
     int currentBuffer;
-    int simulationTime;
+    int apuTicks;
 };
 
 void initAudio(struct AudioState* audioState, int frequency, int frameRate);
-void updateAudio(struct AudioState* audioState);
+void updateAudio(struct Memory* memoryMap, int apuTicks);
 
 #endif
