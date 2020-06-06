@@ -6,6 +6,7 @@
 #include "rom.h"
 #include "cpu.h"
 #include "memory_map.h"
+#include "audio.h"
 
 #define GB_BUTTON_RIGHT     0x01
 #define GB_BUTTON_LEFT      0x02
@@ -22,6 +23,7 @@ struct GameBoy
 {
     struct Memory memory;
     struct CPUState cpu;
+    struct AudioState audio;
 };
 
 extern struct GameBoy gGameboy;

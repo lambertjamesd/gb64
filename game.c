@@ -177,7 +177,7 @@ game(void)
 		// we need to emulator two frames
 		// for every one frame rendered
 		
-		clearDebugOutput();
+		// clearDebugOutput();
 		
 		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, NULL);
@@ -185,6 +185,8 @@ game(void)
 		pad = ReadController(0);
 		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, cfb[draw_buffer]);
+
+		updateAudio(&gGameboy.audio);
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 

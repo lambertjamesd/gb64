@@ -8,6 +8,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 {
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
+    initAudio(&gameboy->audio, 22000, 30);
     loadBIOS(gameboy->memory.rom, 0);
 
     gameboy->cpu.a = 0x0;

@@ -64,7 +64,8 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        memory.c                              \
        src/test/graphics_test.c              \
        src/test/test.c                       \
-       src/debug_out.c 
+       src/debug_out.c                       \
+       src/audio.c 
 
 S_FILES = asm/cpu.s
 
