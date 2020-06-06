@@ -189,13 +189,13 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
-			gGameboy.cpu.cyclesRun, 
-			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
-			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
-			renderSprites
-		);
-		debugInfo(str);
+		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
+		// 	gGameboy.cpu.cyclesRun, 
+		// 	(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
+		// 	(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
+		// 	renderSprites
+		// );
+		// debugInfo(str);
 #endif
 
 		/*

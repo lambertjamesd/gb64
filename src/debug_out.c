@@ -8,6 +8,8 @@ static int currentWritePosition = 0;
 static int currentSourcePosition = 0;
 static int visibleDebugLineCount;
 
+char debugTMP[100];
+
 void wrapBuffer()
 {
     int targetIndex = 0;

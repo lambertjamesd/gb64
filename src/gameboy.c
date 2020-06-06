@@ -83,10 +83,6 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 
         initGraphicsState(&gameboy->memory, &graphicsState, 0);
 
-        char str[64];
-        sprintf(str, "Visible Sprites %d\n", graphicsState.spriteCount);
-		debugInfo(str);
-
         runCPU(&gameboy->cpu, &gameboy->memory, MODE_2_CYCLES);
         for (line = 0; line < GB_SCREEN_H; ++line)
         {

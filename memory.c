@@ -16,7 +16,7 @@ extern char     _cfbSegmentEnd[];
 
 void initHeap()
 {
-    gFirstHeapSegment = (struct HeapSegment*)(((int)_codeSegmentEnd + 3) & ~0x3);
+    gFirstHeapSegment = (struct HeapSegment*)(((int)_codeSegmentEnd + 7) & ~0x7);
 
     gFirstHeapSegment->nextSegment = 0;
     gFirstHeapSegment->segmentEnd = (void*)(osGetMemSize() | 0x80000000);
@@ -41,8 +41,8 @@ void *malloc(unsigned int size)
     struct HeapSegment* currentSegment;
     struct HeapSegment* nextSegment;
     int segmentSize;
-    // word align
-    size = (size + 3) & (~0x3);
+    // 8 byte align for DMA
+    size = (size + 7) & (~0x7);
 
     if (size < sizeof(struct HeapSegment))
     {
