@@ -36,6 +36,7 @@
 #include "src/gameboy.h"
 #include "src/graphics.h"
 #include "src/test/test.h"
+#include "src/debug_out.h"
 
 /*
  * Task header.
@@ -128,6 +129,8 @@ game(void)
 	runTests(str);
 #endif
 
+	debugInfo(str);
+
 	initGameboy(&gGameboy, &gGBRom);
 
 	gGameboy.memory.vram.bgColorPalletes[0] = 0b1100011110110100;
@@ -174,6 +177,8 @@ game(void)
 		// we need to emulator two frames
 		// for every one frame rendered
 		
+		clearDebugOutput();
+		
 		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, NULL);
 
@@ -184,12 +189,13 @@ game(void)
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
-		sprintf(cstring, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
+		sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
 			gGameboy.cpu.cyclesRun, 
 			(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
 			(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
-			prepareSprites
+			renderSprites
 		);
+		debugInfo(str);
 #endif
 
 		/*
@@ -252,7 +258,7 @@ game(void)
 
 			FONTCOL(55, 255, 155, 255);
 		
-			cstring = str;
+			cstring = getDebugString();
 
 			y = 18;
 

@@ -140,40 +140,31 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     currentSpriteIndex = 0;
     renderedSprites = 0;
 
-    while (x < GB_SCREEN_W)
+    for (currentSpriteIndex = 0; currentSpriteIndex < state->spriteCount && renderedSprites < 10; ++currentSpriteIndex)
     {
-        struct Sprite currentSprite;
-        int sourceX = GB_SCREEN_W;
+        struct Sprite currentSprite = state->sortedSprites[currentSpriteIndex];
+        int sourceX = 0;
 
-        while (currentSpriteIndex < state->spriteCount && sourceX >= SPRITE_WIDTH)
+        if (
+            currentSprite.y - SPRITE_Y_OFFSET > state->row ||
+            currentSprite.y - SPRITE_Y_OFFSET + spriteHeight <= state->row
+        )
         {
-            currentSprite = state->sortedSprites[currentSpriteIndex];
-            if (
-                currentSprite.y - SPRITE_Y_OFFSET <= state->row && 
-                currentSprite.y - SPRITE_Y_OFFSET + spriteHeight > state->row
-            )
-            {
-                sourceX = x - (currentSprite.x - SPRITE_WIDTH);
-                ++renderedSprites;
-            }
-            else
-            {
-                sourceX = GB_SCREEN_W;
-            }
-            ++currentSpriteIndex;
-        } 
-
-        while (x < GB_SCREEN_W && (sourceX < 0 || currentSpriteIndex == state->spriteCount || renderedSprites > 10))
+            // sprite not on this row
+            continue;
+        }
+        else
+        {
+            sourceX = x - (currentSprite.x - SPRITE_WIDTH);
+            ++renderedSprites;
+        }
+        
+        while (x < GB_SCREEN_W && sourceX < 0)
         {
             *targetMemory = 0;
             ++targetMemory;
             ++sourceX;
             ++x;
-        }
-
-        if (x == GB_SCREEN_W)
-        {
-            break;
         }
 
         u16 palleteIndex = state->gbc ? 
@@ -243,6 +234,13 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
                 WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 0);
                 break;
         }
+    }
+
+    while (x < GB_SCREEN_W)
+    {
+        *targetMemory = 0;
+        ++targetMemory;
+        ++x;
     }
 }
 
