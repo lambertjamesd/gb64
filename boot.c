@@ -46,8 +46,6 @@ extern char     _codeSegmentTextStart[];
  */
 extern char     _staticSegmentRomStart[],
                 _staticSegmentRomEnd[];
-extern char     _textureSegmentRomStart[],
-                _textureSegmentRomEnd[];
 extern char     _gbromSegmentRomStart[];
 
 /*
@@ -92,7 +90,6 @@ OSIoMesg        dmaIOMessageBuf;	/* * see man page to understand this */
  */
 int		rdp_flag = 0;
 char		*staticSegment;
-char		*textureSegment;
 char        *_gEndSegments;
 
 
@@ -228,27 +225,8 @@ mainproc(void *arg)
 	 */
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 
-	/*
-	 * Stick the texture segment right after the static segment
-	 */
-	textureSegment = staticSegment + 
+	_gEndSegments = staticSegment + 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
-
-	dmaIOMessageBuf.hdr.pri      = OS_MESG_PRI_NORMAL;
-	dmaIOMessageBuf.hdr.retQueue = &dmaMessageQ;
-	dmaIOMessageBuf.dramAddr     = textureSegment;
-	dmaIOMessageBuf.devAddr      = (u32)_textureSegmentRomStart;
-	dmaIOMessageBuf.size         = (u32)_textureSegmentRomEnd-(u32)_textureSegmentRomStart;
-
-	osEPiStartDma(handler, &dmaIOMessageBuf, OS_READ);
-
-	/*
-	 * Wait for DMA to finish
-	 */
-	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-
-	_gEndSegments = textureSegment + 
-		(u32) _textureSegmentRomEnd - (u32) _textureSegmentRomStart;
 
 	initHeap();
 

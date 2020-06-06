@@ -10,12 +10,7 @@ beginseg
 	stack bootStack + STACKSIZE
 	include "codesegment.o"
 	include "$(ROOT)/usr/lib/PR/rspboot.o"
-	include "$(ROOT)/usr/lib/PR/gspL3DEX2.fifo.o"
-	include "$(ROOT)/usr/lib/PR/gspL3DEX2.xbus.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.fifo.o"
-	include "$(ROOT)/usr/lib/PR/gspF3DEX2.xbus.o"
-	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.fifo.o"
-	include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.xbus.o"
 endseg
 
 beginseg
@@ -37,13 +32,6 @@ beginseg
 	flags OBJECT
 	number STATIC_SEGMENT
 	include "gfxinit.o"
-endseg
-
-beginseg
-	name "texture"
-	flags OBJECT
-	number TEXTURE_SEGMENT
-	include "texture.o"
 endseg
 
 beginseg
@@ -69,7 +57,6 @@ beginwave
 	name "game"
 	include "code"
 	include "static"
-	include "texture"
 	include "gbrom"
 	include "dmg_boot"
 	include "cfb"

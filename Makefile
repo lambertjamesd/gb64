@@ -15,26 +15,22 @@ include $(ROOT)/usr/include/make/PRdefs
 
 FINAL = YES
 ifeq ($(FINAL), YES)
-OPTIMIZER       = -O2 -std=gnu90 -mno-shared -mhard-float -fno-stack-protector -fno-common -fno-PIC -mno-abicalls -fno-strict-aliasing -fno-inline-functions -ffreestanding -fwrapv -Werror
+OPTIMIZER       = -O2 -std=gnu90 -Werror
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
 N64LIB          = -lultra_rom
 else
-OPTIMIZER       = -g -std=gnu90 -mno-shared -mhard-float -fno-stack-protector -fno-common -fno-PIC -mno-abicalls -fno-strict-aliasing -fno-inline-functions -ffreestanding -fwrapv -Werror
+OPTIMIZER       = -g -std=gnu90 -Werror
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
 N64LIB          = -lultra_d
 endif
 
-RSPASM = $(N64_INST)/bin/rspasm
-
 APP =		bin/gb.out
 
 TARGETS =	bin/gb.n64
 
-TEXHFILES =	RGBA16foliageMM.h
-
-HFILES =	$(TEXHFILES) boot.h game.h controller.h font.h font_ext.h \
+HFILES =	boot.h game.h controller.h font.h font_ext.h \
 		letters_img.h static.h \
 		src/test/cpu_test.h    \
 		src/cpu.h              \
@@ -73,7 +69,6 @@ CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
 DATAFILES   =	gfxinit.c \
 		rsp_cfb.c \
-		texture.c \
 		cfb.c \
 		zbuffer.c
 
@@ -88,7 +83,7 @@ LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64
 LCOPTS =	-G 0
 LDFLAGS =	$(MKDEPOPT)  -L/usr/lib/n64 $(N64LIB) -lkmc
 
-LDIRT  =	$(APP)
+LDIRT  =	$(APP) $(TARGETS)
 
 default:	$(TARGETS)
 
@@ -122,11 +117,3 @@ cleanall: clean
 rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
 
-# for exeGCC CELF
-ifeq ($(GCC_CELF), ON)
-ifneq ($(FINAL), YES)
-CELFDIR = .
-include $(CELFRULES)
-$(CODEOBJECTS) $(DATAOBJECTS) :	$(CELFINFOFILES)
-endif
-endif
