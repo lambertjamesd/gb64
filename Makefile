@@ -69,8 +69,7 @@ CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
 DATAFILES   =	gfxinit.c \
 		rsp_cfb.c \
-		cfb.c \
-		zbuffer.c
+		cfb.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 

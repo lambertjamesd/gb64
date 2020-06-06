@@ -217,9 +217,8 @@ game(void)
 				OS_K0_TO_PHYSICAL(cfb[draw_buffer]));
 
 		/*
-		* Clear z and color framebuffer.
+		* Clear color framebuffer.
 		*/
-		gSPDisplayList(glistp++, clearzbuffer_dl);
 
 		gDPSetFillColor(glistp++, GPACK_RGBA5551(
 				(int)1,

@@ -8,7 +8,6 @@ struct HeapSegment* gFirstHeapSegment;
  * Symbol genererated by "makerom" (RAM)
  */
 extern char     _codeSegmentEnd[];
-extern char     _zbufferSegmentStart[];
 extern char    *_gEndSegments;
 
 extern char     _cfbSegmentStart[];
@@ -21,8 +20,8 @@ void initHeap()
     gFirstHeapSegment->nextSegment = 0;
     gFirstHeapSegment->segmentEnd = (void*)(osGetMemSize() | 0x80000000);
 
-    markAllocated(_zbufferSegmentStart, 
-        (int)_gEndSegments - (int)_zbufferSegmentStart
+    markAllocated(_codeSegmentEnd, 
+        (int)_gEndSegments - (int)_codeSegmentEnd
     );
     markAllocated(_cfbSegmentStart,
         (int)_cfbSegmentEnd - (int)_cfbSegmentStart

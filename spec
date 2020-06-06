@@ -14,13 +14,6 @@ beginseg
 endseg
 
 beginseg
-	name "zbuffer"
-	flags OBJECT
-	address 0x80118000
-	include "zbuffer.o"
-endseg
-
-beginseg
 	name "cfb"
 	flags OBJECT
 	address 0x80300000
@@ -61,5 +54,4 @@ beginwave
 	include "dmg_boot"
 	include "cfb"
 	include "rsp_cfb"
-	include "zbuffer"
 endwave

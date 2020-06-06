@@ -54,7 +54,6 @@ extern Dynamic	dynamic;
 /*
  * frame buffer symbols
  */
-extern u16	zbuffer[];			/* RAM address */
 extern u16	cfb[][SCREEN_WD*SCREEN_HT];	/* RAM address */
 extern u16	rsp_cfb[];			/* segment address */
 /*

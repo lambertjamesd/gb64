@@ -82,21 +82,6 @@ Gfx init_dl[] = {
     gsSPEndDisplayList(),
 };
 
-
-/*
- * clear the z (depth) frame buffer
- */
-Gfx clearzbuffer_dl[] = {
-    gsDPSetScissor(G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT),
-    gsDPSetDepthImage(OS_K0_TO_PHYSICAL(zbuffer)),
-    gsDPSetCycleType(G_CYC_FILL),
-    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, 
-					OS_K0_TO_PHYSICAL(zbuffer)),
-    gsDPSetFillColor(GPACK_ZDZ(G_MAXFBZ,0) << 16 | GPACK_ZDZ(G_MAXFBZ,0)),
-    gsDPFillRectangle(0, 0, SCREEN_WD-1, SCREEN_HT-1),
-    gsSPEndDisplayList(),
-};
-
 /*
  * clear the color frame buffer
  */

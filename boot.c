@@ -37,7 +37,6 @@
  * Symbol genererated by "makerom" (RAM)
  */
 extern char     _codeSegmentEnd[];
-extern char     _zbufferSegmentEnd[];
 extern char     _codeSegmentTextEnd[];
 extern char     _codeSegmentTextStart[];
 
@@ -206,7 +205,7 @@ mainproc(void *arg)
 	/*
 	 * Stick the static segment right after the code/data segment
 	 */
-	staticSegment = _zbufferSegmentEnd;
+	staticSegment = _codeSegmentEnd;
 
 	osInvalDCache((void *)staticSegment, 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart);
