@@ -57,6 +57,8 @@
 #define REG_NR52        0xFF26
 #define REG_NR52_ENABLED 0x80
 
+#define REG_WAVE_PAT    0xFF30
+
 #define REG_LCDC        0xFF40
 #define REG_LCD_STAT    0xFF41
 #define REG_LCD_STAT_MODE 0x3
@@ -80,6 +82,7 @@
 
 #define WRITE_REGISTER_DIRECT(mm, addr, val) (mm)->miscBytes[(addr) - MISC_START] = (val)
 #define READ_REGISTER_DIRECT(mm, addr) ((mm)->miscBytes[(addr) - MISC_START])
+#define GET_REGISTER_ADDRESS(mm, addr) ((mm)->miscBytes + (addr) - MISC_START)
 
 /*
     Sprite.flags

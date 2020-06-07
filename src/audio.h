@@ -11,9 +11,18 @@
 
 struct Memory;
 
-#define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)  
-#define GET_SQUARE_VOLUME(volume) (((volume) >> 4) & 0xF)
+#define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)
+#define GET_SOUND_LENGTH(length_pattern) ((length_pattern) & 0x1F)
+
+#define GET_SWEEP_TIME(sweep) (((sweep) >> 4) & 0x7)
+#define GET_SWEEP_DIR(sweep) (((sweep) >> 3) & 0x1)
+#define GET_SWEEP_SHIFT(sweep) ((sweep) & 0x7)
+
+#define GET_ENVELOPE_VOLUME(volume) (((volume) >> 4) & 0xF)
+#define GET_ENVELOPE_DIR(volume) (((volume) >> 3) & 0x1)
+#define GET_ENVELOPE_STEP_DURATION(volume) ((volume) & 0x7)
 #define GET_SOUND_FREQ(frequencyHi, frequencyLo) ((((int)(frequencyHi) & 0x7) << 8) | (int)(frequencyLo))
+#define GET_SOUND_LENGTH_LIMITED(frequencyHi) (((frequencyHi) & 0x40) >> 6)
 #define GET_PCM_VOLUME(volume) (((volume) >> 5) & 0x3)
 
 #define SOUND_LENGTH_INDEFINITE     ~0
@@ -37,8 +46,8 @@ struct AudioSample
 };
 
 struct AudioSweep {
-    u16 frequency;
-    u16 frequencyStep;
+    u8 stepDir;
+    u8 stepShift;
     u8 sweepTime;
     u8 sweepTimeCounter;
 };
@@ -53,6 +62,7 @@ struct AudioEnvelope {
 struct SquareWaveSound {
     u16 cycle;
     u16 waveDuty;
+    u16 frequency;
     struct AudioSweep sweep;
     struct AudioEnvelope envelope;
     u16 length;
@@ -63,7 +73,6 @@ struct PCMSound {
     u16 volume;
     u16 frequency;
     u16 length;
-    u8 pcm[0x10];
 };
 
 enum LFSRWidth {
@@ -79,6 +88,13 @@ struct NoiseSound {
     u32 accumulator;
     u32 sampleStep;
     enum LFSRWidth lfsrWidth;
+};
+
+enum SoundIndex {
+    SoundIndexSquare1,
+    SoundIndexSquare2,
+    SoundIndexPCM,
+    SoundIndexNoise,
 };
 
 struct AudioState
@@ -98,6 +114,7 @@ struct AudioState
 
 void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
 void tickAudio(struct Memory* memoryMap, int untilCyles);
+void restartSound(struct Memory* memoryMap, int currentCycle, enum SoundIndex soundNumber);
 void finishAudioFrame(struct Memory* memoryMap);
 
 #endif
