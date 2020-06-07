@@ -48,8 +48,8 @@ struct AudioSample
 struct AudioSweep {
     u8 stepDir;
     u8 stepShift;
-    u8 sweepTime;
-    u8 sweepTimeCounter;
+    u8 stepDuration;
+    u8 stepTimer;
 };
 
 struct AudioEnvelope {

@@ -225,6 +225,7 @@ void tickEnvelope(struct AudioEnvelope* envelope)
 	{
 		if (envelope->stepTimer == 0)
 		{
+			// TODO clamping
 			envelope->volume = (envelope->volume + envelope->step) & 0xF;
 			envelope->stepTimer = envelope->stepDuration - 1;
 		}
@@ -237,10 +238,11 @@ void tickEnvelope(struct AudioEnvelope* envelope)
 
 u16 tickSweep(struct AudioSweep* envelope, u16 frequency)
 {
-	if (envelope->sweepTime)
+	if (envelope->stepDuration)
 	{
-		if (envelope->sweepTimeCounter == 0)
+		if (envelope->stepTimer == 0)
 		{
+			// TODO clamping
 			u16 stepAmount = frequency >> envelope->stepShift;
 			if (envelope->stepDir)
 			{
@@ -250,11 +252,11 @@ u16 tickSweep(struct AudioSweep* envelope, u16 frequency)
 			{
 				frequency += stepAmount;
 			}
-			envelope->sweepTimeCounter = envelope->sweepTime - 1;
+			envelope->stepTimer = envelope->stepDuration - 1;
 		}
 		else
 		{
-			--envelope->sweepTimeCounter;
+			--envelope->stepTimer;
 		}
 	}
 
@@ -324,8 +326,8 @@ void initSweep(struct AudioSweep* sweep, unsigned char sweepData)
 {
 	sweep->stepDir = GET_SWEEP_DIR(sweepData);
 	sweep->stepShift = GET_SWEEP_SHIFT(sweepData);
-	sweep->sweepTime = GET_SWEEP_TIME(sweepData);
-	sweep->sweepTimeCounter = sweep->sweepTime - 1;
+	sweep->stepDuration = GET_SWEEP_TIME(sweepData) << 1;
+	sweep->stepTimer = sweep->stepDuration - 1;
 }
 
 void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex soundNumber)
@@ -380,24 +382,6 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 void finishAudioFrame(struct Memory* memory)
 {
 	struct AudioState* audio = &memory->audio;
-	audio->sound1.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR11));
-	audio->sound1.envelope.volume = GET_ENVELOPE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR12));
-	audio->sound1.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR14), READ_REGISTER_DIRECT(memory, REG_NR13));
-
-	audio->sound2.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR21));
-	audio->sound2.envelope.volume = GET_ENVELOPE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR22));
-	audio->sound2.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
-
-	audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
-	audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
-
-	audio->noiseSound.envelope.volume = GET_ENVELOPE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR42));
-	audio->noiseSound.lfsrWidth = (READ_REGISTER_DIRECT(memory, REG_NR43) & 0x8) >> 3;
-	audio->noiseSound.sampleStep = noiseSampleStep(
-		READ_REGISTER_DIRECT(memory, READ_REGISTER_DIRECT(memory, REG_NR43) & 0x3), 
-		READ_REGISTER_DIRECT(memory, REG_NR43) >> 4,
-		audio->sampleRate
-	);
 
 	u32 playbackState = osAiGetStatus();
 	u32 pendingBufferCount = 0;
