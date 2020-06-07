@@ -41,6 +41,17 @@
 #define REG_NR23        0xFF18
 #define REG_NR24        0xFF19
 
+#define REG_NR30        0xFF1A
+#define REG_NR31        0xFF1B
+#define REG_NR32        0xFF1C
+#define REG_NR33        0xFF1D
+#define REG_NR34        0xFF1E
+
+#define REG_NR50        0xFF24
+#define REG_NR51        0xFF25
+#define REG_NR52        0xFF26
+#define REG_NR52_ENABLED 0x80
+
 #define REG_LCDC        0xFF40
 #define REG_LCD_STAT    0xFF41
 #define REG_LCD_STAT_MODE 0x3
