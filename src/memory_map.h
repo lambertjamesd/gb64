@@ -47,6 +47,11 @@
 #define REG_NR33        0xFF1D
 #define REG_NR34        0xFF1E
 
+#define REG_NR41        0xFF20
+#define REG_NR42        0xFF21
+#define REG_NR43        0xFF22
+#define REG_NR44        0xFF23
+
 #define REG_NR50        0xFF24
 #define REG_NR51        0xFF25
 #define REG_NR52        0xFF26

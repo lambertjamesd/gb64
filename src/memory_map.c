@@ -73,7 +73,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     memory->rom = rom;
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
 
-    initAudio(&memory->audio, 22000, 30);
+    initAudio(&memory->audio, 22500, 30);
     
     finishRomLoad(rom);
 

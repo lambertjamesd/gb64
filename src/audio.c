@@ -5,14 +5,18 @@
 
 #include "debug_out.h"
 
-#define SAMPLE_0 -0x2000
-#define SAMPLE_1 0x2000
+u8 wavePattern[4][8] = {
+    {0, 1, 1, 1, 1, 1, 1, 1},
+    {0, 0, 1, 1, 1, 1, 1, 1},
+    {0, 0, 0, 0, 1, 1, 1, 1},
+    {0, 0, 0, 0, 0, 0, 1, 1},
+};
 
-short wavePattern[4][8] = {
-    {SAMPLE_0, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1},
-    {SAMPLE_0, SAMPLE_0, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1},
-    {SAMPLE_0, SAMPLE_0, SAMPLE_0, SAMPLE_0, SAMPLE_1, SAMPLE_1, SAMPLE_1, SAMPLE_1},
-    {SAMPLE_0, SAMPLE_0, SAMPLE_0, SAMPLE_0, SAMPLE_0, SAMPLE_0, SAMPLE_1, SAMPLE_1},
+short volumeTranslate[16] = {
+	0x0000, 0x0222, 0x0444, 0x0666, 
+	0x0888, 0x0AAA, 0x0CCC, 0x0EEE, 
+	0x1111, 0x1333, 0x1555, 0x1777, 
+	0x1999, 0x1BBB, 0x1DDD, 0x2000, 
 };
 
 short pcmTranslate[16] = {
@@ -33,6 +37,8 @@ void initAudio(struct AudioState* audioState, int sampleRate, int frameRate)
 		audioState->buffers[index] = malloc(sizeof(struct AudioSample) * audioState->samplesPerBuffer);
 		zeroMemory(audioState->buffers[index], sizeof(struct AudioSample) * audioState->samplesPerBuffer);
 	}
+
+	audioState->noiseSound.lfsr = 0x7FFF;
 }
 
 void renderSquareWave(
@@ -44,19 +50,15 @@ void renderSquareWave(
 )
 {
     int sampleIndex;
-	/*
-	steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
-	freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
-	sampleRate = samples/second - the number of samples per second the output is expecting
-	? steps/sample = steps_cycle * freq / sampleRate
-	*/
-	int cycleStep = 0x200000000L / ((0x800L - sound->frequency) * state->sampleRate);
+	
+	int cycleStep = CYCLE_STEP(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
     {
 		// fixed width mulitply the volume
-		short sample = ((int)wavePattern[sound->waveDuty][sound->cycle >> 13] * sound->volume) >> 4;
+		short volumeLevel = volumeTranslate[sound->volume];
+		short sample = wavePattern[sound->waveDuty][sound->cycle >> 13] ? volumeLevel : -volumeLevel;
 		output[sampleIndex].l += (sample * leftVolume) >> 3;
 		output[sampleIndex].r += (sample * rightVolume) >> 3;
 		sound->cycle += cycleStep;
@@ -71,13 +73,7 @@ void renderPatternWave(
 	int leftVolume
 ) {
     int sampleIndex;
-	/*
-	steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
-	freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
-	sampleRate = samples/second - the number of samples per second the output is expecting
-	? steps/sample = steps_cycle * freq / sampleRate
-	*/
-	int cycleStep = 0x200000000L / ((0x800L - sound->frequency) * state->sampleRate);
+	int cycleStep = CYCLE_STEP(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -92,6 +88,69 @@ void renderPatternWave(
     }
 }
 
+/**
+ * freq = 524288 / r / 2^s+1  calcs/second r=0.5 when dividingRatio = 0
+ * sampleRate = samples/second
+ * calcs/sample = freq / sampleRate
+ */
+u32 noiseSampleStep(int dividingRatio, int shift, int sampleRate)
+{
+	if (shift > NOISE_MAX_CLOCK_SHIFT)
+	{
+		return 0;
+	}
+
+	u32 result;
+
+	if (dividingRatio)
+	{
+		result = 0x8000000 / (dividingRatio * sampleRate);
+	}
+	else
+	{
+		result = 0x8000000 * 2 / sampleRate;
+	}
+
+	result <<= (16 - (shift + 1));
+
+	return result;
+}
+
+void renderNoise(
+	struct AudioState* state,
+	int untilSamples,
+	struct NoiseSound* sound,
+	int rightVolume,
+	int leftVolume
+) {
+    int sampleIndex;
+	u16 lfsr = sound->lfsr;
+	enum LFSRWidth lfsrWidth = sound->lfsrWidth;
+	struct AudioSample* output = state->buffers[state->currentWriteBuffer];
+    for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
+    {
+		short volumeLevel = volumeTranslate[sound->volume];
+		short sample = (lfsr & 1) ? -volumeLevel : volumeLevel;
+		output[sampleIndex].l += (sample * leftVolume) >> 3;
+		output[sampleIndex].r += (sample * rightVolume) >> 3;
+
+		sound->accumulator += sound->sampleStep;
+
+		while (sound->accumulator >= 0x1000000)
+		{
+			u16 bit = (lfsr ^ (lfsr >> 1)) & 1;
+			if (lfsrWidth == LFSRWidth15) {
+				lfsr = ((lfsr >> 1) & ~0x4000) | (bit << 14);
+			} else {
+				lfsr = ((lfsr >> 1) & ~0x40) | (bit << 6);
+			}
+
+			sound->accumulator -= 0x1000000;
+		}
+	}
+	sound->lfsr = lfsr;
+}
+
 void renderAudio(struct Memory* memory, int untilSamples)
 {
 	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
@@ -100,7 +159,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		int leftVolume = (READ_REGISTER_DIRECT(memory, REG_NR50) >> 4) & 0x7;
 		int rightVolume = (READ_REGISTER_DIRECT(memory, REG_NR50) >> 0) & 0x7;
 		
-		if (GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR12)) && (stereoSelect & 0x11))
+		if (memory->audio.sound1.volume && (stereoSelect & 0x11))
 		{
 			renderSquareWave(
 				&memory->audio, 
@@ -111,7 +170,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 			);
 		}
 		
-		if (GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR22)) && (stereoSelect & 0x22))
+		if (memory->audio.sound2.volume && (stereoSelect & 0x22))
 		{
 			renderSquareWave(
 				&memory->audio, 
@@ -122,7 +181,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 			);
 		}
 
-		if (GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32)) && (stereoSelect & 0x33))
+		if (memory->audio.pcmSound.volume && (stereoSelect & 0x33))
 		{
 			renderPatternWave(
 				&memory->audio,
@@ -130,6 +189,20 @@ void renderAudio(struct Memory* memory, int untilSamples)
 				&memory->audio.pcmSound,
 				(stereoSelect & 0x03) ? rightVolume : 0,
 				(stereoSelect & 0x30) ? leftVolume : 0
+			);
+		}
+
+		if (memory->audio.noiseSound.volume && 
+			memory->audio.noiseSound.sampleStep && 
+			(stereoSelect & 0x44)
+		)
+		{
+			renderNoise(
+				&memory->audio,
+				untilSamples,
+				&memory->audio.noiseSound,
+				(stereoSelect & 0x04) ? rightVolume : 0,
+				(stereoSelect & 0x40) ? leftVolume : 0
 			);
 		}
 	}
@@ -150,6 +223,14 @@ void updateAudio(struct Memory* memory, int apuTicks)
 
 	audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
 	audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
+
+	audio->noiseSound.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR42));
+	audio->noiseSound.lfsrWidth = (READ_REGISTER_DIRECT(memory, REG_NR43) & 0x8) >> 3;
+	audio->noiseSound.sampleStep = noiseSampleStep(
+		READ_REGISTER_DIRECT(memory, READ_REGISTER_DIRECT(memory, REG_NR43) & 0x3), 
+		READ_REGISTER_DIRECT(memory, REG_NR43) >> 4,
+		audio->sampleRate
+	);
 
 	u32 playbackState = osAiGetStatus();
 	u32 pendingBufferCount = 0;
