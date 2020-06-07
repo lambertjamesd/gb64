@@ -51,13 +51,13 @@ void renderSquareWave(
 {
     int sampleIndex;
 	
-	int cycleStep = CYCLE_STEP(sound->frequency, state->sampleRate);
+	int cycleStep = CYCLE_STEP(sound->sweep.frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
     {
 		// fixed width mulitply the volume
-		short volumeLevel = volumeTranslate[sound->volume];
+		short volumeLevel = volumeTranslate[sound->envelope.volume];
 		short sample = wavePattern[sound->waveDuty][sound->cycle >> 13] ? volumeLevel : -volumeLevel;
 		output[sampleIndex].l += (sample * leftVolume) >> 3;
 		output[sampleIndex].r += (sample * rightVolume) >> 3;
@@ -129,7 +129,7 @@ void renderNoise(
 	struct AudioSample* output = state->buffers[state->currentWriteBuffer];
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
     {
-		short volumeLevel = volumeTranslate[sound->volume];
+		short volumeLevel = volumeTranslate[sound->envelope.volume];
 		short sample = (lfsr & 1) ? -volumeLevel : volumeLevel;
 		output[sampleIndex].l += (sample * leftVolume) >> 3;
 		output[sampleIndex].r += (sample * rightVolume) >> 3;
@@ -159,7 +159,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		int leftVolume = (READ_REGISTER_DIRECT(memory, REG_NR50) >> 4) & 0x7;
 		int rightVolume = (READ_REGISTER_DIRECT(memory, REG_NR50) >> 0) & 0x7;
 		
-		if (memory->audio.sound1.volume && (stereoSelect & 0x11))
+		if (memory->audio.sound1.envelope.volume && (stereoSelect & 0x11))
 		{
 			renderSquareWave(
 				&memory->audio, 
@@ -170,7 +170,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 			);
 		}
 		
-		if (memory->audio.sound2.volume && (stereoSelect & 0x22))
+		if (memory->audio.sound2.envelope.volume && (stereoSelect & 0x22))
 		{
 			renderSquareWave(
 				&memory->audio, 
@@ -192,7 +192,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 			);
 		}
 
-		if (memory->audio.noiseSound.volume && 
+		if (memory->audio.noiseSound.envelope.volume && 
 			memory->audio.noiseSound.sampleStep && 
 			(stereoSelect & 0x44)
 		)
@@ -210,21 +210,111 @@ void renderAudio(struct Memory* memory, int untilSamples)
 	memory->audio.currentSampleIndex = untilSamples;
 }
 
-void updateAudio(struct Memory* memory, int apuTicks)
+void advanceWriteBuffer(struct AudioState* audio)
+{
+	audio->currentWriteBuffer = (audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT;
+	zeroMemory(audio->buffers[audio->currentWriteBuffer], audio->samplesPerBuffer * sizeof(struct AudioSample));
+	audio->currentSampleIndex = 0;
+}
+
+void tickEnvelope(struct AudioEnvelope* envelope)
+{
+	if (envelope->stepDuration)
+	{
+		if (envelope->stepTimer == 0)
+		{
+			envelope->volume = (envelope->volume + envelope->step) & 0xF;
+			envelope->stepTimer = envelope->stepDuration - 1;
+		}
+		else
+		{
+			--envelope->stepTimer;
+		}
+	}
+}
+
+void tickSweep(struct AudioSweep* envelope)
+{
+	if (envelope->sweepTime)
+	{
+		if (envelope->sweepTimeCounter == 0)
+		{
+			envelope->frequency += envelope->frequencyStep;
+			envelope->sweepTimeCounter = envelope->sweepTime - 1;
+		}
+		else
+		{
+			--envelope->sweepTimeCounter;
+		}
+	}
+}
+
+void tickSquareWave(struct SquareWaveSound* squareWave)
+{
+	if (squareWave->length)
+	{
+		TICK_LENGTH(squareWave->length);
+		tickSweep(&squareWave->sweep);
+		tickEnvelope(&squareWave->envelope);
+	}
+}
+
+void tickPCM(struct PCMSound* pcmSound)
+{
+	if (pcmSound->length)
+	{
+		TICK_LENGTH(pcmSound->length);
+	}
+}
+
+void tickNoise(struct NoiseSound* noiseSound)
+{
+	if (noiseSound->length)
+	{
+		TICK_LENGTH(noiseSound->length);
+		tickEnvelope(&noiseSound->envelope);
+	}
+}
+
+void tickAudio(struct Memory* memory, int untilCyles)
+{
+	struct AudioState* audio = &memory->audio;
+
+	while (audio->cyclesEmulated < untilCyles)
+	{
+		int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2);
+
+		if (tickTo > audio->samplesPerBuffer)
+		{
+			renderAudio(memory, tickTo);
+			advanceWriteBuffer(audio);
+			tickTo -= audio->samplesPerBuffer;
+		}
+		renderAudio(memory, tickTo);
+		tickSquareWave(&audio->sound1);
+		tickSquareWave(&audio->sound2);
+		tickPCM(&audio->pcmSound);
+		tickNoise(&audio->noiseSound);
+
+		audio->cyclesEmulated += CYCLES_PER_TICK;
+	}
+}
+
+void finishAudioFrame(struct Memory* memory)
 {
 	struct AudioState* audio = &memory->audio;
 	audio->sound1.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR11));
-	audio->sound1.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR12));
-	audio->sound1.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR14), READ_REGISTER_DIRECT(memory, REG_NR13));
+	audio->sound1.envelope.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR12));
+	audio->sound1.sweep.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR14), READ_REGISTER_DIRECT(memory, REG_NR13));
 
 	audio->sound2.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR21));
-	audio->sound2.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR22));
-	audio->sound2.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
+	audio->sound2.envelope.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR22));
+	audio->sound2.sweep.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
 
 	audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
 	audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
 
-	audio->noiseSound.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR42));
+	audio->noiseSound.envelope.volume = GET_SQUARE_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR42));
 	audio->noiseSound.lfsrWidth = (READ_REGISTER_DIRECT(memory, REG_NR43) & 0x8) >> 3;
 	audio->noiseSound.sampleStep = noiseSampleStep(
 		READ_REGISTER_DIRECT(memory, READ_REGISTER_DIRECT(memory, REG_NR43) & 0x3), 
@@ -253,14 +343,11 @@ void updateAudio(struct Memory* memory, int apuTicks)
 		if (audio->currentWriteBuffer == audio->nextPlayBuffer)
 		{
 			renderAudio(memory, audio->samplesPerBuffer);
-			audio->currentWriteBuffer = (audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT;
-        	zeroMemory(audio->buffers[audio->currentWriteBuffer], audio->samplesPerBuffer * sizeof(struct AudioSample));
-			audio->currentSampleIndex = 0;
+			advanceWriteBuffer(audio);
 		}
 
 		osAiSetNextBuffer(audio->buffers[audio->nextPlayBuffer], audio->samplesPerBuffer * sizeof(struct AudioSample));
 		audio->nextPlayBuffer = (audio->nextPlayBuffer + 1) % AUDIO_BUFFER_COUNT;
 		++pendingBufferCount;
 	}
-
 }

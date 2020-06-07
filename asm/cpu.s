@@ -145,6 +145,8 @@ GB_BREAK_LOOP:
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
     
+    # TODO speed switching
+    sw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     # calculate the number of cycles run
     lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
     sub $v0, CYCLES_RUN, $v0

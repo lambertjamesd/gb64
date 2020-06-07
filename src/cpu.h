@@ -47,6 +47,8 @@ struct CPUState {
     unsigned long nextTimerTrigger;
     unsigned long nextScreenTrigger;
     unsigned long nextInterruptTrigger;
+    // cpu timer uneffected by speed switching
+    unsigned long unscaledCyclesRun; 
 };
 
 extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);

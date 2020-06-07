@@ -185,8 +185,8 @@ game(void)
 		pad = ReadController(0);
 		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, cfb[draw_buffer]);
+		finishAudioFrame(&gGameboy.memory);
 
-		updateAudio(&gGameboy.memory, 0);
 
 		osWritebackDCache(cfb[draw_buffer], sizeof(u16) * SCREEN_WD*SCREEN_HT);
 

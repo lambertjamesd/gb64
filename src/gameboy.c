@@ -97,6 +97,8 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     {
         runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
     }
+
+    tickAudio(&gameboy->memory, gameboy->cpu.unscaledCyclesRun);
 }
 
 void handleInput(struct GameBoy* gameboy, OSContPad* pad)

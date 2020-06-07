@@ -3,14 +3,22 @@
 #define _AUDIO_H
 #include <ultra64.h>
 
-#define AUDIO_BUFFER_COUNT 4
+#define AUDIO_BUFFER_COUNT      4
+#define APU_TICKS_PER_SEC       256
+#define APU_TICKS_PER_SEC_L2    8
+#define CYCLES_PER_TICK         4096
+#define CYCLES_PER_TICK_L2      12
 
 struct Memory;
 
-#define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)
+#define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)  
 #define GET_SQUARE_VOLUME(volume) (((volume) >> 4) & 0xF)
 #define GET_SOUND_FREQ(frequencyHi, frequencyLo) ((((int)(frequencyHi) & 0x7) << 8) | (int)(frequencyLo))
 #define GET_PCM_VOLUME(volume) (((volume) >> 5) & 0x3)
+
+#define SOUND_LENGTH_INDEFINITE     ~0
+
+#define TICK_LENGTH(rvalue) if ((rvalue) != SOUND_LENGTH_INDEFINITE) --rvalue
 
 #define NOISE_MAX_CLOCK_SHIFT 13
 
@@ -28,13 +36,26 @@ struct AudioSample
     short r;
 };
 
+struct AudioSweep {
+    u16 frequency;
+    u16 frequencyStep;
+    u8 sweepTime;
+    u8 sweepTimeCounter;
+};
+
+struct AudioEnvelope {
+    u8 volume;
+    u8 step;
+    u8 stepDuration;
+    u8 stepTimer;
+};
+
 struct SquareWaveSound {
     u16 cycle;
     u16 waveDuty;
-    u16 volume;
-    u16 frequency;
+    struct AudioSweep sweep;
+    struct AudioEnvelope envelope;
     u16 length;
-    u16 unused;
 };
 
 struct PCMSound {
@@ -51,7 +72,7 @@ enum LFSRWidth {
 };
 
 struct NoiseSound {
-    u16 volume;
+    struct AudioEnvelope envelope;
     u16 length;
     u16 lfsr;
     // fixed point numbers 8:24
@@ -67,7 +88,7 @@ struct AudioState
     struct SquareWaveSound sound2;
     struct PCMSound pcmSound;
     struct NoiseSound noiseSound;
-    int apuTicks;
+    u32 cyclesEmulated;
     u16 sampleRate;
     u16 samplesPerBuffer;
     u16 currentWriteBuffer;
@@ -76,6 +97,7 @@ struct AudioState
 };
 
 void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
-void updateAudio(struct Memory* memoryMap, int apuTicks);
+void tickAudio(struct Memory* memoryMap, int untilCyles);
+void finishAudioFrame(struct Memory* memoryMap);
 
 #endif
