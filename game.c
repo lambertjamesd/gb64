@@ -73,8 +73,6 @@ int		fontcol[4];	/* color for shadowed fonts */
 extern char     _gbromSegmentRomStart[];
 extern char     _gbromSegmentRomEnd[];
 
-void _GB_RESTART_SOUND();
-
 #define RUN_TESTS 0
 				
 /*
@@ -126,7 +124,7 @@ game(void)
 	lastTime = 0;
 	gGameboy.cpu.cyclesRun = 0;
 
-	sprintf(str, "Didn't run tests %X", &_GB_RESTART_SOUND);
+	sprintf(str, "Didn't run tests %X", 0);
 #if RUN_TESTS
 	runTests(str);
 #endif

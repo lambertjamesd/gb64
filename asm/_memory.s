@@ -67,61 +67,16 @@ _GB_DO_WRITE:
 .eqv _WRITE_CALLBACK_FRAME_SIZE, 0x28
 
 _GB_CALL_WRITE_CALLBACK:
-    addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
-    sb GB_A, 0x0($sp)
-    sb GB_F, 0x1($sp)
-    sb GB_B, 0x2($sp)
-    sb GB_C, 0x3($sp)
-
-    sb GB_D, 0x4($sp)
-    sb GB_E, 0x5($sp)
-    sb GB_H, 0x6($sp)
-    sb GB_L, 0x7($sp)
-
-    sh GB_PC, 0x8($sp)
-    sh GB_SP, 0xA($sp)
-
-    sw CYCLES_RUN, 0xC($sp)
-    sw CPUState, 0x10($sp)
-    sw Memory, 0x14($sp)
-    sw CycleTo, 0x18($sp)
-    sw $ra, 0x20($sp)
-    sw $fp, 0x24($sp)
+    save_state_on_stack
 
     move $a0, Memory
     move $a1, ADDR
     jalr $ra, Param0
     move $a2, VAL
 
-    lbu GB_A, 0x0($sp)
-    lbu GB_F, 0x1($sp)
-    lbu GB_B, 0x2($sp)
-    lbu GB_C, 0x3($sp)
-
-    lbu GB_D, 0x4($sp)
-    lbu GB_E, 0x5($sp)
-    lbu GB_H, 0x6($sp)
-    lbu GB_L, 0x7($sp)
-
-    lhu Param0, 0x8($sp)
-    lhu GB_SP, 0xA($sp)
-
-    lw CYCLES_RUN, 0xC($sp)
-    lw CPUState, 0x10($sp)
-    lw Memory, 0x14($sp)
-    lw CycleTo, 0x18($sp)
-    lw $fp, 0x24($sp)
-
-    # in case the program counter is inside the bank of 
-    # memory that was switched
-    jal SET_GB_PC
-    # make sure GB_PC doesn't match Param0 to force bank load
-    xori GB_PC, Param0, 0xFFFF 
-
-    lw $ra, 0x20($sp)
-
+    restore_state_from_stack
     jr $ra
-    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+    nop
 
 
 ######################
@@ -278,36 +233,15 @@ _GB_WRITE_SOUND_REG:
     j _GB_BASIC_REGISTER_WRITE
     nop
 
-.global _GB_RESTART_SOUND
-.balign 4
 _GB_RESTART_SOUND:
     andi $at, VAL, 0x80
     beqz $at, _GB_BASIC_REGISTER_WRITE # only restart sound if upper bit is set
     nop
 
-    addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
-    sb GB_A, 0x0($sp)
-    sb GB_F, 0x1($sp)
-    sb GB_B, 0x2($sp)
-    sb GB_C, 0x3($sp)
-
-    sb GB_D, 0x4($sp)
-    sb GB_E, 0x5($sp)
-    sb GB_H, 0x6($sp)
-    sb GB_L, 0x7($sp)
-
-    sh GB_PC, 0x8($sp)
-    sh GB_SP, 0xA($sp)
-
-    sw CYCLES_RUN, 0xC($sp)
-    sw CPUState, 0x10($sp)
-    sw Memory, 0x14($sp)
-    sw CycleTo, 0x18($sp)
-    sw $ra, 0x20($sp)
+    save_state_on_stack
 
     # write the register before making the call
     jal _GB_BASIC_REGISTER_WRITE
-    sw $fp, 0x24($sp)
 
     lui Param0, %hi(restartSound)
     addiu Param0, Param0, %lo(restartSound)
@@ -318,35 +252,10 @@ _GB_RESTART_SOUND:
     # TODO use unscaledCyclesRun
     move $a2, TMP2
 
-    lbu GB_A, 0x0($sp)
-    lbu GB_F, 0x1($sp)
-    lbu GB_B, 0x2($sp)
-    lbu GB_C, 0x3($sp)
-
-    lbu GB_D, 0x4($sp)
-    lbu GB_E, 0x5($sp)
-    lbu GB_H, 0x6($sp)
-    lbu GB_L, 0x7($sp)
-
-    lhu Param0, 0x8($sp)
-    lhu GB_SP, 0xA($sp)
-
-    lw CYCLES_RUN, 0xC($sp)
-    lw CPUState, 0x10($sp)
-    lw Memory, 0x14($sp)
-    lw CycleTo, 0x18($sp)
-    lw $fp, 0x24($sp)
-
-    # in case the program counter is inside the bank of 
-    # memory that was switched
-    jal SET_GB_PC
-    # make sure GB_PC doesn't match Param0 to force bank load
-    xori GB_PC, Param0, 0xFFFF 
-
-    lw $ra, 0x20($sp)
+    restore_state_from_stack
 
     jr $ra
-    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+    nop
 
 ############################
 

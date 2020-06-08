@@ -96,3 +96,63 @@
 .eqv INTERRUPTS_ENABLED, 0x80;
 
 .extern unloadBIOS 4
+
+.macro save_state_on_stack
+    addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
+    sb GB_A, 0x0($sp)
+    sb GB_F, 0x1($sp)
+    sb GB_B, 0x2($sp)
+    sb GB_C, 0x3($sp)
+
+    sb GB_D, 0x4($sp)
+    sb GB_E, 0x5($sp)
+    sb GB_H, 0x6($sp)
+    sb GB_L, 0x7($sp)
+
+    sh GB_PC, 0x8($sp)
+    sh GB_SP, 0xA($sp)
+
+    sw CYCLES_RUN, 0xC($sp)
+    sw CPUState, 0x10($sp)
+    sw Memory, 0x14($sp)
+    sw CycleTo, 0x18($sp)
+    sw $ra, 0x20($sp)
+    sw $fp, 0x24($sp)
+.endm
+
+.macro restore_state_from_stack
+    lbu GB_A, 0x0($sp)
+    lbu GB_F, 0x1($sp)
+    lbu GB_B, 0x2($sp)
+    lbu GB_C, 0x3($sp)
+
+    lbu GB_D, 0x4($sp)
+    lbu GB_E, 0x5($sp)
+    lbu GB_H, 0x6($sp)
+    lbu GB_L, 0x7($sp)
+
+    lhu Param0, 0x8($sp)
+    lhu GB_SP, 0xA($sp)
+
+    lw CYCLES_RUN, 0xC($sp)
+    lw CPUState, 0x10($sp)
+    lw Memory, 0x14($sp)
+    lw CycleTo, 0x18($sp)
+    lw $fp, 0x24($sp)
+
+    # in case the program counter is inside the bank of 
+    # memory that was switched
+    jal SET_GB_PC
+    # make sure GB_PC doesn't match Param0 to force bank load
+    xori GB_PC, Param0, 0xFFFF 
+
+    lw $ra, 0x20($sp)
+
+    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+.endm
+
+.macro call_c_fn name
+    lui $at, %hi(\name)
+    addiu $at, Param0, %lo(\name)
+    jalr $ra, $at
+.endm

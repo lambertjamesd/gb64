@@ -5,6 +5,8 @@
 .include "asm/registers.inc"
 .include "asm/memory.inc"
 
+.include "asm/_debug.s"
+
 .macro clear_flags flags
     andi GB_F, GB_F, %lo(~(\flags))
 .endm
@@ -14,6 +16,7 @@
 .endm
 
 .set DEBUG_OUT, 0
+.set VALIDATE_STATE, 0
 
 .global runCPU 
 .balign 4 
@@ -68,6 +71,11 @@ runCPU:
 .endif
 
 DECODE_NEXT:
+.if VALIDATE_STATE
+    jal CHECK_FOR_INVALID_STATE
+    nop
+.endif
+
     sltu $at, CYCLES_RUN, CycleTo
     bnez $at, _DECODE_NEXT_READ
     nop
