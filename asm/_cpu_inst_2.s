@@ -2,7 +2,7 @@
 ### 0x2X
 GB_JR_NZ:
     andi $at, GB_F, Z_FLAG # check z flag
-    bne $at, $zero, _SKIP_JR # if Z_FLAG != 0 skip jump
+    bnez $at, _SKIP_JR # if Z_FLAG != 0 skip jump
     nop
     j GB_JR
     nop
@@ -76,7 +76,7 @@ GB_DAA:
     nop
 GB_JR_Z:
     andi $at, GB_F, Z_FLAG # check z flag
-    beq $at, $zero, _SKIP_JR # skip jump if not zero
+    beqz $at, _SKIP_JR # skip jump if not zero
     nop
     j GB_JR
     nop

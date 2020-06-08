@@ -2,7 +2,7 @@
 ### 0x3X
 GB_JR_NC:
     andi $at, GB_F, C_FLAG # check z flag
-    bne $at, $zero, _SKIP_JR # skip jump if not zero
+    bnez $at, _SKIP_JR # skip jump if not zero
     nop
     j GB_JR
     nop
@@ -76,7 +76,7 @@ GB_SCF:
     nop
 GB_JR_C:
     andi $at, GB_F, C_FLAG # check z flag
-    beq $at, $zero, _SKIP_JR # skip jump if not zero
+    beqz $at, _SKIP_JR # skip jump if not zero
     nop
     j GB_JR
     nop

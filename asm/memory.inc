@@ -153,6 +153,6 @@
 
 .macro call_c_fn name
     lui $at, %hi(\name)
-    addiu $at, Param0, %lo(\name)
+    addiu $at, $at, %lo(\name)
     jalr $ra, $at
 .endm

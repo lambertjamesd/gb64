@@ -5,6 +5,8 @@
 
 #include "debug_out.h"
 
+#define ENABLE_AUDIO 0
+
 u8 wavePattern[4][8] = {
     {0, 1, 1, 1, 1, 1, 1, 1},
     {0, 0, 1, 1, 1, 1, 1, 1},
@@ -332,6 +334,7 @@ void initSweep(struct AudioSweep* sweep, unsigned char sweepData)
 
 void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex soundNumber)
 {
+#if ENABLE_AUDIO
 	tickAudio(memory, currentCycle);
 	struct AudioState* audio = &memory->audio;
 
@@ -377,10 +380,12 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 				SOUND_LENGTH_INDEFINITE;
 			break;
 	}
+#endif
 }
 
 void finishAudioFrame(struct Memory* memory)
 {
+#if ENABLE_AUDIO
 	struct AudioState* audio = &memory->audio;
 
 	u32 playbackState = osAiGetStatus();
@@ -411,4 +416,5 @@ void finishAudioFrame(struct Memory* memory)
 		audio->nextPlayBuffer = (audio->nextPlayBuffer + 1) % AUDIO_BUFFER_COUNT;
 		++pendingBufferCount;
 	}
+#endif
 }
