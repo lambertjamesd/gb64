@@ -31,7 +31,7 @@ APP =		bin/gb.out
 TARGETS =	bin/gb.n64
 
 HFILES =	boot.h game.h controller.h font.h font_ext.h \
-		letters_img.h static.h \
+		letters_img.h gbfont_img.h static.h \
 		src/test/cpu_test.h    \
 		src/cpu.h              \
 		src/memory_map.h
@@ -109,7 +109,7 @@ $(TARGETS) $(APP):      spec $(OBJECTS)
 	$(MAKEROM) -r $(TARGETS) -e $(APP) spec
 endif
 
-font.o:		./letters_img.h
+font.o:		./letters_img.h ./gbfont_img.h
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)

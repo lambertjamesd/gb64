@@ -8,6 +8,7 @@
 #include "font_ext.h"
 
 #include "letters_img.h"
+#include "gbfont_img.h"
 
 static char letters_string[] = "abcdefhiuvsnorm.klxz4321567890`!gjpqytw,EFGHKLNOPRSUVXZ@JM:WIYABCD'T\"+-=Q_/?()[]";
 
@@ -104,9 +105,85 @@ static Bitmap letters_bms[] = {
 
 };
 
+static char gbfont_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.?!,@[]'\"\\+-=/?()";
 
+static Bitmap gbfont_bms[] = {
+    { 8, 64, 0*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 0*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 1*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 4*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 5*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 6*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 6*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 6*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 6*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 6*8, gbfont_img, 8, 0},
+};
 
 Font letters_font = { letters_string, letters_bms, letters_img };
+
+Font gbfont_font = { gbfont_string, gbfont_bms, gbfont_img};
 
 char *my_strchr( char *, char );
 
