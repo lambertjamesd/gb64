@@ -102,6 +102,25 @@
 #define SPRITE_FLAGS_VRAM_BANK      0x08
 #define SPRITE_FLAGS_GBC_PALLETE    0x07
 
+#define DEBUG_INSTRUCTION  0xD3
+
+enum BreakpointType {
+    BreakpointTypeNone,
+    BreakpointTypeUser,
+    BreakpointTypeStep,
+};
+
+struct Breakpoint {
+    u16 address;
+    u8 existingInstruction;
+    u8 breakpointType;
+    u8* memoryAddress;
+};
+
+#define BREAK_POINT_COUNT   10
+#define USER_BREAK_POINTS   8
+#define STEP_BREAK_POINTS   2
+
 struct Sprite {
     unsigned char y;
     unsigned char x;
@@ -156,6 +175,7 @@ struct Memory {
     };
     struct ROMLayout* rom;
     struct AudioState audio;
+    struct Breakpoint breakpoints[10];
 };
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);

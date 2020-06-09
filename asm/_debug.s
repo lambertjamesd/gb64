@@ -3,8 +3,6 @@
     ERROR_MSG: .asciiz "Invalid CPU State\n"
 .text
 
-.global CHECK_FOR_INVALID_STATE
-.balign
 CHECK_FOR_INVALID_STATE:
     slti $at, GB_A, 0x100
     beqz $at, _CHECK_FOR_INVALID_STATE_INVALD

@@ -31,7 +31,7 @@ APP =		bin/gb.out
 TARGETS =	bin/gb.n64
 
 HFILES =	boot.h game.h controller.h font.h font_ext.h \
-		letters_img.h gbfont_img.h static.h \
+		gbfont_img.h static.h \
 		src/test/cpu_test.h    \
 		src/cpu.h              \
 		src/memory_map.h
@@ -61,7 +61,9 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/test/graphics_test.c              \
        src/test/test.c                       \
        src/debug_out.c                       \
-       src/audio.c 
+       src/audio.c                           \
+       src/debugger.c                        \
+       render.c 
 
 S_FILES = asm/cpu.s
 
@@ -109,7 +111,7 @@ $(TARGETS) $(APP):      spec $(OBJECTS)
 	$(MAKEROM) -r $(TARGETS) -e $(APP) spec
 endif
 
-font.o:		./letters_img.h ./gbfont_img.h
+font.o:		./gbfont_img.h
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)

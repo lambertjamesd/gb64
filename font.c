@@ -7,103 +7,7 @@
 #include "font.h"
 #include "font_ext.h"
 
-#include "letters_img.h"
 #include "gbfont_img.h"
-
-static char letters_string[] = "abcdefhiuvsnorm.klxz4321567890`!gjpqytw,EFGHKLNOPRSUVXZ@JM:WIYABCD'T\"+-=Q_/?()[]";
-
-static Bitmap letters_bms[] = {
-    { 8, 64, 0*8, 0*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 0*12, letters_img,   12,0 },
-    { 8, 64, 2*8, 0*12, letters_img,   12,0 },
-    { 8, 64, 3*8, 0*12, letters_img,   12,0 },
-    { 8, 64, 4*8, 0*12, letters_img,   12,0 },
-    { 8, 64, 5*8, 0*12, letters_img,   12,0 },
-    { 8, 64, 6*8, 0*12, letters_img,   12,0 },
-    { 7, 64, 7*8, 0*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 1*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 1*12, letters_img,   12,0 },
-    { 8, 64, 2*8, 1*12, letters_img,   12,0 },
-    { 8, 64, 3*8, 1*12, letters_img,   12,0 },
-    { 8, 64, 4*8, 1*12, letters_img,   12,0 },
-    { 8, 64, 5*8, 1*12, letters_img,   12,0 },
-    { 9, 64, 6*8, 1*12, letters_img,   12,0 },
-    { 6, 64, 7*8+1, 1*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 2*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 3*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 4*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 5*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 6*8, 2*12, letters_img,   12,0 },
-    { 8, 64, 7*8, 2*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 3*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 3*12, letters_img,   12,0 },
-    { 8, 64, 2*8, 3*12, letters_img,   12,0 },
-    { 8, 64, 3*8, 3*12, letters_img,   12,0 },
-    { 8, 64, 4*8, 3*12, letters_img,   12,0 },
-    { 8, 64, 5*8, 3*12, letters_img,   12,0 },
-    { 7, 64, 6*8, 3*12, letters_img,   12,0 },
-    { 7, 64, 7*8, 3*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 4*12, letters_img,   16,0 },
-    { 8, 64, 1*8, 4*12, letters_img,   16,0 },
-    { 8, 64, 2*8, 4*12, letters_img,   16,0 },
-    { 8, 64, 3*8, 4*12, letters_img,   16,0 },
-    { 8, 64, 4*8, 4*12, letters_img,   16,0 },
-    { 8, 64, 5*8, 4*12, letters_img,   16,0 },
-    { 9, 64, 6*8, 4*12, letters_img,   16,0 },
-    { 6, 64, 7*8+1, 4*12, letters_img,   16,0 },
-
-    { 8, 64, 0*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 2*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 3*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 4*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 5*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 6*8, 64+0*12, letters_img,   12,0 },
-    { 8, 64, 7*8, 64+0*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 2*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 3*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 4*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 5*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 6*8, 64+1*12, letters_img,   12,0 },
-    { 8, 64, 7*8, 64+1*12, letters_img,   12,0 },
-
-    { 7, 64, 0*8, 64+2*12, letters_img,   12,0 },
-    { 9, 64, 1*8-1, 64+2*12, letters_img,   12,0 },
-    { 6, 64, 2*8, 64+2*12, letters_img,   12,0 },
-    { 9, 64, 3*8-1, 64+2*12, letters_img,   12,0 },
-    { 7, 64, 4*8, 64+2*12, letters_img,   12,0 },
-    { 9, 64, 5*8-1, 64+2*12, letters_img,   12,0 },
-    { 8, 64, 6*8, 64+2*12, letters_img,   12,0 },
-    { 8, 64, 7*8, 64+2*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 64+3*12, letters_img,   12,0 },
-    { 8, 64, 1*8, 64+3*12, letters_img,   12,0 },
-    { 7, 64, 2*8, 64+3*12, letters_img,   12,0 },
-    { 9, 64, 3*8-1, 64+3*12, letters_img,   12,0 },
-    { 7, 64, 4*8, 64+3*12, letters_img,   12,0 },
-    { 9, 64, 5*8-1, 64+3*12, letters_img,   12,0 },
-    { 8, 64, 6*8, 64+3*12, letters_img,   12,0 },
-    { 8, 64, 7*8, 64+3*12, letters_img,   12,0 },
-
-    { 8, 64, 0*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 1*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 2*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 3*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 4*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 5*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 6*8, 64+4*12+1, letters_img,   16,0 },
-    { 8, 64, 7*8, 64+4*12+1, letters_img,   16,0 },
-
-};
 
 static char gbfont_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.?!,@[]'\"\\+-=/?()";
 
@@ -126,6 +30,14 @@ static Bitmap gbfont_bms[] = {
     { 8, 64, 7*8, 1*8, gbfont_img, 8, 0},
     { 8, 64, 0*8, 2*8, gbfont_img, 8, 0},
     { 8, 64, 1*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 2*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 3*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 4*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 5*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 6*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 7*8, 2*8, gbfont_img, 8, 0},
+    { 8, 64, 0*8, 3*8, gbfont_img, 8, 0},
+    { 8, 64, 1*8, 3*8, gbfont_img, 8, 0},
     { 8, 64, 0*8, 0*8, gbfont_img, 8, 0},
     { 8, 64, 1*8, 0*8, gbfont_img, 8, 0},
     { 8, 64, 2*8, 0*8, gbfont_img, 8, 0},
@@ -181,14 +93,11 @@ static Bitmap gbfont_bms[] = {
     { 8, 64, 4*8, 6*8, gbfont_img, 8, 0},
 };
 
-Font letters_font = { letters_string, letters_bms, letters_img };
-
 Font gbfont_font = { gbfont_string, gbfont_bms, gbfont_img};
 
 char *my_strchr( char *, char );
 
-void
-text_sprite( Sprite *txt, char *str, Font *fnt, int xlen, int ylen )
+void text_sprite( Sprite *txt, char *str, Font *fnt, int xlen, int ylen )
 {
     int i, ci;
     int x;
@@ -204,31 +113,31 @@ text_sprite( Sprite *txt, char *str, Font *fnt, int xlen, int ylen )
     i = 0;
     ci = 0;
     for(y=0; y<ylen; y++) {
-	for(x=0; x<xlen; x++, i++, ci++) {
-	    if( str[ci] == '\0' ) {
-		bm[i]       = fnt->bitmaps[0];
-		bm[i].width = -1;
-		txt->nbitmaps = i;
+        for(x=0; x<xlen; x++, i++, ci++) {
+            if( str[ci] == '\0' ) {
+                bm[i]       = fnt->bitmaps[0];
+                bm[i].width = -1;
+                txt->nbitmaps = i;
 
-		return;
-	    };
-	    if( str[ci] == '\n' ) {
-		bm[i]      = fnt->bitmaps[0];
-		bm[i].buf = NULL;
-		ci--;
-		continue;
+                return;
+            };
+            if( str[ci] == '\n' ) {
+                bm[i]      = fnt->bitmaps[0];
+                bm[i].buf = NULL;
+                ci--;
+                continue;
+            };
+
+            if( (indx = my_strchr(fnt->index_string, str[ci])) != NULL ) {
+                bm[i]      = fnt->bitmaps[indx-fnt->index_string];
+            } else {
+                bm[i]      = fnt->bitmaps[0];
+                bm[i].buf = NULL;
+            };
 	    };
 
-	    if( (indx = my_strchr(fnt->index_string, str[ci])) != NULL ) {
-		bm[i]      = fnt->bitmaps[indx-fnt->index_string];
-	    } else {
-		bm[i]      = fnt->bitmaps[0];
-		bm[i].buf = NULL;
-	    };
-	};
-
-	if( str[ci] == '\n' )
-	    ci++;
+        if( str[ci] == '\n' )
+            ci++;
     };
 
     txt->nbitmaps = i;
@@ -236,8 +145,7 @@ text_sprite( Sprite *txt, char *str, Font *fnt, int xlen, int ylen )
     return;
 }
 
-char *
-my_strchr( char *str, char target )
+char* my_strchr( char *str, char target )
 {
     while( *str && (*str != target) )
 	str++;
@@ -278,7 +186,7 @@ Sprite template_sprite = {
         NUM_template_BMS,                       /* Number of bitmaps */
         NUM_DL(NUM_template_BMS),               /* Number of display list locations allocated */
 
-        15, 128,                 /* Sprite Bitmap Height: Used_height, physical height */
+        8, 64,                 /* Sprite Bitmap Height: Used_height, physical height */
         G_IM_FMT_I,             /* Sprite Bitmap Format */
         G_IM_SIZ_4b,            /* Sprite Bitmap Texel Size */
 
@@ -397,16 +305,14 @@ void
 font_set_transparent( int flag )
 {
     if( flag )
-	spSetAttribute( &template_sprite, SP_TRANSPARENT | SP_CUTOUT );
+	    spSetAttribute( &template_sprite, SP_TRANSPARENT | SP_CUTOUT );
     else
-	spClearAttribute( &template_sprite, SP_TRANSPARENT | SP_CUTOUT );
+	    spClearAttribute( &template_sprite, SP_TRANSPARENT | SP_CUTOUT );
 }
 
 /* Convert the string to a sprite with the propler bitmaps
    assembled from the basic font texture. */
-
-void
-font_show_string( Gfx **glistp, char *val_str )
+void font_show_string( Gfx **glistp, char *val_str )
 {
     Sprite *sp;
     static Gfx gx[10000];
@@ -417,9 +323,9 @@ font_show_string( Gfx **glistp, char *val_str )
     sp = &template_sprite;
 
     sp->width =  font_win_width*8  + 8;
-    sp->height = font_win_height*16 + 8;
+    sp->height = font_win_height*8 + 8;
 
-    text_sprite( sp, val_str, &letters_font, font_win_width, font_win_height );
+    text_sprite( sp, val_str, &gbfont_font, font_win_width, font_win_height );
 
     spMove( sp, font_xpos, font_ypos );
     spColor( sp, font_red, font_grn, font_blu, font_alf );
