@@ -38,6 +38,7 @@
 #include "src/test/test.h"
 #include "src/debug_out.h"
 #include "render.h"
+#include "src/debugger.h"
 
 #define RUN_TESTS 0
 
@@ -104,6 +105,11 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
+        if ((pad[0]->button & U_CBUTTONS) && (~lastButton & U_CBUTTONS))
+        {
+            useDebugger(&gGameboy.cpu, &gGameboy.memory);
+        }
+
 		lastButton = pad[0]->button;
 
 		frameTime = lastTime;
@@ -142,6 +148,8 @@ game(void)
 		// );
 		// debugInfo(str);
 #endif
-		renderFrame(0);
+		preRenderFrame(0);
+		renderDebugLog();
+		finishRenderFrame();
     }
 }

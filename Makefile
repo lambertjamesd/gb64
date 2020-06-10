@@ -63,7 +63,8 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/debug_out.c                       \
        src/audio.c                           \
        src/debugger.c                        \
-       render.c 
+       render.c                              \
+       src/menu.c 
 
 S_FILES = asm/cpu.s
 

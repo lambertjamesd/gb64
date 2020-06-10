@@ -1,4 +1,3 @@
-#include <ultra64.h> 
 #include "render.h"
 #include "static.h"
 #include "src/debug_out.h"
@@ -33,18 +32,14 @@ Gfx		*glistp;	/* RSP display list pointer */
 Dynamic		dynamic;	/* dynamic data */
 int		draw_buffer=0;	/* frame buffer being updated (0 or 1) */
 int		fontcol[4];	/* color for shadowed fonts */
+Dynamic     *dynamicp;
 
-void renderFrame(int clear)
+
+void preRenderFrame(int clear)
 {
-    OSTask      *theadp;
-    Dynamic     *dynamicp;
-	int x, y;
-	x = 18;
-	y = 18;
     /*
     * pointers to build the display list.
     */
-    theadp = &taskHeader;
     dynamicp = &dynamic;
     glistp = dynamicp->glist;
 
@@ -80,48 +75,58 @@ void renderFrame(int clear)
 
     gDPPipeSync(glistp++);
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
+}
 
-    /*
-    * Draw Text
-    */
-    {
-        /* 
-        * neccessary after lines
-        */
-        gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
-
-        font_init( &glistp );
-        font_set_transparent( 1 );
-        
-        font_set_scale( 1.0, 1.0 );
-        font_set_win( 200, 1 );
-
-        FONTCOL(55, 255, 155, 255);
+void renderDebugLog()
+{
+	int x, y;
+	x = 18;
+    y = 18;
     
-        char *cstring = getDebugString();
+    /* 
+    * neccessary after lines
+    */
+    gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
 
-        y = 18;
+    font_init( &glistp );
+    font_set_transparent( 1 );
+    
+    font_set_scale( 1.0, 1.0 );
+    font_set_win( 200, 1 );
 
-        while (*cstring)
-        {
-                SHOWFONT(&glistp,cstring,x,y);
+    FONTCOL(55, 255, 155, 255);
 
-                while (*cstring && *cstring != '\n')
-                {
-                        ++cstring;
-                }
+    char *cstring = getDebugString();
 
-                if (*cstring)
-                {
-                        ++cstring;
-                }
+    y = 18;
 
-                y += 20;
-        }
+    while (*cstring)
+    {
+            SHOWFONT(&glistp,cstring,x,y);
+
+            while (*cstring && *cstring != '\n')
+            {
+                    ++cstring;
+            }
+
+            if (*cstring)
+            {
+                    ++cstring;
+            }
+
+            y += 20;
     }
+}
+
+void finishRenderFrame()
+{
+    OSTask      *theadp;
+    Dynamic     *dynamicp;
+
+    theadp = &taskHeader;
+    dynamicp = &dynamic;
 
     font_finish( &glistp );
-
 
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);

@@ -2,6 +2,7 @@
 #ifndef _RENDER_H
 #define _RENDER_H
 
+#include <ultra64.h> 
 #include "boot.h"
 
 /*
@@ -16,6 +17,7 @@ extern OSMesgQueue
  */
 extern int	rdp_flag;
 extern char	*staticSegment;
+extern Gfx	*glistp;
 
 /*
  * frame buffer symbols
@@ -65,7 +67,9 @@ extern Dynamic	dynamic;
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
-void renderFrame(int clear);
+void preRenderFrame(int clear);
+void renderDebugLog();
+void finishRenderFrame();
 u16* getColorBuffer();
 
 #endif
