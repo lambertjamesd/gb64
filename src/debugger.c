@@ -4,6 +4,7 @@
 #include "../memory.h"
 #include "../render.h"
 #include "decoder.h"
+#include "bool.h"
 
 u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
@@ -39,7 +40,7 @@ u8 readMemoryDirect(struct Memory* memory, u16 address)
     return *getMemoryAddress(memory, address);
 }
 
-void insertBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type, int breakpointIndex)
+void insertBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type, enum BreakpointType breakpointIndex)
 {
     if (memory->breakpoints[breakpointIndex].breakpointType != BreakpointTypeNone)
     {
@@ -49,12 +50,12 @@ void insertBreakpoint(struct Memory* memory, u16 address, enum BreakpointType ty
     memory->breakpoints[breakpointIndex].memoryAddress = getMemoryAddress(memory, address);
     memory->breakpoints[breakpointIndex].address = address;
     memory->breakpoints[breakpointIndex].existingInstruction = *memory->breakpoints[breakpointIndex].memoryAddress;
-    memory->breakpoints[breakpointIndex].existingInstruction = type;
+    memory->breakpoints[breakpointIndex].breakpointType = type;
 
     *memory->breakpoints[breakpointIndex].memoryAddress = DEBUG_INSTRUCTION;
 }
 
-void addBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type)
+struct Breakpoint* addBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type)
 {
     int index;
     for (index = 0; index < USER_BREAK_POINTS; ++index)
@@ -62,9 +63,11 @@ void addBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type)
         if (memory->breakpoints[index].breakpointType == BreakpointTypeNone)
         {
             insertBreakpoint(memory, address, BreakpointTypeUser, index);
-            break;
+            return &memory->breakpoints[index];
         }
     }
+
+    return NULL;
 }
 
 void removeBreakpoint(struct Memory* memory, u16 address)
@@ -78,6 +81,21 @@ void removeBreakpoint(struct Memory* memory, u16 address)
             removeBreakpointDirect(&memory->breakpoints[index]);
         }
     }
+}
+
+struct Breakpoint* findBreakpoint(struct Memory* memory, u8* at)
+{
+    int index;
+
+    for (index = 0; index < BREAK_POINT_COUNT; ++index)
+    {
+        if (memory->breakpoints[index].memoryAddress == at)
+        {
+            return &memory->breakpoints[index];
+        }
+    }
+
+    return NULL;
 }
 
 void useDebugger(struct CPUState* cpu, struct Memory* memory)
@@ -114,28 +132,127 @@ void useDebugger(struct CPUState* cpu, struct Memory* memory)
 
 ///////////////////////////////////
 
+void editValueRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
+{
+    if (menuItem == highlightedItem)
+    {
+        int index;
+        char strBuffer[2];
+        struct EditValueMenuState* editMenu = (struct EditValueMenuState*)menuItem->data;
+        FONTCOL(255, 255, 255, 255);
+
+        for (index = 0; index < editMenu->nibbleWidth; ++index)
+        {
+            if (editMenu->currentNibble == index)
+            {
+                FONTCOL(200, 100, 45, 255);
+            }
+            else
+            {
+                FONTCOL(45, 100, 255, 255);
+            }
+
+            sprintf(strBuffer, "%1X", (editMenu->currentValue >> (index * 4)) & 0xF);
+            SHOWFONT(&glistp, strBuffer, editMenu->x + DEBUGGER_FONT_W * (editMenu->nibbleWidth - index - 1), editMenu->y);
+        }
+    }
+}
+
+struct MenuItem* editValueHandleInput(struct MenuItem* menuItem, int buttons)
+{
+    struct EditValueMenuState* editMenu = (struct EditValueMenuState*)menuItem->data;
+    u16 offset = 0x1 << (editMenu->currentNibble * 4);
+    u16 mask = 0xF << (editMenu->currentNibble * 4);
+    
+    if (buttons & B_BUTTON)
+    {
+        editMenu->confirmEdit = 0;
+        return editMenu->returnTo;
+    }
+    else if (buttons & (A_BUTTON | START_BUTTON))
+    {
+        editMenu->confirmEdit = 1;
+        return editMenu->returnTo;
+    }
+    else if (buttons & U_JPAD)
+    {
+        editMenu->currentValue = (editMenu->currentValue & ~mask) | ((editMenu->currentValue + offset) & mask);
+    }
+    else if (buttons & D_JPAD)
+    {
+        editMenu->currentValue = (editMenu->currentValue & ~mask) | ((editMenu->currentValue - offset) & mask);
+    }
+    else if ((buttons & R_JPAD) && editMenu->currentNibble > 0)
+    {
+        --editMenu->currentNibble;
+    }
+    else if ((buttons * L_JPAD) && editMenu->currentNibble < editMenu->nibbleWidth - 1)
+    {
+        ++editMenu->currentNibble;
+    }
+
+    return menuItem;
+}
+
+struct MenuItem* startEdit(struct MenuItem* editMenuItem, struct MenuItem* returnTo, u16 x, u16 y, u16 nibbleWidth, u16 initialValue)
+{
+    struct EditValueMenuState* editMenu = (struct EditValueMenuState*)editMenuItem->data;
+
+    editMenu->returnTo = returnTo;
+    editMenu->x = x;
+    editMenu->y = y;
+    editMenu->nibbleWidth = nibbleWidth;
+    editMenu->currentNibble = 0;
+    editMenu->currentValue = initialValue;
+    editMenu->confirmEdit = 0;
+
+    return editMenuItem;
+}
+
+bool checkEditValue(struct MenuItem* editMenuItem, struct MenuItem* targetMenu, u16* value)
+{
+    struct EditValueMenuState* editMenu = (struct EditValueMenuState*)editMenuItem->data;
+
+    if (editMenu->returnTo == targetMenu)
+    {
+        editMenu->returnTo = NULL;
+        *value = editMenu->currentValue;
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+///////////////////////////////////
+
 void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     char strBuffer[5];
     int index;
     struct MemoryAddressMenuItem* addressGUI = (struct MemoryAddressMenuItem*)menuItem->data;
+    struct EditValueMenuState* editMenu = (struct EditValueMenuState*)addressGUI->editMenuItem->data;
     u16 address = addressGUI->addressStart;
 
     FONTCOL(255, 255, 255, 255);
     
     for (index = 0; index < MEMORY_BLOCK_ROWS; ++index)
     {
-        if (addressGUI->menuState->cursorY == index && menuItem == highlightedItem)
+        if (editMenu->returnTo != menuItem || addressGUI->menuState->cursorY != index)
         {
-            FONTCOL(43, 200, 100, 255);
-        }
-        else
-        {
-            FONTCOL(255, 255, 255, 255);
-        }
+            if (addressGUI->menuState->cursorY == index && menuItem == highlightedItem)
+            {
+                FONTCOL(43, 200, 100, 255);
+            }
+            else
+            {
+                FONTCOL(255, 255, 255, 255);
+            }
 
-        sprintf(strBuffer, "%04X", address);
-        SHOWFONT(&glistp, strBuffer, MEMROY_GRID_X, MEMORY_GRID_Y + index * DEBUG_MENU_ROW_HEIGHT);
+            sprintf(strBuffer, "%04X", address);
+            SHOWFONT(&glistp, strBuffer, MEMORY_GRID_X, MEMORY_GRID_Y + index * DEBUG_MENU_ROW_HEIGHT);
+        }
         address += MEMORY_BLOCK_COLS;
     }
 }
@@ -168,8 +285,34 @@ struct MenuItem* memoryAddressesHandleInput(struct MenuItem* menuItem, int butto
         }
         return menuItem;
     }
+    else if (buttons & (A_BUTTON | START_BUTTON))
+    {
+        return startEdit(
+            address->editMenuItem, 
+            menuItem,
+            MEMORY_GRID_X,
+            MEMORY_GRID_Y + address->menuState->cursorY * DEBUG_MENU_ROW_HEIGHT,
+            4,
+            address->addressStart + address->menuState->cursorY * MEMORY_BLOCK_COLS
+        );
+    }
 
     return NULL;
+}
+
+void memoryAddressSetActive(struct MenuItem* menuItem, int isActive)
+{
+    struct MemoryAddressMenuItem* address = (struct MemoryAddressMenuItem*)menuItem->data;
+
+    if (isActive)
+    {
+        u16 newValue;
+
+        if (checkEditValue(address->editMenuItem, menuItem, &newValue))
+        {
+            address->addressStart = newValue - address->menuState->cursorY * MEMORY_BLOCK_COLS;
+        }
+    }
 }
 
 ///////////////////////////////////
@@ -192,6 +335,7 @@ void memoryValuesRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     char strBuffer[3];
     int x, y;
     struct MemoryValueMenuItem* values = (struct MemoryValueMenuItem*)menuItem->data;
+    struct EditValueMenuState* editMenu = (struct EditValueMenuState*)values->editMenuItem->data;
     memoryValuesCheckReread(values);
 
     FONTCOL(255, 255, 255, 255);
@@ -200,6 +344,9 @@ void memoryValuesRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     {
         for (x = 0; x < MEMORY_BLOCK_COLS; ++x)
         {
+            if (editMenu->returnTo == menuItem && values->menuState->cursorY == y && values->menuState->cursorX == x)
+                continue;
+
             if (values->menuState->cursorY == y && values->menuState->cursorX == x && menuItem == highlightedItem)
             {
                 FONTCOL(43, 200, 100, 255);
@@ -253,8 +400,36 @@ struct MenuItem* memoryValuesHandleInput(struct MenuItem* menuItem, int buttons)
         ++values->menuState->cursorX;
         return menuItem;
     }
+    else if (buttons & (A_BUTTON | START_BUTTON))
+    {
+        return startEdit(
+            values->editMenuItem, 
+            menuItem,
+            MEMORY_VALUES_X + values->menuState->cursorX * MEMORY_VALUES_SPACING,
+            MEMORY_GRID_Y + values->menuState->cursorY * DEBUG_MENU_ROW_HEIGHT,
+            2,
+            values->values[values->menuState->cursorX + values->menuState->cursorY * MEMORY_BLOCK_COLS]
+        );
+    }
 
     return NULL;
+}
+
+void memoryValuesSetActive(struct MenuItem* menuItem, int isActive)
+{
+    struct MemoryValueMenuItem* values = (struct MemoryValueMenuItem*)menuItem->data;
+
+    if (isActive)
+    {
+        u16 newValue;
+
+        if (checkEditValue(values->editMenuItem, menuItem, &newValue))
+        {
+            u16 offset = values->menuState->cursorX + values->menuState->cursorY * MEMORY_BLOCK_COLS;
+            values->values[offset] = newValue;
+            writeMemoryDirect(values->memory, values->addressStart + offset, newValue);
+        }
+    }
 }
 
 ///////////////////////////////////
@@ -267,6 +442,21 @@ void instructionsReload(struct InstructionsMenuItem* instructions, u16 currentAd
     for (index = 0; index < MI_INSTRUCTIONS_LINE_COUNT; ++index)
     {
         u8 instruction = readMemoryDirect(instructions->memory, currentAddress);
+
+        if (instruction == DEBUG_INSTRUCTION)
+        {
+            instructions->instructions[index].breakpoint = findBreakpoint(instructions->memory, getMemoryAddress(instructions->memory, currentAddress));
+
+            if (instructions->instructions[index].breakpoint)
+            {
+                instruction = instructions->instructions[index].breakpoint->existingInstruction;
+            }
+        }
+        else
+        {
+            instructions->instructions[index].breakpoint = NULL;
+        }
+
         instructions->instructions[index].address = currentAddress;
         int instructionSize = getInstructionSize(instruction);
 
@@ -277,7 +467,7 @@ void instructionsReload(struct InstructionsMenuItem* instructions, u16 currentAd
             case 2:
                 instructions->instructions[index].instruction[1] = readMemoryDirect(instructions->memory, currentAddress + 1);
             default:
-                instructions->instructions[index].instruction[0] = readMemoryDirect(instructions->memory, currentAddress + 0);
+                instructions->instructions[index].instruction[0] = instruction;
         }
 
         currentAddress = currentAddress + instructionSize;
@@ -289,30 +479,50 @@ void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     int index;
     char strBuffer[16];
     struct InstructionsMenuItem* instructions = (struct InstructionsMenuItem*)menuItem->data;
+    struct EditValueMenuState* editMenu = (struct EditValueMenuState*)instructions->editMenuItem->data;
     FONTCOL(255, 255, 255, 255);
 
     for (index = 0; index < MI_INSTRUCTIONS_LINE_COUNT; ++index)
     {
-        if (instructions->menuState->cursorY == index && menuItem == highlightedItem && instructions->menuState->cursorX == MI_INSTRUCTION_ADDR_COL)
-        {
-            FONTCOL(43, 200, 100, 255);
-        }
-        else
-        {
-            FONTCOL(255, 255, 255, 255);
-        }
-        sprintf(strBuffer, "%04X", instructions->instructions[index].address);
-        SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+        struct InstructionLine* line = &instructions->instructions[index];
 
-        decodeInstruction(strBuffer, instructions->instructions[index].instruction, instructions->instructions[index].address);
+        if (editMenu->returnTo != menuItem || instructions->menuState->cursorY != index)
+        {
+            if (instructions->menuState->cursorY == index && menuItem == highlightedItem && instructions->menuState->cursorX == MI_INSTRUCTION_ADDR_COL)
+            {
+                FONTCOL(43, 200, 100, 255);
+            }
+            else
+            {
+                FONTCOL(255, 255, 255, 255);
+            }
+            sprintf(strBuffer, "%04X", line->address);
+            SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+        }
+
+        decodeInstruction(strBuffer, line->instruction, line->address);
 
         if (instructions->menuState->cursorY == index && menuItem == highlightedItem && instructions->menuState->cursorX == MI_INSTRUCTION_NAME_COL)
         {
-            FONTCOL(43, 200, 100, 255);
+            if (line->breakpoint)
+            {
+                FONTCOL(200, 200, 43, 255);
+            }
+            else
+            {
+                FONTCOL(43, 200, 100, 255);
+            }
         }
         else
         {
-            FONTCOL(255, 255, 255, 255);
+            if (line->breakpoint)
+            {
+                FONTCOL(200, 100, 43, 255);
+            }
+            else
+            {
+                FONTCOL(255, 255, 255, 255);
+            }
         }
 
         SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_NAME_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
@@ -351,8 +561,56 @@ struct MenuItem* instructionsHandleInput(struct MenuItem* menuItem, int buttons)
         ++instructions->menuState->cursorX;
         return menuItem;
     }
+    else if (buttons & (A_BUTTON | START_BUTTON))
+    {
+        if (instructions->menuState->cursorX == MI_INSTRUCTION_ADDR_COL)
+        {
+            return startEdit(
+                instructions->editMenuItem, 
+                menuItem,
+                MI_INSTRUCTIONS_X,
+                MI_INSTRUCTIONS_Y + instructions->menuState->cursorY * DEBUG_MENU_ROW_HEIGHT,
+                4,
+                instructions->instructions[instructions->menuState->cursorY].address
+            );
+        }
+        else
+        {   
+            if (instructions->menuState->cursorY >= 0 && instructions->menuState->cursorY < MI_INSTRUCTIONS_LINE_COUNT)
+            {
+                struct InstructionLine* line = &instructions->instructions[instructions->menuState->cursorY];
+
+                if (line->breakpoint)
+                {
+                    removeBreakpointDirect(line->breakpoint);
+                    line->breakpoint = NULL;
+                }
+                else
+                {
+                    line->breakpoint = addBreakpoint(instructions->memory, instructions->instructions[instructions->menuState->cursorY].address, BreakpointTypeUser);
+                }
+            }
+
+            return menuItem;
+        }
+    }
 
     return NULL;
+}
+
+void instructionsSetActive(struct MenuItem* menuItem, int isActive)
+{
+    struct InstructionsMenuItem* instructions = (struct InstructionsMenuItem*)menuItem->data;
+
+    if (isActive)
+    {
+        u16 newValue;
+
+        if (checkEditValue(instructions->editMenuItem, menuItem, &newValue))
+        {
+            instructionsReload(instructions, newValue);
+        }
+    }
 }
 
 ///////////////////////////////////
@@ -385,14 +643,17 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
     zeroMemory(menu, sizeof(struct DebuggerMenu));
 
     menu->memoryAddresses.menuState = &menu->state;
+    menu->memoryAddresses.editMenuItem = &menu->menuItems[DebuggerMenuIndicesEditValue];
 
     menu->memoryValues.menuState = &menu->state;
     menu->memoryValues.memory = memory;
     menu->memoryValues.addressGUI = &menu->memoryAddresses;
     menu->memoryValues.addressStart = 1; // this forces a page refresh
+    menu->memoryValues.editMenuItem = &menu->menuItems[DebuggerMenuIndicesEditValue];
 
     menu->instructionMenuItem.menuState = &menu->state;
     menu->instructionMenuItem.memory = memory;
+    menu->instructionMenuItem.editMenuItem = &menu->menuItems[DebuggerMenuIndicesEditValue];
     instructionsReload(&menu->instructionMenuItem, cpu->pc);
 
     menuItemInit(
@@ -400,7 +661,7 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
         &menu->memoryAddresses,
         memoryAddressesRender,
         memoryAddressesHandleInput,
-        NULL 
+        memoryAddressSetActive 
     );
     
     menuItemInit(
@@ -408,14 +669,14 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
         &menu->memoryValues,
         memoryValuesRender,
         memoryValuesHandleInput,
-        NULL 
+        memoryValuesSetActive 
     );
     
     menuItemInit(
         &menu->menuItems[DebuggerMenuIndicesCPUState],
         cpu,
         cpuStateRender,
-        NULL,
+        NULL,-
         NULL 
     );
 
@@ -424,11 +685,19 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
         &menu->instructionMenuItem,
         instructionsRender,
         instructionsHandleInput,
+        instructionsSetActive 
+    );
+
+    menuItemInit(
+        &menu->menuItems[DebuggerMenuIndicesEditValue],
+        &menu->editMenu,
+        editValueRender,
+        editValueHandleInput,
         NULL 
     );
 
     menuItemConnectSideToSide(&menu->menuItems[DebuggerMenuIndicesMemoryAddress], &menu->menuItems[DebuggerMenuIndicesMemoryValues]);
     menuItemConnectSideToSide(&menu->menuItems[DebuggerMenuIndicesMemoryValues], &menu->menuItems[DebuggerMenuIndicesInstructions]);
 
-    initMenuState(&menu->menu, menu->menuItems, 4);
+    initMenuState(&menu->menu, menu->menuItems, DebuggerMenuIndicesCount);
 }

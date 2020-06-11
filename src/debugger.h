@@ -12,9 +12,12 @@ enum DebuggerMenuIndices {
     DebuggerMenuIndicesMemoryValues,
     DebuggerMenuIndicesCPUState,
     DebuggerMenuIndicesInstructions,
-    DebuggerMenuIndicesPC,
+    DebuggerMenuIndicesEditValue,
     DebuggerMenuIndicesCount,
 };
+
+
+#define DEBUGGER_FONT_W     8
 
 #define CPU_STATE_X         8
 #define CPU_STATE_Y         10
@@ -22,12 +25,22 @@ enum DebuggerMenuIndices {
 #define MEMORY_BLOCK_ROWS   12
 #define MEMORY_BLOCK_COLS   4
 
-#define MEMROY_GRID_X   8
+#define MEMORY_GRID_X   8
 #define MEMORY_GRID_Y   80
 #define DEBUG_MENU_ROW_HEIGHT 10
 
 #define MEMORY_VALUES_X         48
 #define MEMORY_VALUES_SPACING   24
+
+struct EditValueMenuState {
+    struct MenuItem* returnTo;
+    u16 x;
+    u16 y;
+    u16 nibbleWidth; // number of nibbles
+    u16 currentNibble;
+    u16 currentValue;
+    u16 confirmEdit; // 1 if edit is accepted
+};
 
 struct DebuggerMenuState {
     int cursorX;
@@ -37,6 +50,7 @@ struct DebuggerMenuState {
 struct MemoryAddressMenuItem {
     u16 addressStart;
     struct DebuggerMenuState* menuState;
+    struct MenuItem* editMenuItem;
 };
 
 struct MemoryValueMenuItem {
@@ -45,6 +59,7 @@ struct MemoryValueMenuItem {
     struct Memory* memory;
     struct MemoryAddressMenuItem* addressGUI;
     u16 addressStart;
+    struct MenuItem* editMenuItem;
 };
 
 #define MI_INSTRUCTIONS_Y           10
@@ -58,6 +73,7 @@ struct MemoryValueMenuItem {
 struct InstructionLine {
     u16 address;
     u8 instruction[4];
+    struct Breakpoint* breakpoint;
 };
 
 struct InstructionsMenuItem {
@@ -65,6 +81,7 @@ struct InstructionsMenuItem {
     struct InstructionLine instructions[MI_INSTRUCTIONS_LINE_COUNT];
     struct DebuggerMenuState* menuState;
     struct Memory* memory;
+    struct MenuItem* editMenuItem;
 };
 
 struct DebuggerMenu {
@@ -74,12 +91,13 @@ struct DebuggerMenu {
     struct MemoryAddressMenuItem memoryAddresses;
     struct MemoryValueMenuItem memoryValues;
     struct InstructionsMenuItem instructionMenuItem;
+    struct EditValueMenuState editMenu;
 };
 
 void writeMemoryDirect(struct Memory* memory, u16 address, u8 value);
 u8 readMemoryDirect(struct Memory* memory, u16 address);
 
-void addBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type);
+struct Breakpoint* addBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type);
 void removeBreakpoint(struct Memory* memory, u16 address);
 
 void useDebugger(struct CPUState* cpu, struct Memory* memory);
