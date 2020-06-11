@@ -28,9 +28,9 @@ GB_JP_NC:
     nop
     nop
 GB_ERROR_0:
-    addi $at, $zero, STOP_REASON_ERROR
-    j GB_BREAK_LOOP # exit early
-    sb $at, CPU_STATE_STOP_REASON(CPUState)
+    j OPEN_DEBUGGER # exit early
+    nop
+    nop
     nop
     nop
     nop

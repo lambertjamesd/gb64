@@ -98,12 +98,33 @@ struct Breakpoint* findBreakpoint(struct Memory* memory, u8* at)
     return NULL;
 }
 
-void useDebugger(struct CPUState* cpu, struct Memory* memory)
+u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 {
     OSContPad	**pad;
     struct DebuggerMenu menu;
-    int paused = 1;
+    bool paused = TRUE;
     int lastButton = U_CBUTTONS;
+    int index;
+
+    u8 result = readMemoryDirect(memory, cpu->pc);
+
+    if (result == DEBUG_INSTRUCTION)
+    {
+        struct Breakpoint* breakpoint = findBreakpoint(memory, getMemoryAddress(memory, cpu->pc));
+
+        if (breakpoint)
+        {
+            result = breakpoint->existingInstruction;
+        }
+    }
+
+    for (index = USER_BREAK_POINTS; index < BREAK_POINT_COUNT; ++index)
+    {
+        if (memory->breakpoints[index].breakpointType == BreakpointTypeStep)
+        {
+            removeBreakpointDirect(&memory->breakpoints[index]);
+        }
+    }
 
     initDebugMenu(&menu, cpu, memory);
     clearDebugOutput();
@@ -123,11 +144,13 @@ void useDebugger(struct CPUState* cpu, struct Memory* memory)
 
         if ((pad[0]->button & U_CBUTTONS) && (~lastButton & U_CBUTTONS))
         {
-            paused = 0;
+            paused = FALSE;
         }
 
         lastButton = pad[0]->button;
     }
+
+    return result;
 }
 
 ///////////////////////////////////

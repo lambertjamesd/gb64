@@ -117,9 +117,9 @@ struct Breakpoint {
     u8* memoryAddress;
 };
 
-#define BREAK_POINT_COUNT   10
-#define USER_BREAK_POINTS   8
-#define STEP_BREAK_POINTS   2
+#define USER_BREAK_POINTS       8
+#define SYSTEM_BREAK_POINTS     2
+#define BREAK_POINT_COUNT       (USER_BREAK_POINTS + SYSTEM_BREAK_POINTS)
 
 struct Sprite {
     unsigned char y;

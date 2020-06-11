@@ -107,6 +107,7 @@ _DEBUG_SKIP:
     sw TMP4, 0($at)
 .endif
 
+DECODE_V0:
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
     add $ra, $at, $v0
