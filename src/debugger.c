@@ -3,6 +3,7 @@
 #include "debug_out.h"
 #include "../memory.h"
 #include "../render.h"
+#include "decoder.h"
 
 u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
@@ -111,6 +112,8 @@ void useDebugger(struct CPUState* cpu, struct Memory* memory)
     }
 }
 
+///////////////////////////////////
+
 void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     char strBuffer[5];
@@ -169,11 +172,27 @@ struct MenuItem* memoryAddressesHandleInput(struct MenuItem* menuItem, int butto
     return NULL;
 }
 
+///////////////////////////////////
+
+void memoryValuesCheckReread(struct MemoryValueMenuItem* values)
+{
+    if (values->addressStart != values->addressGUI->addressStart)
+    {
+        values->addressStart = values->addressGUI->addressStart;
+        int index;
+        for (index = 0; index < MEMORY_BLOCK_ROWS * MEMORY_BLOCK_COLS; ++index)
+        {
+            values->values[index] = readMemoryDirect(values->memory, values->addressStart + index);
+        }
+    }
+}
+
 void memoryValuesRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     char strBuffer[3];
     int x, y;
     struct MemoryValueMenuItem* values = (struct MemoryValueMenuItem*)menuItem->data;
+    memoryValuesCheckReread(values);
 
     FONTCOL(255, 255, 255, 255);
     
@@ -238,6 +257,106 @@ struct MenuItem* memoryValuesHandleInput(struct MenuItem* menuItem, int buttons)
     return NULL;
 }
 
+///////////////////////////////////
+
+void instructionsReload(struct InstructionsMenuItem* instructions, u16 currentAddress)
+{
+    int index;
+    instructions->startAddress = currentAddress;
+
+    for (index = 0; index < MI_INSTRUCTIONS_LINE_COUNT; ++index)
+    {
+        u8 instruction = readMemoryDirect(instructions->memory, currentAddress);
+        instructions->instructions[index].address = currentAddress;
+        int instructionSize = getInstructionSize(instruction);
+
+        switch (getInstructionSize(instruction))
+        {
+            case 3:
+                instructions->instructions[index].instruction[2] = readMemoryDirect(instructions->memory, currentAddress + 2);
+            case 2:
+                instructions->instructions[index].instruction[1] = readMemoryDirect(instructions->memory, currentAddress + 1);
+            default:
+                instructions->instructions[index].instruction[0] = readMemoryDirect(instructions->memory, currentAddress + 0);
+        }
+
+        currentAddress = currentAddress + instructionSize;
+    }
+}
+
+void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
+{
+    int index;
+    char strBuffer[16];
+    struct InstructionsMenuItem* instructions = (struct InstructionsMenuItem*)menuItem->data;
+    FONTCOL(255, 255, 255, 255);
+
+    for (index = 0; index < MI_INSTRUCTIONS_LINE_COUNT; ++index)
+    {
+        if (instructions->menuState->cursorY == index && menuItem == highlightedItem && instructions->menuState->cursorX == MI_INSTRUCTION_ADDR_COL)
+        {
+            FONTCOL(43, 200, 100, 255);
+        }
+        else
+        {
+            FONTCOL(255, 255, 255, 255);
+        }
+        sprintf(strBuffer, "%04X", instructions->instructions[index].address);
+        SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+
+        decodeInstruction(strBuffer, instructions->instructions[index].instruction, instructions->instructions[index].address);
+
+        if (instructions->menuState->cursorY == index && menuItem == highlightedItem && instructions->menuState->cursorX == MI_INSTRUCTION_NAME_COL)
+        {
+            FONTCOL(43, 200, 100, 255);
+        }
+        else
+        {
+            FONTCOL(255, 255, 255, 255);
+        }
+
+        SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_NAME_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+    }
+}
+
+struct MenuItem* instructionsHandleInput(struct MenuItem* menuItem, int buttons)
+{
+    struct InstructionsMenuItem* instructions = (struct InstructionsMenuItem*)menuItem->data;
+    
+    if (buttons & U_JPAD)
+    {
+        if (instructions->menuState->cursorY > 0) 
+        {
+            --instructions->menuState->cursorY;
+        } 
+        // TODO scroll instructions
+        return menuItem;
+    }
+    else if (buttons & D_JPAD)
+    {
+        if (instructions->menuState->cursorY < MI_INSTRUCTIONS_LINE_COUNT - 1)
+        {
+            ++instructions->menuState->cursorY;
+        }
+        // TODO scroll instructions
+        return menuItem;
+    }
+    else if ((buttons & L_JPAD) && instructions->menuState->cursorX == MI_INSTRUCTION_NAME_COL)
+    {
+        --instructions->menuState->cursorX;
+        return menuItem;
+    }
+    else if ((buttons & R_JPAD) && instructions->menuState->cursorX == MI_INSTRUCTION_ADDR_COL)
+    {
+        ++instructions->menuState->cursorX;
+        return menuItem;
+    }
+
+    return NULL;
+}
+
+///////////////////////////////////
+
 void cpuStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     struct CPUState* cpu = (struct CPUState*)menuItem->data;
@@ -259,14 +378,22 @@ void cpuStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
     SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 5 * DEBUG_MENU_ROW_HEIGHT);
 }
 
+///////////////////////////////////
+
 void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memory* memory)
 {
     zeroMemory(menu, sizeof(struct DebuggerMenu));
 
     menu->memoryAddresses.menuState = &menu->state;
+
     menu->memoryValues.menuState = &menu->state;
     menu->memoryValues.memory = memory;
     menu->memoryValues.addressGUI = &menu->memoryAddresses;
+    menu->memoryValues.addressStart = 1; // this forces a page refresh
+
+    menu->instructionMenuItem.menuState = &menu->state;
+    menu->instructionMenuItem.memory = memory;
+    instructionsReload(&menu->instructionMenuItem, cpu->pc);
 
     menuItemInit(
         &menu->menuItems[DebuggerMenuIndicesMemoryAddress],
@@ -292,8 +419,16 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
         NULL 
     );
 
-    menu->menuItems[DebuggerMenuIndicesMemoryAddress].toRight = &menu->menuItems[DebuggerMenuIndicesMemoryValues];
-    menu->menuItems[DebuggerMenuIndicesMemoryValues].toLeft = &menu->menuItems[DebuggerMenuIndicesMemoryAddress];
+    menuItemInit(
+        &menu->menuItems[DebuggerMenuIndicesInstructions],
+        &menu->instructionMenuItem,
+        instructionsRender,
+        instructionsHandleInput,
+        NULL 
+    );
 
-    initMenuState(&menu->menu, menu->menuItems, 3);
+    menuItemConnectSideToSide(&menu->menuItems[DebuggerMenuIndicesMemoryAddress], &menu->menuItems[DebuggerMenuIndicesMemoryValues]);
+    menuItemConnectSideToSide(&menu->menuItems[DebuggerMenuIndicesMemoryValues], &menu->menuItems[DebuggerMenuIndicesInstructions]);
+
+    initMenuState(&menu->menu, menu->menuItems, 4);
 }

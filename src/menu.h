@@ -38,4 +38,7 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad);
 void menuStateRender(struct MenuState* menu);
 void menuItemInit(struct MenuItem* menuItem, void* data, MenuItemRender renderCallback, MenuItemHandleInput handleButtonDown, MenuItemSetActive setActive);
 
+void menuItemConnectSideToSide(struct MenuItem* left, struct MenuItem* right);
+void menuItemConnectUpAndDown(struct MenuItem* up, struct MenuItem* down);
+
 #endif

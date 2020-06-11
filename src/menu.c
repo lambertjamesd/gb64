@@ -116,3 +116,15 @@ void menuItemInit(struct MenuItem* menuItem, void* data, MenuItemRender renderCa
     menuItem->handleButtonDown = handleButtonDown;
     menuItem->setActive = setActive;
 }
+
+void menuItemConnectSideToSide(struct MenuItem* left, struct MenuItem* right)
+{
+    left->toRight = right;
+    right->toLeft = left;
+}
+
+void menuItemConnectUpAndDown(struct MenuItem* up, struct MenuItem* down)
+{
+    up->toDown = down;
+    down->toUp = up;
+}

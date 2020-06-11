@@ -9,7 +9,7 @@
 
 #include "gbfont_img.h"
 
-static char gbfont_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.?!,@[]'\"\\+-=/?()";
+static char gbfont_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.?!,@[]'\"\\+-=/()";
 
 static Bitmap gbfont_bms[] = {
     { 8, 64, 0*8, 0*8, gbfont_img, 8, 0},

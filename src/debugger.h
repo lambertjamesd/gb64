@@ -17,7 +17,7 @@ enum DebuggerMenuIndices {
 };
 
 #define CPU_STATE_X         8
-#define CPU_STATE_Y         8
+#define CPU_STATE_Y         10
 
 #define MEMORY_BLOCK_ROWS   12
 #define MEMORY_BLOCK_COLS   4
@@ -47,12 +47,33 @@ struct MemoryValueMenuItem {
     u16 addressStart;
 };
 
+#define MI_INSTRUCTIONS_Y           10
+#define MI_INSTRUCTIONS_X           152
+#define MI_INSTRUCTIONS_NAME_X      192
+#define MI_INSTRUCTIONS_LINE_COUNT  20
+#define MI_INSTRUCTION_Y_OFFSET     8
+#define MI_INSTRUCTION_ADDR_COL     3
+#define MI_INSTRUCTION_NAME_COL     4
+
+struct InstructionLine {
+    u16 address;
+    u8 instruction[4];
+};
+
+struct InstructionsMenuItem {
+    u16 startAddress;
+    struct InstructionLine instructions[MI_INSTRUCTIONS_LINE_COUNT];
+    struct DebuggerMenuState* menuState;
+    struct Memory* memory;
+};
+
 struct DebuggerMenu {
     struct MenuState menu;
     struct MenuItem menuItems[DebuggerMenuIndicesCount];
     struct DebuggerMenuState state;
     struct MemoryAddressMenuItem memoryAddresses;
     struct MemoryValueMenuItem memoryValues;
+    struct InstructionsMenuItem instructionMenuItem;
 };
 
 void writeMemoryDirect(struct Memory* memory, u16 address, u8 value);
