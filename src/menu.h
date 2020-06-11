@@ -4,8 +4,8 @@
 
 #include <ultra64.h>
 
-#define INITIAL_TIME_DELAY 30
-#define REPEAT_TIME_DELAY 10
+#define INITIAL_TIME_DELAY 16
+#define REPEAT_TIME_DELAY 2
 
 struct MenuItem;
 

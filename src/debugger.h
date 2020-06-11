@@ -34,17 +34,17 @@ struct DebuggerMenuState {
     int cursorY;
 };
 
+struct MemoryAddressMenuItem {
+    u16 addressStart;
+    struct DebuggerMenuState* menuState;
+};
+
 struct MemoryValueMenuItem {
     u8 values[MEMORY_BLOCK_ROWS * MEMORY_BLOCK_COLS];
     struct DebuggerMenuState* menuState;
     struct Memory* memory;
-};
-
-struct MemoryAddressMenuItem {
-    u16 address[MEMORY_BLOCK_ROWS];
-    struct MemoryValueMenuItem* values;
-    struct DebuggerMenuState* menuState;
-    struct Memory* memory;
+    struct MemoryAddressMenuItem* addressGUI;
+    u16 addressStart;
 };
 
 struct DebuggerMenu {

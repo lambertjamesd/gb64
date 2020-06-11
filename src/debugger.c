@@ -87,6 +87,7 @@ void useDebugger(struct CPUState* cpu, struct Memory* memory)
     int lastButton = U_CBUTTONS;
 
     initDebugMenu(&menu, cpu, memory);
+    clearDebugOutput();
 
     while (paused)
     {
@@ -114,13 +115,14 @@ void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlight
 {
     char strBuffer[5];
     int index;
-    struct MemoryAddressMenuItem* address = (struct MemoryAddressMenuItem*)menuItem->data;
+    struct MemoryAddressMenuItem* addressGUI = (struct MemoryAddressMenuItem*)menuItem->data;
+    u16 address = addressGUI->addressStart;
 
     FONTCOL(255, 255, 255, 255);
     
     for (index = 0; index < MEMORY_BLOCK_ROWS; ++index)
     {
-        if (address->menuState->cursorY == index && menuItem == highlightedItem)
+        if (addressGUI->menuState->cursorY == index && menuItem == highlightedItem)
         {
             FONTCOL(43, 200, 100, 255);
         }
@@ -129,8 +131,9 @@ void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlight
             FONTCOL(255, 255, 255, 255);
         }
 
-        sprintf(strBuffer, "%04X", address->address[index]);
+        sprintf(strBuffer, "%04X", address);
         SHOWFONT(&glistp, strBuffer, MEMROY_GRID_X, MEMORY_GRID_Y + index * DEBUG_MENU_ROW_HEIGHT);
+        address += MEMORY_BLOCK_COLS;
     }
 }
 
@@ -138,14 +141,28 @@ struct MenuItem* memoryAddressesHandleInput(struct MenuItem* menuItem, int butto
 {
     struct MemoryAddressMenuItem* address = (struct MemoryAddressMenuItem*)menuItem->data;
 
-    if ((buttons & U_JPAD) && address->menuState->cursorY > 0)
+    if (buttons & U_JPAD)
     {
-        --address->menuState->cursorY;
+        if (address->menuState->cursorY > 0) 
+        {
+            --address->menuState->cursorY;
+        } 
+        else 
+        {
+            address->addressStart -= MEMORY_BLOCK_COLS;
+        }
         return menuItem;
     }
-    else if ((buttons & D_JPAD) && address->menuState->cursorY < MEMORY_BLOCK_ROWS - 1)
+    else if (buttons & D_JPAD)
     {
-        ++address->menuState->cursorY;
+        if ( address->menuState->cursorY < MEMORY_BLOCK_ROWS - 1)
+        {
+            ++address->menuState->cursorY;
+        }
+        else
+        {
+            address->addressStart += MEMORY_BLOCK_COLS;
+        }
         return menuItem;
     }
 
@@ -183,14 +200,28 @@ struct MenuItem* memoryValuesHandleInput(struct MenuItem* menuItem, int buttons)
 {
     struct MemoryValueMenuItem* values = (struct MemoryValueMenuItem*)menuItem->data;
 
-    if ((buttons & U_JPAD) && values->menuState->cursorY > 0)
+    if (buttons & U_JPAD)
     {
-        --values->menuState->cursorY;
+        if (values->menuState->cursorY > 0) 
+        {
+            --values->menuState->cursorY;
+        } 
+        else 
+        {
+            values->addressGUI->addressStart -= MEMORY_BLOCK_COLS;
+        }
         return menuItem;
     }
-    else if ((buttons & D_JPAD) && values->menuState->cursorY < MEMORY_BLOCK_ROWS - 1)
+    else if (buttons & D_JPAD)
     {
-        ++values->menuState->cursorY;
+        if (values->menuState->cursorY < MEMORY_BLOCK_ROWS - 1)
+        {
+            ++values->menuState->cursorY;
+        }
+        else
+        {
+            values->addressGUI->addressStart += MEMORY_BLOCK_COLS;
+        }
         return menuItem;
     }
     else if ((buttons & L_JPAD) && values->menuState->cursorX > 0)
@@ -232,11 +263,10 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
 {
     zeroMemory(menu, sizeof(struct DebuggerMenu));
 
-    menu->memoryAddresses.values = &menu->memoryValues;
     menu->memoryAddresses.menuState = &menu->state;
-    menu->memoryAddresses.memory = memory;
     menu->memoryValues.menuState = &menu->state;
     menu->memoryValues.memory = memory;
+    menu->memoryValues.addressGUI = &menu->memoryAddresses;
 
     menuItemInit(
         &menu->menuItems[DebuggerMenuIndicesMemoryAddress],
