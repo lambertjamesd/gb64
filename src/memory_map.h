@@ -121,6 +121,8 @@ struct Breakpoint {
 #define SYSTEM_BREAK_POINTS     2
 #define BREAK_POINT_COUNT       (USER_BREAK_POINTS + SYSTEM_BREAK_POINTS)
 
+#define SYSTEM_BREAK_POINT_START    USER_BREAK_POINTS
+
 struct Sprite {
     unsigned char y;
     unsigned char x;
@@ -175,7 +177,7 @@ struct Memory {
     };
     struct ROMLayout* rom;
     struct AudioState audio;
-    struct Breakpoint breakpoints[10];
+    struct Breakpoint breakpoints[BREAK_POINT_COUNT];
 };
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);

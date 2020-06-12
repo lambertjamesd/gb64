@@ -80,6 +80,7 @@ struct InstructionsMenuItem {
     u16 startAddress;
     struct InstructionLine instructions[MI_INSTRUCTIONS_LINE_COUNT];
     struct DebuggerMenuState* menuState;
+    struct CPUState* cpu;
     struct Memory* memory;
     struct MenuItem* editMenuItem;
 };

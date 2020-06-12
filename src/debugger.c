@@ -98,12 +98,26 @@ struct Breakpoint* findBreakpoint(struct Memory* memory, u8* at)
     return NULL;
 }
 
+struct AddressTuple getInstructionBranchFromState(struct CPUState* cpu, struct Memory* memory, u8 instructionCode)
+{
+    u8 instructionData[4];
+    instructionData[0] = instructionCode;
+    instructionData[1] = readMemoryDirect(memory, cpu->pc + 1);
+    instructionData[2] = readMemoryDirect(memory, cpu->pc + 2);
+    return getInstructionBranch(
+        instructionData,
+        cpu->pc,
+        (u16)readMemoryDirect(memory, cpu->sp) | ((u16)readMemoryDirect(memory, cpu->sp + 1) << 8),
+        ((u16)cpu->h << 8) | cpu->l
+    );
+}
+
 u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 {
     OSContPad	**pad;
     struct DebuggerMenu menu;
     bool paused = TRUE;
-    int lastButton = U_CBUTTONS;
+    int lastButton = ~0;
     int index;
 
     u8 result = readMemoryDirect(memory, cpu->pc);
@@ -142,13 +156,37 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 
 		finishRenderFrame();
 
-        if ((pad[0]->button & U_CBUTTONS) && (~lastButton & U_CBUTTONS))
+        int buttonDown = pad[0]->button & ~lastButton;
+
+        if (buttonDown & U_CBUTTONS)
         {
+            paused = FALSE;
+        }
+        else if (buttonDown & D_CBUTTONS)
+        {
+            struct AddressTuple possibleNext = getInstructionBranchFromState(cpu, memory, result);
+            insertBreakpoint(memory, possibleNext.nextInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
+            if (!isInstructionCall(result) && possibleNext.nextInstruction != possibleNext.branchInstruction)
+            {
+                insertBreakpoint(memory, possibleNext.branchInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START + 1);
+            }
+            paused = FALSE;
+        }
+        else if (buttonDown & R_CBUTTONS)
+        {
+            struct AddressTuple possibleNext = getInstructionBranchFromState(cpu, memory, result);
+            insertBreakpoint(memory, possibleNext.nextInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
+            if (possibleNext.nextInstruction != possibleNext.branchInstruction)
+            {
+                insertBreakpoint(memory, possibleNext.branchInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START + 1);
+            }
             paused = FALSE;
         }
 
         lastButton = pad[0]->button;
     }
+
+    zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
     return result;
 }
@@ -549,6 +587,12 @@ void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
         }
 
         SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_NAME_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+
+        if (line->address == instructions->cpu->pc)
+        {
+            FONTCOL(200, 100, 43, 255);
+            SHOWFONT(&glistp, "-", MI_INSTRUCTIONS_X - DEBUGGER_FONT_W, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+        }
     }
 }
 
@@ -571,7 +615,10 @@ struct MenuItem* instructionsHandleInput(struct MenuItem* menuItem, int buttons)
         {
             ++instructions->menuState->cursorY;
         }
-        // TODO scroll instructions
+        else
+        {
+            instructionsReload(instructions, instructions->instructions[1].address);
+        }
         return menuItem;
     }
     else if ((buttons & L_JPAD) && instructions->menuState->cursorX == MI_INSTRUCTION_NAME_COL)
@@ -675,6 +722,7 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
     menu->memoryValues.editMenuItem = &menu->menuItems[DebuggerMenuIndicesEditValue];
 
     menu->instructionMenuItem.menuState = &menu->state;
+    menu->instructionMenuItem.cpu = cpu;
     menu->instructionMenuItem.memory = memory;
     menu->instructionMenuItem.editMenuItem = &menu->menuItems[DebuggerMenuIndicesEditValue];
     instructionsReload(&menu->instructionMenuItem, cpu->pc);

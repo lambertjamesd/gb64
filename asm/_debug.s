@@ -51,7 +51,6 @@ _CHECK_FOR_INVALID_STATE_INVALD:
 OPEN_DEBUGGER:
     save_state_on_stack
 
-    
     jal CALCULATE_DIV_VALUE
     addi GB_PC, GB_PC, -1 # back PC back to the begginning of current instruction
     andi GB_PC, GB_PC, 0xFFFF
@@ -65,6 +64,9 @@ OPEN_DEBUGGER:
     nop
 
     restore_state_from_stack
+    
+    addi GB_PC, GB_PC, 1 # back PC back to the begginning of current instruction
+    andi GB_PC, GB_PC, 0xFFFF
 
     j DECODE_V0 # the value of the next instruction to execute is returne from useDebugger
-
+    nop
