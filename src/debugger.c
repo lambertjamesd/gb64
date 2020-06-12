@@ -40,14 +40,38 @@ u8 readMemoryDirect(struct Memory* memory, u16 address)
     return *getMemoryAddress(memory, address);
 }
 
+struct Breakpoint* findBreakpoint(struct Memory* memory, u8* at)
+{
+    int index;
+
+    for (index = 0; index < BREAK_POINT_COUNT; ++index)
+    {
+        if (memory->breakpoints[index].memoryAddress == at)
+        {
+            return &memory->breakpoints[index];
+        }
+    }
+
+    return NULL;
+}
+
 void insertBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type, enum BreakpointType breakpointIndex)
 {
+    u8* memoryAddress = getMemoryAddress(memory, address);
+    struct Breakpoint* existingBreakpoint = findBreakpoint(memory, memoryAddress);
+
+    if (existingBreakpoint)
+    {
+        // don't add a breakpoint if one already exists
+        return;
+    }
+
     if (memory->breakpoints[breakpointIndex].breakpointType != BreakpointTypeNone)
     {
         removeBreakpointDirect(&memory->breakpoints[breakpointIndex]);
     }
 
-    memory->breakpoints[breakpointIndex].memoryAddress = getMemoryAddress(memory, address);
+    memory->breakpoints[breakpointIndex].memoryAddress = memoryAddress;
     memory->breakpoints[breakpointIndex].address = address;
     memory->breakpoints[breakpointIndex].existingInstruction = *memory->breakpoints[breakpointIndex].memoryAddress;
     memory->breakpoints[breakpointIndex].breakpointType = type;
@@ -81,21 +105,6 @@ void removeBreakpoint(struct Memory* memory, u16 address)
             removeBreakpointDirect(&memory->breakpoints[index]);
         }
     }
-}
-
-struct Breakpoint* findBreakpoint(struct Memory* memory, u8* at)
-{
-    int index;
-
-    for (index = 0; index < BREAK_POINT_COUNT; ++index)
-    {
-        if (memory->breakpoints[index].memoryAddress == at)
-        {
-            return &memory->breakpoints[index];
-        }
-    }
-
-    return NULL;
 }
 
 struct AddressTuple getInstructionBranchFromState(struct CPUState* cpu, struct Memory* memory, u8 instructionCode)

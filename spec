@@ -43,7 +43,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/tests/cpu_instrs/individual/11-op a,hl.gb"
+	include "data/tests/instr_timing/instr_timing.gb"
 endseg
 
 beginwave
