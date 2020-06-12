@@ -97,48 +97,51 @@
 
 .extern unloadBIOS 4
 
+
+.eqv _C_CALLBACK_FRAME_SIZE, 0x14
+
 .macro save_state_on_stack
-    addi $sp, $sp, -_WRITE_CALLBACK_FRAME_SIZE
-    sb GB_A, 0x0($sp)
-    sb GB_F, 0x1($sp)
-    sb GB_B, 0x2($sp)
-    sb GB_C, 0x3($sp)
+    addi $sp, $sp, -_C_CALLBACK_FRAME_SIZE
+    sb GB_A, CPU_STATE_A(CPUState)
+    sb GB_F, CPU_STATE_F(CPUState)
+    sb GB_B, CPU_STATE_B(CPUState)
+    sb GB_C, CPU_STATE_C(CPUState)
+    sb GB_D, CPU_STATE_D(CPUState)
+    sb GB_E, CPU_STATE_E(CPUState)
+    sb GB_H, CPU_STATE_H(CPUState)
+    sb GB_L, CPU_STATE_L(CPUState)
 
-    sb GB_D, 0x4($sp)
-    sb GB_E, 0x5($sp)
-    sb GB_H, 0x6($sp)
-    sb GB_L, 0x7($sp)
+    sh GB_SP, CPU_STATE_SP(CPUState)
+    sh GB_PC, CPU_STATE_PC(CPUState)
 
-    sh GB_PC, 0x8($sp)
-    sh GB_SP, 0xA($sp)
+    sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
-    sw CYCLES_RUN, 0xC($sp)
-    sw CPUState, 0x10($sp)
-    sw Memory, 0x14($sp)
-    sw CycleTo, 0x18($sp)
-    sw $ra, 0x20($sp)
-    sw $fp, 0x24($sp)
+    sw CPUState, 0x00($sp)
+    sw Memory, 0x04($sp)
+    sw CycleTo, 0x08($sp)
+    sw $ra, 0x0C($sp)
+    sw $fp, 0x10($sp)
 .endm
 
 .macro restore_state_from_stack
-    lbu GB_A, 0x0($sp)
-    lbu GB_F, 0x1($sp)
-    lbu GB_B, 0x2($sp)
-    lbu GB_C, 0x3($sp)
+    lw CPUState, 0x00($sp)
+    lw Memory, 0x04($sp)
+    lw CycleTo, 0x08($sp)
+    lw $fp, 0x10($sp)
 
-    lbu GB_D, 0x4($sp)
-    lbu GB_E, 0x5($sp)
-    lbu GB_H, 0x6($sp)
-    lbu GB_L, 0x7($sp)
+    lbu GB_A, CPU_STATE_A(CPUState)
+    lbu GB_F, CPU_STATE_F(CPUState)
+    lbu GB_B, CPU_STATE_B(CPUState)
+    lbu GB_C, CPU_STATE_C(CPUState)
+    lbu GB_D, CPU_STATE_D(CPUState)
+    lbu GB_E, CPU_STATE_E(CPUState)
+    lbu GB_H, CPU_STATE_H(CPUState)
+    lbu GB_L, CPU_STATE_L(CPUState)
 
-    lhu Param0, 0x8($sp)
-    lhu GB_SP, 0xA($sp)
-
-    lw CYCLES_RUN, 0xC($sp)
-    lw CPUState, 0x10($sp)
-    lw Memory, 0x14($sp)
-    lw CycleTo, 0x18($sp)
-    lw $fp, 0x24($sp)
+    lhu GB_SP, CPU_STATE_SP(CPUState)
+    lhu Param0, CPU_STATE_PC(CPUState)
+    
+    lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
     # in case the program counter is inside the bank of 
     # memory that was switched
@@ -146,9 +149,9 @@
     # make sure GB_PC doesn't match Param0 to force bank load
     xori GB_PC, Param0, 0xFFFF 
 
-    lw $ra, 0x20($sp)
+    lw $ra, 0x0C($sp)
 
-    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+    addi $sp, $sp, _C_CALLBACK_FRAME_SIZE
 .endm
 
 .macro call_c_fn name

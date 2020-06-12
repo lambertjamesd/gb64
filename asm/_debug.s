@@ -49,19 +49,22 @@ _CHECK_FOR_INVALID_STATE_INVALD:
 .global OPEN_DEBUGGER
 .balign 4
 OPEN_DEBUGGER:
+    save_state_on_stack
+
+    
     jal CALCULATE_DIV_VALUE
     addi GB_PC, GB_PC, -1 # back PC back to the begginning of current instruction
-    jal CALCULATE_TIMA_VALUE
     andi GB_PC, GB_PC, 0xFFFF
-
-    save_state_on_stack
+    jal CALCULATE_TIMA_VALUE
+    sh GB_PC, CPU_STATE_PC(CPUState)
+    
+    lw $fp, (ST_FP + _C_CALLBACK_FRAME_SIZE)($sp)
 
     # $a0 and $a1 already have the correct values
     call_c_fn useDebugger
+    nop
 
     restore_state_from_stack
 
-    addi GB_PC, GB_PC, 1 # restore PC
-    andi GB_PC, GB_PC, 0xFFFF
     j DECODE_V0 # the value of the next instruction to execute is returne from useDebugger
 

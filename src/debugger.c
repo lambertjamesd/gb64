@@ -699,7 +699,7 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
         &menu->menuItems[DebuggerMenuIndicesCPUState],
         cpu,
         cpuStateRender,
-        NULL,-
+        NULL,
         NULL 
     );
 
