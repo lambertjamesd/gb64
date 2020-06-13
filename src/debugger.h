@@ -100,6 +100,7 @@ u8 readMemoryDirect(struct Memory* memory, u16 address);
 
 struct Breakpoint* addBreakpoint(struct Memory* memory, u16 address, enum BreakpointType type);
 void removeBreakpoint(struct Memory* memory, u16 address);
+void reapplyBreakpoint(struct Breakpoint* breakpoint);
 
 u8 useDebugger(struct CPUState* cpu, struct Memory* memory);
 

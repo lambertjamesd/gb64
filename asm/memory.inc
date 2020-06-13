@@ -95,9 +95,6 @@
 .eqv INTERRUPTS_INPUT, 0x10;
 .eqv INTERRUPTS_ENABLED, 0x80;
 
-.extern unloadBIOS 4
-
-
 .eqv _C_CALLBACK_FRAME_SIZE, 0x14
 
 .macro save_state_on_stack

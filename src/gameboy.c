@@ -1,6 +1,7 @@
 
 #include "gameboy.h"
 #include "graphics.h"
+#include "debugger.h"
 
 struct GameBoy gGameboy;
 
@@ -155,4 +156,14 @@ void handleInput(struct GameBoy* gameboy, OSContPad* pad)
     }
     
     WRITE_REGISTER_DIRECT(&gameboy->memory, REG_JOYP, nextJoy);
+}
+
+void unloadBIOS(struct Memory* memory)
+{
+    loadRomSegment(memory->rom->mainBank, memory->rom->romLocation, 0);
+    int index;
+    for (index = 0; index < BREAK_POINT_COUNT; ++index)
+    {
+        reapplyBreakpoint(&memory->breakpoints[index]);
+    }
 }

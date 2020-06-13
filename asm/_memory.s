@@ -539,12 +539,8 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     sw $ra, 0x20($sp)
     sw $fp, 0x24($sp)
 
-    lui $at, %hi(unloadBIOS)
-    addiu $at, $at, %lo(unloadBIOS)
-    la $a0, MEMORY_ROM
-    add $a0, Memory, $a0
-    jalr $ra, $at
-    lw $a0, 0($a0)
+    call_c_fn unloadBIOS
+    move $a0, Memory
 
     lhu GB_PC, 0x8($sp)
     lhu GB_SP, 0xA($sp)

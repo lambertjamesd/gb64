@@ -204,8 +204,3 @@ void loadBIOS(struct ROMLayout* romLayout, int gbc)
     osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 }
-
-void unloadBIOS(struct ROMLayout* romLayout)
-{
-    loadRomSegment(romLayout->mainBank, romLayout->romLocation, 0);
-}

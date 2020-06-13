@@ -37,5 +37,6 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt);
 void emulateFrame(struct GameBoy* gameboy, void* targetMemory);
 
 void handleInput(struct GameBoy* gameboy, OSContPad* pad);
+void unloadBIOS(struct Memory* memory);
 
 #endif

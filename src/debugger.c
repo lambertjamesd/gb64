@@ -107,6 +107,15 @@ void removeBreakpoint(struct Memory* memory, u16 address)
     }
 }
 
+void reapplyBreakpoint(struct Breakpoint* breakpoint)
+{
+    if (breakpoint->breakpointType != BreakpointTypeNone && *breakpoint->memoryAddress != DEBUG_INSTRUCTION)
+    {
+        breakpoint->existingInstruction = *breakpoint->memoryAddress;
+        *breakpoint->memoryAddress = DEBUG_INSTRUCTION;
+    }
+}
+
 struct AddressTuple getInstructionBranchFromState(struct CPUState* cpu, struct Memory* memory, u8 instructionCode)
 {
     u8 instructionData[4];
