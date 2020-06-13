@@ -5,6 +5,7 @@
 #include <ultra64.h>
 #include "rom.h"
 #include "audio.h"
+#include "bool.h"
 
 #define MEMORY_MAP_SIZE 16
 #define MEMORY_MAP_SEGMENT_SIZE 0x1000
@@ -178,6 +179,17 @@ struct Memory {
     struct ROMLayout* rom;
     struct AudioState audio;
     struct Breakpoint breakpoints[BREAK_POINT_COUNT];
+};
+
+#define MBC_FLAGS_RAM       0x1
+#define MBC_FLAGS_BATTERY   0x2
+#define MBC_FLAGS_TIMER     0x4
+#define MBC_FLAGS_RUMBLE    0x8
+
+struct MBCData {
+    RegisterWriter bankSwitch;
+    u16 id;
+    u16 flags;
 };
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);

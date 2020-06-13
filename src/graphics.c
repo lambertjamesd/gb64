@@ -303,7 +303,7 @@ void renderPixelRow(
         
         if (!dataSelect)
         {
-            //tileIndex = ((tileIndex + 0x80) & 0xFF) + 0x80;
+            tileIndex = ((tileIndex + 0x80) & 0xFF) + 0x80;
         }
 
         spriteRow = tileSource[tileIndex].rows[

@@ -70,7 +70,7 @@ game(void)
 	lastTime = 0;
 	gGameboy.cpu.cyclesRun = 0;
 
-	sprintf(str, "Didn't run tests %X", OPEN_DEBUGGER);
+	sprintf(str, "Didn't run tests %X\n", OPEN_DEBUGGER);
 #if RUN_TESTS
 	runTests(str);
 #endif
