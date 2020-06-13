@@ -53,7 +53,6 @@ void initRomLayout(struct ROMLayout* romLayout, void *romLocation)
     romLayout->romLocation = romLocation;
 }
 
-
 void finishRomLoad(struct ROMLayout* romLayout)
 {
     int bankIndex;

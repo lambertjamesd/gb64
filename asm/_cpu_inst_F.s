@@ -100,7 +100,7 @@ GB_LD_A_a16:
     nop
     nop
 GB_EI:
-    addi $at, $zero, INTERRUPTS_ENABLED
+    li $at, INTERRUPTS_ENABLED
     jal CHECK_FOR_INTERRUPT
     sb $at, CPU_STATE_INTERRUPTS(CPUState)
     jal CALCULATE_NEXT_STOPPING_POINT

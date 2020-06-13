@@ -101,6 +101,8 @@ game(void)
 	*((u32*)debugWrite) = (int)&gGameboy.memory;
 	debugWrite = (void*)(0x80700000 - 16);
 	*((u32*)debugWrite) = (int)gGameboy.memory.rom;
+	debugWrite = (void*)(0x80700000 - 8);
+	*((u32*)debugWrite) = (int)&gGameboy.cpu;
 
     /*
      * Main game loop

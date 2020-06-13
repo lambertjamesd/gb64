@@ -648,6 +648,9 @@ void cpuStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
     SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 4 * DEBUG_MENU_ROW_HEIGHT);
     sprintf(buffer, "PC %04X", cpu->pc);
     SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 5 * DEBUG_MENU_ROW_HEIGHT);
+    
+    sprintf(buffer, "EI %1X", cpu->interrupts);
+    SHOWFONT(&glistp, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 0 * DEBUG_MENU_ROW_HEIGHT);
 }
 
 ///////////////////////////////////
