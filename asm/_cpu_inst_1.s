@@ -74,7 +74,7 @@ GB_RLA:
     nop
 GB_JR:
     jal READ_NEXT_INSTRUCTION
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR  * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     sll $v0, $v0, 24 # sign extend the bytes
     sra $v0, $v0, 24
     jal SET_GB_PC

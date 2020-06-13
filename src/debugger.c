@@ -130,85 +130,6 @@ struct AddressTuple getInstructionBranchFromState(struct CPUState* cpu, struct M
     );
 }
 
-u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
-{
-    OSContPad	**pad;
-    struct DebuggerMenu menu;
-    bool paused = TRUE;
-    int lastButton = ~0;
-    int index;
-
-    u8 result = readMemoryDirect(memory, cpu->pc);
-
-    if (result == DEBUG_INSTRUCTION)
-    {
-        struct Breakpoint* breakpoint = findBreakpoint(memory, getMemoryAddress(memory, cpu->pc));
-
-        if (breakpoint)
-        {
-            result = breakpoint->existingInstruction;
-        }
-    }
-
-    for (index = USER_BREAK_POINTS; index < BREAK_POINT_COUNT; ++index)
-    {
-        if (memory->breakpoints[index].breakpointType == BreakpointTypeStep)
-        {
-            removeBreakpointDirect(&memory->breakpoints[index]);
-        }
-    }
-
-    initDebugMenu(&menu, cpu, memory);
-    clearDebugOutput();
-
-    while (paused)
-    {
-		pad = ReadController(0);
-
-        menuStateHandleInput(&menu.menu, pad[0]);
-    
-		preRenderFrame(1);
-		renderDebugLog();
-
-        menuStateRender(&menu.menu);
-
-		finishRenderFrame();
-
-        int buttonDown = pad[0]->button & ~lastButton;
-
-        if (buttonDown & U_CBUTTONS)
-        {
-            paused = FALSE;
-        }
-        else if (buttonDown & D_CBUTTONS)
-        {
-            struct AddressTuple possibleNext = getInstructionBranchFromState(cpu, memory, result);
-            insertBreakpoint(memory, possibleNext.nextInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
-            if (!isInstructionCall(result) && possibleNext.nextInstruction != possibleNext.branchInstruction)
-            {
-                insertBreakpoint(memory, possibleNext.branchInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START + 1);
-            }
-            paused = FALSE;
-        }
-        else if (buttonDown & R_CBUTTONS)
-        {
-            struct AddressTuple possibleNext = getInstructionBranchFromState(cpu, memory, result);
-            insertBreakpoint(memory, possibleNext.nextInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
-            if (possibleNext.nextInstruction != possibleNext.branchInstruction)
-            {
-                insertBreakpoint(memory, possibleNext.branchInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START + 1);
-            }
-            paused = FALSE;
-        }
-
-        lastButton = pad[0]->button;
-    }
-
-    zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
-
-    return result;
-}
-
 ///////////////////////////////////
 
 void editValueRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
@@ -682,6 +603,11 @@ struct MenuItem* instructionsHandleInput(struct MenuItem* menuItem, int buttons)
             return menuItem;
         }
     }
+    else if (buttons & Z_TRIG)
+    {
+        insertBreakpoint(instructions->memory, instructions->instructions[instructions->menuState->cursorY].address, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
+        instructions->menuState->isDebugging = FALSE;
+    }
 
     return NULL;
 }
@@ -730,6 +656,8 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
 {
     zeroMemory(menu, sizeof(struct DebuggerMenu));
 
+    menu->state.isDebugging = TRUE;
+    menu->state.cursorX = MI_INSTRUCTION_NAME_COL;
     menu->memoryAddresses.menuState = &menu->state;
     menu->memoryAddresses.editMenuItem = &menu->menuItems[DebuggerMenuIndicesEditValue];
 
@@ -789,4 +717,86 @@ void initDebugMenu(struct DebuggerMenu* menu, struct CPUState* cpu, struct Memor
     menuItemConnectSideToSide(&menu->menuItems[DebuggerMenuIndicesMemoryValues], &menu->menuItems[DebuggerMenuIndicesInstructions]);
 
     initMenuState(&menu->menu, menu->menuItems, DebuggerMenuIndicesCount);
+}
+
+struct DebuggerMenu gDebugMenu;
+
+u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
+{
+    OSContPad	**pad;
+    int lastButton = ~0;
+    int index;
+
+    u8 result = readMemoryDirect(memory, cpu->pc);
+
+    if (result == DEBUG_INSTRUCTION)
+    {
+        struct Breakpoint* breakpoint = findBreakpoint(memory, getMemoryAddress(memory, cpu->pc));
+
+        if (breakpoint)
+        {
+            result = breakpoint->existingInstruction;
+        }
+    }
+
+    for (index = USER_BREAK_POINTS; index < BREAK_POINT_COUNT; ++index)
+    {
+        if (memory->breakpoints[index].breakpointType == BreakpointTypeStep)
+        {
+            removeBreakpointDirect(&memory->breakpoints[index]);
+        }
+    }
+    
+    gDebugMenu.memoryValues.addressStart = ~gDebugMenu.memoryAddresses.addressStart; // this forces a page refresh
+    memoryValuesCheckReread(&gDebugMenu.memoryValues);
+    instructionsReload(&gDebugMenu.instructionMenuItem, cpu->pc);
+    clearDebugOutput();
+    gDebugMenu.state.isDebugging = TRUE;
+
+    while (gDebugMenu.state.isDebugging)
+    {
+		pad = ReadController(0);
+
+        menuStateHandleInput(&gDebugMenu.menu, pad[0]);
+    
+		preRenderFrame(1);
+		renderDebugLog();
+
+        menuStateRender(&gDebugMenu.menu);
+
+		finishRenderFrame();
+
+        int buttonDown = pad[0]->button & ~lastButton;
+
+        if (buttonDown & U_CBUTTONS)
+        {
+            gDebugMenu.state.isDebugging = FALSE;
+        }
+        else if (buttonDown & D_CBUTTONS)
+        {
+            struct AddressTuple possibleNext = getInstructionBranchFromState(cpu, memory, result);
+            insertBreakpoint(memory, possibleNext.nextInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
+            if (!isInstructionCall(result) && possibleNext.nextInstruction != possibleNext.branchInstruction)
+            {
+                insertBreakpoint(memory, possibleNext.branchInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START + 1);
+            }
+            gDebugMenu.state.isDebugging = FALSE;
+        }
+        else if (buttonDown & R_CBUTTONS)
+        {
+            struct AddressTuple possibleNext = getInstructionBranchFromState(cpu, memory, result);
+            insertBreakpoint(memory, possibleNext.nextInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START);
+            if (possibleNext.nextInstruction != possibleNext.branchInstruction)
+            {
+                insertBreakpoint(memory, possibleNext.branchInstruction, BreakpointTypeStep, SYSTEM_BREAK_POINT_START + 1);
+            }
+            gDebugMenu.state.isDebugging = FALSE;
+        }
+
+        lastButton = pad[0]->button;
+    }
+
+    zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
+
+    return result;
 }

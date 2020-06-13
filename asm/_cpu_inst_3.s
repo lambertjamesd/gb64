@@ -3,7 +3,7 @@
 GB_JR_NC:
     andi $at, GB_F, C_FLAG # check z flag
     bnez $at, _SKIP_JR # skip jump if not zero
-    nop
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j GB_JR
     nop
     nop
@@ -77,7 +77,7 @@ GB_SCF:
 GB_JR_C:
     andi $at, GB_F, C_FLAG # check z flag
     beqz $at, _SKIP_JR # skip jump if not zero
-    nop
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j GB_JR
     nop
     nop

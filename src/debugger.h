@@ -6,12 +6,13 @@
 #include "cpu.h"
 #include "menu.h"
 #include "../controller.h"
+#include "bool.h"
 
 enum DebuggerMenuIndices {
+    DebuggerMenuIndicesInstructions,
     DebuggerMenuIndicesMemoryAddress,
     DebuggerMenuIndicesMemoryValues,
     DebuggerMenuIndicesCPUState,
-    DebuggerMenuIndicesInstructions,
     DebuggerMenuIndicesEditValue,
     DebuggerMenuIndicesCount,
 };
@@ -45,6 +46,7 @@ struct EditValueMenuState {
 struct DebuggerMenuState {
     int cursorX;
     int cursorY;
+    bool isDebugging;
 };
 
 struct MemoryAddressMenuItem {
@@ -94,6 +96,8 @@ struct DebuggerMenu {
     struct InstructionsMenuItem instructionMenuItem;
     struct EditValueMenuState editMenu;
 };
+
+extern struct DebuggerMenu gDebugMenu;
 
 void writeMemoryDirect(struct Memory* memory, u16 address, u8 value);
 u8 readMemoryDirect(struct Memory* memory, u16 address);

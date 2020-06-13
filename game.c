@@ -79,6 +79,8 @@ game(void)
 
 	initGameboy(&gGameboy, &gGBRom);
 
+	initDebugMenu(&gDebugMenu, &gGameboy.cpu, &gGameboy.memory);
+
 	gGameboy.memory.vram.bgColorPalletes[0] = 0b1100011110110100;
 	gGameboy.memory.vram.bgColorPalletes[1] = 0b1000111000011100;
 	gGameboy.memory.vram.bgColorPalletes[2] = 0b0011001101010100;
