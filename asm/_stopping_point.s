@@ -240,7 +240,7 @@ _CHECK_FOR_INTERRUPT_SAVE:
     sltu $at, CycleTo, TMP3
     # check to see if interrupt is new stopping point
     bnez $at, _CHECK_FOR_INTERRUPT_EXIT
-    nop
+    sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
     move CycleTo, TMP3
 _CHECK_FOR_INTERRUPT_EXIT:
     # save next interrupt time
@@ -248,6 +248,25 @@ _CHECK_FOR_INTERRUPT_EXIT:
     jr $ra
     sb TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
 
+########################
+# Check to unhalt the CPUState
+########################
+
+# TODO handle halt bug
+CHECK_FOR_UNHALT:
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    beqz $at, CHECK_FOR_UNHALT_DO_IT
+    read_register_direct $at, REG_INTERRUPTS_REQUESTED
+    read_register_direct TMP2, REG_INTERRUPTS_ENABLED
+    and $at, $at, TMP2
+    andi $at, $at, 0x1F
+    bnez $at, CHECK_FOR_UNHALT_DO_IT
+    nop
+    j CHECK_FOR_INTERRUPT
+    nop
+CHECK_FOR_UNHALT_DO_IT:
+    j DECODE_NEXT
+    sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
 
 ########################
 # Checks Param0 = REG_LCDC_STATUS

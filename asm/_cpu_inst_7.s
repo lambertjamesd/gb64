@@ -56,12 +56,12 @@ GB_LD_HL_L:
     nop
 GB_HALT:
     li $at, STOP_REASON_HALT
-    j GB_SIMULATE_HALTED
+    jal CHECK_FOR_UNHALT
     sb $at, CPU_STATE_STOP_REASON(CPUState)
+    lbu $at, CPU_STATE_STOP_REASON(CPUState)
+    beqz $at, DECODE_NEXT
     nop
-    nop
-    nop
-    nop
+    j GB_SIMULATE_HALTED
     nop
 GB_LD_HL_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
