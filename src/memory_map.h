@@ -67,6 +67,8 @@
 #define REG_SCX         0xFF43
 #define REG_LY          0xFF44
 #define REG_LCY         0xFF45
+#define REG_WY          0xFF4A
+#define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D
 
 #define REG_KEY1_SPEED_REQUEST  0x1

@@ -40,6 +40,8 @@
 #define LCDC_WIN_TILE_MAP       0x40
 #define LCDC_LCD_E              0x80
 
+#define WINDOW_X_OFFSET         0x7
+
 #define MODE_2_CYCLES           20
 #define CYCLES_PER_LINE         114
 #define V_BLANK_LINES           10
@@ -53,6 +55,7 @@ struct GraphicsState {
     int spriteCount;
     int gbc;
     int row;
+    int winY;
 };
 
 int compareSprites(struct Sprite a, struct Sprite b);
