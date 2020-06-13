@@ -55,9 +55,9 @@ game(void)
     char	str[200];
 	int loop, offset, color;
 	int lastButton;
+	int accumulatedTime;
 	OSTime lastTime;
 	OSTime lastDrawTime;
-	OSTime frameTime;
 	void* debugWrite;
 
 	loop = 0;
@@ -65,9 +65,8 @@ game(void)
 	color = 0;
 	lastButton = 0;
 
-	frameTime = 0;
 	lastDrawTime = 0;
-	lastTime = 0;
+	lastTime = osGetTime();
 	gGameboy.cpu.cyclesRun = 0;
 
 	sprintf(str, "Didn't run tests %X\n", OPEN_DEBUGGER);
@@ -118,10 +117,14 @@ game(void)
 
 		lastButton = pad[0]->button;
 
-		frameTime = lastTime;
+		OSTime frameTime = lastTime;
 		lastTime = osGetTime();
 
 		frameTime = lastTime - frameTime;
+
+		accumulatedTime += OS_CYCLES_TO_USEC(frameTime);
+
+		// time s  1024*1024 cycles/s 60 frames/s
 
 		cstring=str;
 		
@@ -134,14 +137,26 @@ game(void)
 		
 		// clearDebugOutput();
 		
-		handleInput(&gGameboy, pad[0]);
-		emulateFrame(&gGameboy, NULL);
 
-		pad = ReadController(0);
+		loop = MAX_FRAME_SKIP;
+		while (accumulatedTime > USECS_PER_FRAME && loop > 0)
+		{
+			handleInput(&gGameboy, pad[0]);
+			emulateFrame(&gGameboy, NULL);
+			pad = ReadController(0);
+			accumulatedTime -= USECS_PER_FRAME;
+			--loop;
+		}
+
+		while (accumulatedTime > USECS_PER_FRAME)
+		{
+			accumulatedTime -= USECS_PER_FRAME;
+		}
+
 		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, getColorBuffer());
+		accumulatedTime -= USECS_PER_FRAME;
 		finishAudioFrame(&gGameboy.memory);
-
 
 		osWritebackDCache(getColorBuffer(), sizeof(u16) * SCREEN_WD*SCREEN_HT);
 

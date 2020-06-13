@@ -18,6 +18,9 @@
 #define GB_BUTTON_SELECT    0x40
 #define GB_BUTTON_START     0x80
 
+#define USECS_PER_FRAME     16666
+#define MAX_FRAME_SKIP      6
+
 
 struct GameBoy
 {
