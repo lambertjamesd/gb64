@@ -5,7 +5,7 @@
 
 #include "debug_out.h"
 
-#define ENABLE_AUDIO 0
+#define ENABLE_AUDIO 1
 
 u8 wavePattern[4][8] = {
     {0, 1, 1, 1, 1, 1, 1, 1},
@@ -76,13 +76,13 @@ void renderPatternWave(
 	int leftVolume
 ) {
     int sampleIndex;
-	int cycleStep = CYCLE_STEP(sound->frequency, state->sampleRate);
+	int cycleStep = PCM_CYCLE_STEP(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
     {
-		int sampleIndex = sound->cycle >> 12;
-		unsigned char index =  GET_REGISTER_ADDRESS(memory, REG_WAVE_PAT)[sampleIndex];
+		int pcmIndex = sound->cycle >> 12;
+		unsigned char index =  GET_REGISTER_ADDRESS(memory, REG_WAVE_PAT)[pcmIndex];
 
 		short sample = pcmTranslate[((sound->cycle >> 11) & 0x1) ? index & 0xF : ((index >> 4) & 0xF)] >> (sound->volume - 1);
 		output[sampleIndex].l += (sample * leftVolume) >> 3;
@@ -302,7 +302,7 @@ void tickAudio(struct Memory* memory, int untilCyles)
 
 		if (tickTo > audio->samplesPerBuffer)
 		{
-			renderAudio(memory, tickTo);
+			renderAudio(memory, audio->samplesPerBuffer);
 			advanceWriteBuffer(audio);
 			tickTo -= audio->samplesPerBuffer;
 		}

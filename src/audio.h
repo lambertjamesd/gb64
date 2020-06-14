@@ -38,6 +38,7 @@ sampleRate = samples/second - the number of samples per second the output is exp
 ? steps/sample = steps_cycle * freq / sampleRate
 */
 #define CYCLE_STEP(frequency, sampleRate) (int)(0x200000000L / ((0x800L - (frequency)) * (sampleRate)))
+#define PCM_CYCLE_STEP(frequency, sampleRate) (int)(0x100000000L / ((0x800L - (frequency)) * (sampleRate)))
 
 struct AudioSample
 {
