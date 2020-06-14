@@ -445,7 +445,7 @@ _GB_WRITE_DMA:
     andi TMP2, TMP2, 0xFFF # mask away upper bits
     add ADDR, ADDR, TMP2 # calucate starting point inside memory bank
     addi TMP3, Memory, MEMORY_MISC_START # load start of misc memory
-    li TMP2, 0x100 # loop 256 times
+    li TMP2, 0xA0 # loop once per sprite
 _GB_DMA_LOOP:
     lw $at, 0(ADDR)
     sw $at, 0(TMP3)

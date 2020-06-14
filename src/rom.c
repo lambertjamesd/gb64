@@ -3,6 +3,7 @@
 
 #include "../memory.h"
 #include "rom.h"
+#include "debug_out.h"
 
 extern OSMesgQueue     dmaMessageQ;
 extern OSMesg          dmaMessageBuf;

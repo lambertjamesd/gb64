@@ -42,8 +42,6 @@
 
 #define RUN_TESTS 0
 
-extern void OPEN_DEBUGGER();
-
 /*
  * This is the main routine of the app.
  */
@@ -68,8 +66,6 @@ game(void)
 	lastDrawTime = 0;
 	lastTime = osGetTime();
 	gGameboy.cpu.cyclesRun = 0;
-
-	sprintf(str, "Didn't run tests %X\n", OPEN_DEBUGGER);
 #if RUN_TESTS
 	runTests(str);
 #endif

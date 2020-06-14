@@ -181,6 +181,7 @@ struct Memory {
     struct ROMLayout* rom;
     struct AudioState audio;
     struct Breakpoint breakpoints[BREAK_POINT_COUNT];
+    u8* timerMemoryBank;
 };
 
 #define MBC_FLAGS_RAM       0x1

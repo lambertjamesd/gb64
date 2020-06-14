@@ -80,7 +80,13 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         // TODO Timer
     }
 
-    char* ramBank = memory->cartRam + (memory->misc.romBankUpper & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
+    char* ramBank;
+    if (memory->misc.romBankUpper < 4 || !memory->timerMemoryBank) {
+        ramBank = memory->cartRam + (memory->misc.romBankUpper & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
+    } else {
+        // TODO actually implement timer
+        ramBank = memory->timerMemoryBank;
+    }
     char* romBank = getROMBank(memory->rom, memory->misc.romBankLower & 0x7F);
 
     memory->memoryMap[0x4] = romBank + MEMORY_MAP_SEGMENT_SIZE * 0;
@@ -135,10 +141,35 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
 {
     char *memoryBank;
     int index;
+    struct MBCData* mbc = NULL;
+
+    for (index = 0; index < MBC_TYPES_LENGTH; ++index)
+    {
+        if (rom->mainBank[GB_ROM_H_CART_TYPE] == mbcTypes[index].id) {
+            mbc = &mbcTypes[index];
+            break;
+        }
+    }
 
     zeroMemory(memory, sizeof(struct Memory));
     memory->rom = rom;
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
+    
+    if (!mbc) {
+        DEBUG_PRINT_F("Bad MBC %X\n", mbcTypes[index].id);
+        memory->bankSwitch = nopBankSwitch;
+    } else if (!mbc->bankSwitch) {
+        DEBUG_PRINT_F("TODO MBC %X\n", mbcTypes[index].id);
+        memory->bankSwitch = nopBankSwitch;
+    } else {
+        memory->bankSwitch = mbc->bankSwitch;
+    }
+
+    if (mbc && (mbc->flags & MBC_FLAGS_TIMER))
+    {
+        // TODO actually implement the timer
+        memory->timerMemoryBank = malloc(RAM_BANK_SIZE);
+    }
 
     initAudio(&memory->audio, 22500, 30);
     
@@ -171,25 +202,5 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     for (index = 0; index < REGISTER_WRITER_COUNT; ++index)
     {
         memory->registerWriters[index] = defaultRegisterWrite;
-    }
-
-    struct MBCData* mbc = NULL;
-
-    for (index = 0; index < MBC_TYPES_LENGTH; ++index)
-    {
-        if (rom->mainBank[GB_ROM_H_CART_TYPE] == mbcTypes[index].id) {
-            mbc = &mbcTypes[index];
-            break;
-        }
-    }
-    
-    if (!mbc) {
-        DEBUG_PRINT_F("Bad MBC %X\n", mbcTypes[index].id);
-        memory->bankSwitch = nopBankSwitch;
-    } else if (!mbc->bankSwitch) {
-        DEBUG_PRINT_F("TODO MBC %X\n", mbcTypes[index].id);
-        memory->bankSwitch = nopBankSwitch;
-    } else {
-        memory->bankSwitch = mbc->bankSwitch;
     }
 }

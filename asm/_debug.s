@@ -48,8 +48,6 @@ _CHECK_FOR_INVALID_STATE_INVALD:
     nop
 
 
-.global OPEN_DEBUGGER
-.balign 4
 OPEN_DEBUGGER:
     save_state_on_stack
 

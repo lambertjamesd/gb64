@@ -44,6 +44,7 @@ CALCULATE_DIV_VALUE:
     read_register16_direct $at, _REG_DIV_OFFSET
     add $v0, $v0, $at
     srl $v0, $v0, 8
+    andi $v0, $v0, 0xFF
     jr $ra
     write_register_direct $v0, REG_DIV
 

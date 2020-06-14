@@ -16,7 +16,7 @@
 .endm
 
 .set DEBUG_OUT, 0
-.set VALIDATE_STATE, 1
+.set VALIDATE_STATE, 0
 
 .global runCPU 
 .balign 4 
