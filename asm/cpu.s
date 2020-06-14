@@ -16,7 +16,7 @@
 .endm
 
 .set DEBUG_OUT, 0
-.set VALIDATE_STATE, 0
+.set VALIDATE_STATE, 1
 
 .global runCPU 
 .balign 4 
@@ -63,6 +63,7 @@ runCPU:
 
     lbu $at, CPU_STATE_STOP_REASON(CPUState)
     bnez $at, GB_SIMULATE_HALTED
+    nop
 
 .if DEBUG_OUT
     la $at, 0x80700000 - 4
@@ -72,6 +73,7 @@ runCPU:
 
 DECODE_NEXT:
 .if VALIDATE_STATE
+    nop
     jal CHECK_FOR_INVALID_STATE
     nop
 .endif

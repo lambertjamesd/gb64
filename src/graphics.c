@@ -5,11 +5,11 @@
 #include "../boot.h"
 #include "debug_out.h"
 
-#define WRITE_PIXEL(spriteRow, pallete, x, targetMemory, pixel, spriteBuffer, spritePallete, maxX)    \
-    if (spriteBuffer[x])                                                                        \
+#define WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, spriteBuffer, spritePallete, maxX)    \
+    if (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)) \
         *targetMemory = spritePallete[spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY];                \
     else                                                                                        \
-        *targetMemory = pallete[READ_PIXEL_INDEX(spriteRow, pixel)];                            \
+        *targetMemory = pallete[pixelIndex];                            \
     ++x;                                                                                        \
     ++targetMemory;                                                                             \
     if (x == maxX)                                                                       \
@@ -340,6 +340,8 @@ void renderPixelRow(
                 (7 - (bgY & 0x7)) :
                 (bgY & 0x7)
         ];
+
+        u8 pixelIndex;
         
         // A bit of a hack here
         // set the h flip flag to bit 3 and put the 
@@ -347,38 +349,54 @@ void renderPixelRow(
         switch ((bgX & 0x7) | ((tileInfo & TILE_ATTR_H_FLIP) >> 1))
         {
             case 0:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 0);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 1:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 1);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 2:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 2);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 3:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 3);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 4:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 4);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 5:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 5);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 6:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 6);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 7:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 7);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
                 break;
             case 8:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 7, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 7);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 9:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 6, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 6);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 10:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 5, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 5);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 11:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 4, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 4);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 12:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 3, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 3);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 13:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 2, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 2);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 14:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 1, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 1);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
             case 15:
-                WRITE_PIXEL(spriteRow, pallete, x, targetMemory, 0, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
+                pixelIndex = READ_PIXEL_INDEX(spriteRow, 0);
+                WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, state->spriteIndexBuffer, memory->vram.objColorPalletes, maxX);
                 break;
         }
     }

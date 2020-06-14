@@ -28,6 +28,8 @@ CHECK_FOR_INVALID_STATE:
     andi $at, GB_SP, 0
     bnez $at, _CHECK_FOR_INVALID_STATE_INVALD
 
+    nop
+
     jr $ra
     nop
 _CHECK_FOR_INVALID_STATE_INVALD:
