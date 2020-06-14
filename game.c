@@ -66,6 +66,7 @@ game(void)
 	lastDrawTime = 0;
 	lastTime = osGetTime();
 	gGameboy.cpu.cyclesRun = 0;
+	clearDebugOutput();
 #if RUN_TESTS
 	runTests(str);
 #endif

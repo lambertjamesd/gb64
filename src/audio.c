@@ -227,9 +227,11 @@ void tickEnvelope(struct AudioEnvelope* envelope)
 	{
 		if (envelope->stepTimer == 0)
 		{
-			// TODO clamping
-			envelope->volume = (envelope->volume + envelope->step) & 0xF;
-			envelope->stepTimer = envelope->stepDuration - 1;
+			if (!(envelope->volume == 0 && envelope->step == 0xFF) && !(envelope->volume == 0xF && envelope->step == 0x01))
+			{
+				envelope->volume = (envelope->volume + envelope->step) & 0xF;
+				envelope->stepTimer = envelope->stepDuration - 1;
+			}
 		}
 		else
 		{
