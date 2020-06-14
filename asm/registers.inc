@@ -18,6 +18,8 @@
 .eqv REG_NR34, 0xFF1E
 .eqv REG_NR44, 0xFF23
 
+.eqv REG_NR52, 0xFF26
+
 .eqv REG_LCDC, 0xFF40
 .eqv REG_LCDC_LCD_ENABLE, 0x80
 

@@ -316,6 +316,8 @@ void tickAudio(struct Memory* memory, int untilCyles)
 
 		audio->cyclesEmulated += CYCLES_PER_TICK;
 	}
+
+	updateOnOffRegister(memory);
 }
 
 void initEnvelope(struct AudioEnvelope* target, unsigned char envelopeData)
@@ -382,6 +384,7 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 				SOUND_LENGTH_INDEFINITE;
 			break;
 	}
+	updateOnOffRegister(memory);
 #endif
 }
 
@@ -419,4 +422,33 @@ void finishAudioFrame(struct Memory* memory)
 		++pendingBufferCount;
 	}
 #endif
+}
+
+void updateOnOffRegister(struct Memory* memory)
+{
+	u8 existingValue = READ_REGISTER_DIRECT(memory, REG_NR52);
+	u8 result = existingValue & REG_NR52_ENABLED;
+	struct AudioState* audio = &memory->audio;
+
+	if (existingValue & REG_NR52_ENABLED)
+	{
+		if (audio->sound1.length)
+		{
+			result |= 0x01;
+		}
+		if (audio->sound2.length)
+		{
+			result |= 0x02;
+		}
+		if (audio->pcmSound.length)
+		{
+			result |= 0x03;
+		}
+		if (audio->noiseSound.length)
+		{
+			result |= 0x04;
+		}
+	}
+
+	WRITE_REGISTER_DIRECT(memory, REG_NR52, result);
 }

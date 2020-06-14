@@ -117,5 +117,6 @@ void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
 void tickAudio(struct Memory* memoryMap, int untilCyles);
 void restartSound(struct Memory* memoryMap, int currentCycle, enum SoundIndex soundNumber);
 void finishAudioFrame(struct Memory* memoryMap);
+void updateOnOffRegister(struct Memory* memoryMap);
 
 #endif

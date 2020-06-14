@@ -257,6 +257,19 @@ _GB_RESTART_SOUND:
     jr $ra
     nop
 
+_GB_SYNC_AUDIO:
+    save_state_on_stack
+
+    move $a0, Memory
+    call_c_fn tickAudio
+    # TODO use unscaledCyclesRun
+    move $a1, CYCLES_RUN
+
+    restore_state_from_stack
+
+    jr $ra
+    nop
+
 ############################
 
 _GB_WRITE_REG_4X:
@@ -641,6 +654,9 @@ GB_DO_READ_REGISTERS:
     # check for TIMA recalculation
     li $at, REG_TIMA
     beq $at, ADDR, CALCULATE_TIMA_VALUE
+
+    li $at, REG_NR52
+    beq $at, ADDR, _GB_DO_READ_SOUND_ENABLE
     nop
 
     li $at, MEMORY_MISC_START-MM_REGISTER_START
@@ -648,3 +664,18 @@ GB_DO_READ_REGISTERS:
     add ADDR, Memory, ADDR # Relative to memory
     jr $ra
     lbu $v0, 0(ADDR)
+
+
+_GB_DO_READ_SOUND_ENABLE:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    jal _GB_SYNC_AUDIO
+    nop
+
+    read_register_direct $v0, REG_NR52
+
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 4
+    
