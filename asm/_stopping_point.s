@@ -480,3 +480,39 @@ _HANDLE_STOPPING_POINT_BREAK:
     j GB_BREAK_LOOP
     addi $sp, $sp, 4
     
+QUEUE_STOPPING_POINT:
+    lw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add TMP3, TMP3, CPUState
+_QUEUE_STOPPING_POINT_CHECK_NEXT:
+    # check if at end of loop
+    addi $at, CPUState, CPU_STATE_STOPPING_POINT_SIZE * CPU_STATE_STOPPING_POINT_MAX_COUNT
+    beq $at, TMP3, _QUEUE_STOPPING_POINT_SET
+    nop
+    # check if found insertion point
+    lw TMP4, CPU_STATE_STOPPING_POINTS(TMP3)
+    sltu $at, TMP2, TMP4
+    bnez $at, _QUEUE_STOPPING_POINT_SET
+    nop
+    sw TMP4, (CPU_STATE_STOPPING_POINTS-CPU_STATE_STOPPING_POINT_SIZE)(TMP3) # move current element back one slot
+    j _QUEUE_STOPPING_POINT_CHECK_NEXT
+    addi TMP3, TMP3, CPU_STATE_STOPPING_POINT_SIZE
+_QUEUE_STOPPING_POINT_SET:
+    sw TMP2, (CPU_STATE_STOPPING_POINTS-CPU_STATE_STOPPING_POINT_SIZE)(TMP3) # save new stopping point
+    lw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState) # 
+    addi TMP3, TMP3, -CPU_STATE_STOPPING_POINT_SIZE
+    sw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add TMP3, TMP3, CPUState
+    lw CycleTo, CPU_STATE_STOPPING_POINTS(TMP3)
+    jr $ra
+    srl CycleTo, CycleTo, 8 # timer is stored in the upper 24 bits
+
+READ_NEXT_STOPPING_POINT:
+    lw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add TMP3, TMP3, CPUState
+    lw CycleTo, CPU_STATE_STOPPING_POINTS(TMP3)
+    jr $ra
+    srl CycleTo, CycleTo, 8 # timer is stored in the upper 24 bits
+
+    # todo
+    # implement handle stopping point
+    # immplement using queue stopping point

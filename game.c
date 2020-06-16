@@ -104,8 +104,6 @@ game(void)
 
 	OSTime startTime = osGetTime();
 
-	DEBUG_PRINT_F("%X\n", OPEN_DEBUGGER);
-
     /*
      * Main game loop
      */

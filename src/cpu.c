@@ -13,4 +13,5 @@ void initializeCPU(struct CPUState* state)
     state->nextTimerTrigger = ~0;
     state->nextScreenTrigger = ~0;
     state->nextInterruptTrigger = ~0;
+    state->nextStoppingPoint = CPU_STOPPING_POINT_COUNT * sizeof(struct CPUStoppingPoint);
 }

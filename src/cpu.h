@@ -28,6 +28,21 @@ enum GB_INTERRUPTS {
     GB_INTERRUPTS_ENABLED   = 0x80,
 };
 
+enum CPUStoppingPointType {
+    CPUStoppingPointTypeNone,
+    CPUStoppingPointTypeTimer,
+    CPUStoppingPointTypeScreenEvent,
+    CPUStoppingPointTypeInterrupt,
+    CPUStoppingPointTypeExit,
+};
+
+struct CPUStoppingPoint {
+    unsigned long cycleTime:24;
+    unsigned long stoppingPointType:8;
+};
+
+#define CPU_STOPPING_POINT_COUNT    8
+
 struct CPUState {
     unsigned char a;
     unsigned char f;
@@ -49,6 +64,8 @@ struct CPUState {
     unsigned long nextInterruptTrigger;
     // cpu timer uneffected by speed switching
     unsigned long unscaledCyclesRun; 
+    unsigned long nextStoppingPoint;
+    struct CPUStoppingPoint stoppingPoints[CPU_STOPPING_POINT_COUNT];
 };
 
 extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);
