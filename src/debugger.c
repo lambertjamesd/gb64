@@ -651,6 +651,9 @@ void cpuStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
     
     sprintf(buffer, "EI %1X", cpu->interrupts);
     SHOWFONT(&glistp, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 0 * DEBUG_MENU_ROW_HEIGHT);
+
+    sprintf(buffer, "TK %03X", cpu->cyclesRun & 0xFFFFFF);
+    SHOWFONT(&glistp, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 1 * DEBUG_MENU_ROW_HEIGHT);
 }
 
 ///////////////////////////////////

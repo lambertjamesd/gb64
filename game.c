@@ -100,6 +100,8 @@ game(void)
 	debugWrite = (void*)(0x80700000 - 8);
 	*((u32*)debugWrite) = (int)&gGameboy.cpu;
 
+	OSTime startTime = osGetTime();
+
     /*
      * Main game loop
      */
