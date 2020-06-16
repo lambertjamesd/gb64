@@ -41,7 +41,7 @@ GB_CALL_NC:
     bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip the call
     nop
     j _GB_CALL
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 4 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 5 # update cycles run
     nop
     nop
     nop
@@ -113,7 +113,7 @@ GB_CALL_C:
     beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip call
     nop
     j _GB_CALL
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 4 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 5 # update cycles run
     nop
     nop
     nop

@@ -22,7 +22,6 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     addi $at, $at, 0x100
     # shift the diffence by the clock divider
     sllv $at, $at, TMP2
-    addi $at, $at, 1 # timer interrupt happens 1 cycle after overflow
     add $at, CYCLES_RUN, $at # make offset relative to cycles run
     j CALCULATE_NEXT_STOPPING_POINT
     # calculate the next interrupt time

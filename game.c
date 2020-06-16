@@ -42,6 +42,8 @@
 
 #define RUN_TESTS 0
 
+void OPEN_DEBUGGER();
+
 /*
  * This is the main routine of the app.
  */
@@ -101,6 +103,8 @@ game(void)
 	*((u32*)debugWrite) = (int)&gGameboy.cpu;
 
 	OSTime startTime = osGetTime();
+
+	DEBUG_PRINT_F("%X\n", OPEN_DEBUGGER);
 
     /*
      * Main game loop

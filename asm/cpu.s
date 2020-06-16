@@ -87,7 +87,7 @@ DECODE_NEXT:
     nop
 _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
-    nop
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR
 
 .if DEBUG_OUT
 DEBUG_START:
@@ -114,7 +114,7 @@ DECODE_V0:
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
     add $ra, $at, $v0
     jr $ra
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR
+    nop
     #################
     # Each entry in the jump table needs
     # to be 8 instructions apart

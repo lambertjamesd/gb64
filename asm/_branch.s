@@ -33,5 +33,5 @@ _SKIP_JR:
     jal SET_GB_PC
     andi Param0, Param0, 0xFFFF
     j DECODE_NEXT
-    nop
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     

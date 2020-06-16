@@ -47,7 +47,7 @@ _CHECK_FOR_INVALID_STATE_INVALD:
     jr $ra
     nop
 
-
+.global OPEN_DEBUGGER
 OPEN_DEBUGGER:
     save_state_on_stack
 
@@ -56,6 +56,7 @@ OPEN_DEBUGGER:
     andi GB_PC, GB_PC, 0xFFFF
     jal CALCULATE_TIMA_VALUE
     sh GB_PC, CPU_STATE_PC(CPUState)
+    sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
     
     lw $fp, (ST_FP + _C_CALLBACK_FRAME_SIZE)($sp)
 
