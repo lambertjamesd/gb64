@@ -15,3 +15,23 @@ void initializeCPU(struct CPUState* state)
     state->nextInterruptTrigger = ~0;
     state->nextStoppingPoint = CPU_STOPPING_POINT_COUNT * sizeof(struct CPUStoppingPoint);
 }
+
+void addStoppingPoint(struct CPUState* state, struct CPUStoppingPoint stoppingPoint)
+{
+    int index = state->nextStoppingPoint;
+
+    while (index < CPU_STOPPING_POINT_COUNT)
+    {
+        if (CPU_STOPPING_POINT_AS_LONG(stoppingPoint) < CPU_STOPPING_POINT_AS_LONG(state->stoppingPoints[index]))
+        {
+            break;
+        }
+        else
+        {
+            state->stoppingPoints[index - 1] = state->stoppingPoints[index];
+        }
+    }
+
+    state->stoppingPoints[index - 1] = stoppingPoint;
+    state->nextStoppingPoint -= sizeof(struct CPUStoppingPoint);
+}

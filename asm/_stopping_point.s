@@ -183,70 +183,13 @@ REQUEST_INTERRUPT:
     and $at, $at, VAL
     beqz $at, _REQUEST_INTERRUPT_FINISH
     nop
-    j CHECK_FOR_INTERRUPT
     sb $zero, CPU_STATE_STOP_REASON(CPUState)
+    sll TMP2, CYCLES_RUN, 8
+    j QUEUE_STOPPING_POINT 
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_INTERRUPT
 _REQUEST_INTERRUPT_FINISH:
     jr $ra
     nop
-#############################
-# Check if any interrupts have been requested
-# And saves the requested interrupt CPU_STATE_NEXT_INTERRUPT
-#############################
-
-CHECK_FOR_INTERRUPT:
-    # default to no next interrupt
-    la TMP3, ~0
-    # first check if interrupts are enabled
-    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    beqz $at, _CHECK_FOR_INTERRUPT_EXIT
-    li TMP2, 0
-    # check if an interrupt was already requested
-    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
-    bnez $at, _CHECK_FOR_INTERRUPT_EXIT
-    nop
-    # see if any individual interrupts have been triggered
-    read_register_direct $at, REG_INTERRUPTS_REQUESTED
-    read_register_direct TMP2, REG_INTERRUPTS_ENABLED
-    and $at, TMP2, $at
-    beqz $at, _CHECK_FOR_INTERRUPT_EXIT
-    li TMP2, 0
-
-    andi TMP2, $at, INTERRUPTS_V_BLANK
-    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
-    nop
-    
-    andi TMP2, $at, INTERRUPTS_LCDC
-    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
-    nop
-    
-    andi TMP2, $at, INTERRUPTS_TIMER
-    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
-    nop
-    
-    andi TMP2, $at, INTERRUPTS_SERIAL
-    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
-    nop
-    
-    andi TMP2, $at, INTERRUPTS_INPUT
-    bnez TMP2, _CHECK_FOR_INTERRUPT_SAVE
-    nop
-    
-    j _CHECK_FOR_INTERRUPT_EXIT
-    addi TMP2, $zero, 0
-
-_CHECK_FOR_INTERRUPT_SAVE:
-    # set next interrupt time to be 1 frame ahead
-    move TMP3, CYCLES_RUN # TODO different timing with EI vs set interrupt flag
-    sltu $at, CycleTo, TMP3
-    # check to see if interrupt is new stopping point
-    bnez $at, _CHECK_FOR_INTERRUPT_EXIT
-    sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
-    move CycleTo, TMP3
-_CHECK_FOR_INTERRUPT_EXIT:
-    # save next interrupt time
-    sw TMP3, CPU_STATE_NEXT_INTERRUPT_TIME(CPUState)
-    jr $ra
-    sb TMP2, CPU_STATE_NEXT_INTERRUPT(CPUState)
 
 ########################
 # Check to unhalt the CPUState
@@ -480,36 +423,229 @@ _HANDLE_STOPPING_POINT_BREAK:
     j GB_BREAK_LOOP
     addi $sp, $sp, 4
     
+    
+########################
+# 
+########################
+
+DEQUEUE_STOPPING_POINT:
+    addi $ra, $ra, -4
+    sw $ra, 0($sp)
+
+    lw $at, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add $at, $at, CPUState
+    lw $at, CPU_STATE_STOPPING_POINTS(CPUState)
+    andi $at, $at, 0xFF # mask the stopping point type
+    sll $at, $at, 2 # align jump table to 4 bytes
+
+ENTER_MODE_0:
+    read_register_direct TMP3, REG_LY
+    # load current LCDC status flag
+    jal CHECK_LCDC_STAT_FLAG
+    read_register_direct Param0, REG_LCDC_STATUS
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
+
+    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_0_CYCLES
+    sll TMP2, TMP2, 8
+    li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
+    slti $at, TMP3, GB_SCREEN_H
+    bnez $at, _ENTER_MODE_0_NEXT_MODE
+    nop
+    li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
+_ENTER_MODE_0_NEXT_MODE:
+    jal QUEUE_STOPPING_POINT
+    add TMP2, TMP2, TMP4
+    j CHECK_LSTAT_INTERRUPT
+    nop
+
+ENTER_MODE_1:
+    read_register_direct TMP3, REG_LY
+    # load current LCDC status flag
+    jal CHECK_LCDC_STAT_FLAG
+    read_register_direct Param0, REG_LCDC_STATUS
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
+    addi Param0, Param0, 1
+    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_1_CYCLES
+    sll TMP2, TMP2, 8
+    slti $at, TMP3, GB_SCREEN_LINES
+    li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
+    bnez $at _ENTER_MODE_1_NEXT_MODE
+    addi TMP3, TMP3, 1
+    li REG_LY, 0
+    li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
+_ENTER_MODE_1_NEXT_MODE:
+    jal QUEUE_STOPPING_POINT
+    add TMP2, TMP2, TMP4
+    j CHECK_LSTAT_INTERRUPT
+    write_register_direct TMP3, REG_LY
+    
+ENTER_MODE_2:
+    read_register_direct TMP3, REG_LY
+    # load current LCDC status flag
+    jal CHECK_LCDC_STAT_FLAG
+    read_register_direct Param0, REG_LCDC_STATUS
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
+    addi Param0, Param0, 2
+    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_2_CYCLES
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
+    addi TMP3, TMP3, 1
+    j CHECK_LSTAT_INTERRUPT
+    write_register_direct TMP3, REG_LY
+
+ENTER_MODE_3:
+    read_register_direct TMP3, REG_LY
+    # load current LCDC status flag
+    jal CHECK_LCDC_STAT_FLAG
+    read_register_direct Param0, REG_LCDC_STATUS
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
+    addi Param0, Param0, 3
+    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_3_CYCLES
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_0
+    j CHECK_LSTAT_INTERRUPT
+    nop
+
+CHECK_LSTAT_INTERRUPT:
+    write_register_direct Param0, REG_LCDC_STATUS
+    jal CHECK_LCDC_STAT_FLAG
+    move TMP2, $v0
+    slt $at, TMP2, $v0 # if previous stat < current state then trigger interrupt
+    beqz $at, CHECK_LSTAT_INTERRUPT_SKIP_INTERRUPT
+    nop
+    # request interrupt
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPT_LCD_STAT
+CHECK_LSTAT_INTERRUPT_SKIP_INTERRUPT:
+    j _FINISH_DEQUEUE_INTERRUPT
+    nop
+
+HANDLE_DEQUEUE_TIMER:
+    read_register_direct TMP2, REG_TMA
+    write_register_direct TMP2, REG_TIMA
+
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPTS_TIMER
+
+    jal CALCULATE_NEXT_TIMER_INTERRUPT
+    nop
+
+    j _FINISH_DEQUEUE_INTERRUPT
+    nop
+
+HANDLE_DEQUEUE_INTERRUPT:
+    # default to no next interrupt
+    la TMP3, ~0
+    # first check if interrupts are enabled
+    lbu $at, CPU_STATE_INTERRUPTS(CPUState)
+    beqz $at, HANDLE_DEQUEUE_EXIT
+    li TMP2, 0
+    # check if an interrupt was already requested
+    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
+    bnez $at, HANDLE_DEQUEUE_EXIT
+    nop
+    # see if any individual interrupts have been triggered
+    read_register_direct $at, REG_INTERRUPTS_REQUESTED
+    read_register_direct TMP2, REG_INTERRUPTS_ENABLED
+    and $at, TMP2, $at
+    beqz $at, HANDLE_DEQUEUE_EXIT
+    li TMP2, 0
+
+    andi TMP2, $at, INTERRUPTS_V_BLANK
+    bnez TMP2, _HANDLE_DEQUEUE_INTERRUPT_SAVE
+    li ADDR, 0x40 # load the base address for interrupt jumps
+    
+    andi TMP2, $at, INTERRUPTS_LCDC
+    bnez TMP2, _HANDLE_DEQUEUE_INTERRUPT_SAVE
+    li ADDR, 0x48 # load the base address for interrupt jumps
+    
+    andi TMP2, $at, INTERRUPTS_TIMER
+    bnez TMP2, _HANDLE_DEQUEUE_INTERRUPT_SAVE
+    li ADDR, 0x50 # load the base address for interrupt jumps
+    
+    andi TMP2, $at, INTERRUPTS_SERIAL
+    bnez TMP2, _HANDLE_DEQUEUE_INTERRUPT_SAVE
+    li ADDR, 0x58 # load the base address for interrupt jumps
+    
+    andi TMP2, $at, INTERRUPTS_INPUT
+    bnez TMP2, _HANDLE_DEQUEUE_INTERRUPT_SAVE
+    li ADDR, 0x60 # load the base address for interrupt jumps
+    
+    j HANDLE_DEQUEUE_EXIT
+    addi TMP2, $zero, 0
+
+_HANDLE_DEQUEUE_INTERRUPT_SAVE:
+    # clear requested interrupt
+    xori $at, TMP2, 0xFF
+    read_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+    and TMP2, TMP2, $at
+    write_register_direct TMP2, REG_INTERRUPTS_REQUESTED
+
+    sb $zero, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
+    sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
+    
+    addi GB_SP, GB_SP, -2 # reserve space in stack
+    andi GB_SP, GB_SP, 0xFFFF
+    move VAL, GB_PC # set current PC to be saved
+    jal SET_GB_PC
+    move Param0, ADDR # set the new PC
+    jal GB_DO_WRITE_16_CALL
+    move ADDR, GB_SP # set the write address
+    j _FINISH_DEQUEUE_INTERRUPT
+    nop
+    
+HANDLE_DEQUEUE_EXIT:
+    j GB_BREAK_LOOP
+    addi $ra, $ra, 4
+
+_FINISH_DEQUEUE_INTERRUPT:
+    lw $ra, 0($sp)
+    jr $ra
+    addi $ra, $ra, 4
+
+
+########################
+# $a2 is CycleTo and since it is 
+# updated at the end of the function
+# it is used as a temporary variable
+########################
+
 QUEUE_STOPPING_POINT:
-    lw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
-    add TMP3, TMP3, CPUState
+    addi $sp, $sp, -4
+    sw TMP3, 0($sp)
+    lw $a2, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add $a2, $a2, CPUState
 _QUEUE_STOPPING_POINT_CHECK_NEXT:
     # check if at end of loop
     addi $at, CPUState, CPU_STATE_STOPPING_POINT_SIZE * CPU_STATE_STOPPING_POINT_MAX_COUNT
-    beq $at, TMP3, _QUEUE_STOPPING_POINT_SET
+    beq $at, $a2, _QUEUE_STOPPING_POINT_SET
     nop
     # check if found insertion point
-    lw TMP4, CPU_STATE_STOPPING_POINTS(TMP3)
-    sltu $at, TMP2, TMP4
+    lw TMP3, CPU_STATE_STOPPING_POINTS($a2)
+    sltu $at, TMP2, TMP3
     bnez $at, _QUEUE_STOPPING_POINT_SET
     nop
-    sw TMP4, (CPU_STATE_STOPPING_POINTS-CPU_STATE_STOPPING_POINT_SIZE)(TMP3) # move current element back one slot
+    sw TMP3, (CPU_STATE_STOPPING_POINTS-CPU_STATE_STOPPING_POINT_SIZE)($a2) # move current element back one slot
     j _QUEUE_STOPPING_POINT_CHECK_NEXT
-    addi TMP3, TMP3, CPU_STATE_STOPPING_POINT_SIZE
+    addi $a2, $a2, CPU_STATE_STOPPING_POINT_SIZE
 _QUEUE_STOPPING_POINT_SET:
-    sw TMP2, (CPU_STATE_STOPPING_POINTS-CPU_STATE_STOPPING_POINT_SIZE)(TMP3) # save new stopping point
-    lw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState) # 
-    addi TMP3, TMP3, -CPU_STATE_STOPPING_POINT_SIZE
-    sw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
-    add TMP3, TMP3, CPUState
-    lw CycleTo, CPU_STATE_STOPPING_POINTS(TMP3)
-    jr $ra
+    sw TMP2, (CPU_STATE_STOPPING_POINTS-CPU_STATE_STOPPING_POINT_SIZE)($a2) # save new stopping point
+    lw $a2, CPU_STATE_NEXT_STOPPING_POINT(CPUState) # 
+    addi $a2, $a2, -CPU_STATE_STOPPING_POINT_SIZE
+    sw $a2, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add $a2, $a2, CPUState
+    
+    lw CycleTo, CPU_STATE_STOPPING_POINTS($a2)
     srl CycleTo, CycleTo, 8 # timer is stored in the upper 24 bits
 
+    lw TMP3, 0($sp)
+    jr $ra
+    addi $sp, $sp, 4
+
 READ_NEXT_STOPPING_POINT:
-    lw TMP3, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
-    add TMP3, TMP3, CPUState
-    lw CycleTo, CPU_STATE_STOPPING_POINTS(TMP3)
+    lw CycleTo, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
+    add CycleTo, CycleTo, CPUState
+    lw CycleTo, CPU_STATE_STOPPING_POINTS(CPUState)
     jr $ra
     srl CycleTo, CycleTo, 8 # timer is stored in the upper 24 bits
 
