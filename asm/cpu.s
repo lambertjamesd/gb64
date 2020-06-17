@@ -55,11 +55,10 @@ runCPU:
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
-    add $at, CycleTo, CYCLES_RUN    # calculate upper bound of execution
-    sw $at, ST_CYCLE_TO($fp)
-
-    jal CALCULATE_NEXT_STOPPING_POINT
-    nop
+    add TMP2, CycleTo, CYCLES_RUN    # calculate upper bound of execution
+    sll TMP2, TMP2, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_EXIT
 
     lbu $at, CPU_STATE_STOP_REASON(CPUState)
     bnez $at, GB_SIMULATE_HALTED
@@ -81,7 +80,7 @@ DECODE_NEXT:
     sltu $at, CYCLES_RUN, CycleTo
     bnez $at, _DECODE_NEXT_READ
     nop
-    jal HANDLE_STOPPING_POINT
+    jal DEQUEUE_STOPPING_POINT
     nop
     j DECODE_NEXT
     nop
@@ -171,6 +170,7 @@ GB_BREAK_LOOP:
     # above 0x80000000 if it is we 
     # decrement both CYCLES_RUN and
     # by that much CPU_STATE_NEXT_TIMER
+    # TODO adjust all stopping points
     lui TMP2, 0x8000
     sltu $at, CYCLES_RUN, TMP2
     bnez $at, _GB_BREAK_LOOP_SAVE_CYCLES
@@ -263,12 +263,12 @@ _SET_GB_PC_FINISH:
 ######################
 
 GB_SIMULATE_HALTED:
-    jal HANDLE_STOPPING_POINT # handle the next stopping point
+    jal DEQUEUE_STOPPING_POINT # handle the next stopping point
     move CYCLES_RUN, CycleTo # update the clock
     lbu $at, CPU_STATE_STOP_REASON(CPUState) # check if CPU was woken up by an interrupt
     beqz $at, DECODE_NEXT
     nop
-    j GB_SIMULATE_HALTED # loop, HANDLE_STOPPING_POINT will break the loop once it has been simulated
+    j GB_SIMULATE_HALTED # loop, DEQUEUE_STOPPING_POINT will break the loop once it has been simulated
     nop
 
 .include "asm/_stopping_point.s"

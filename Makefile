@@ -17,12 +17,12 @@ FINAL = YES
 ifeq ($(FINAL), YES)
 OPTIMIZER       = -O2 -std=gnu90 -Werror
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
-ASFLAGS         = -mabi=32
+ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_rom
 else
 OPTIMIZER       = -g -std=gnu90 -Werror
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
-ASFLAGS         = -mabi=32
+ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_d
 endif
 

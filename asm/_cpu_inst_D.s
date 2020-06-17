@@ -85,9 +85,9 @@ GB_RETI:
     li $at, INTERRUPTS_ENABLED
     jal CHECK_FOR_INTERRUPT
     sb $at, CPU_STATE_INTERRUPTS(CPUState)
-    jal CALCULATE_NEXT_STOPPING_POINT
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     j _GB_RET
+    nop
     nop
     nop
 GB_JP_C:

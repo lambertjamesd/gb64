@@ -136,7 +136,7 @@ _GB_WRITE_INTERRUPTS_ENABLED:
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_ENABLED # set requested interrupts
     lw $ra, 0($sp)
-    j CALCULATE_NEXT_STOPPING_POINT
+    jr $ra
     addi $sp, $sp, 4
 
 ########################
@@ -184,6 +184,12 @@ _GB_WRITE_REG_DIV:
     write_register16_direct $at, _REG_DIV_OFFSET
     
 _GB_WRITE_REG_TIMA:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_TYPE_TIMER
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TIMA
     
@@ -196,6 +202,8 @@ _GB_WRITE_REG_TAC:
     sw $ra, 0($sp)
     jal CALCULATE_TIMA_VALUE
     nop
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_TYPE_TIMER
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     j CALCULATE_NEXT_TIMER_INTERRUPT
@@ -207,7 +215,7 @@ _GB_WRITE_REG_INT_REQ:
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
     lw $ra, 0($sp)
-    j CALCULATE_NEXT_STOPPING_POINT
+    jr $ra
     addi $sp, $sp, 4
 
 
@@ -349,20 +357,19 @@ _GB_WRITE_REG_LCDC_ON:
 
     read_register_direct $at, REG_LCDC_STATUS
     andi $at, $at, %lo(~REG_LCDC_STATUS_MODE)
-    ori $at, $at, REG_LCDC_STATUS_MODE_1
-    write_register_direct $at, REG_LCDC_STATUS # set mode to 1
+    ori $at, $at, REG_LCDC_STATUS_MODE_2
+    write_register_direct $at, REG_LCDC_STATUS # set mode to 2
 
     # set up next stopping point to be the current cycle
     # with LY at the last line to update the current
     # lcd state on DECODE_NEXT
     move $at, CYCLES_RUN
-    sw $at, CPU_STATE_NEXT_SCREEN(CPUState)
 
-    # this will put the cpu in a state where the next cycle
-    # will start the frame
-    li $at, GB_SCREEN_LINES - 1 
-    jal CALCULATE_NEXT_STOPPING_POINT
-    write_register_direct $at, REG_LY
+    write_register_direct $zero, REG_LY
+
+    sll $at, CYCLES_RUN, 8
+    jal QUEUE_STOPPING_POINT
+    addi $at, $at, CPU_STOPPING_POINT_TYPE_SCREEN_2
       
     lw $ra, 0($sp)
     j _GB_WRITE_REG_LCDC_WRITE
@@ -375,11 +382,15 @@ _GB_WRITE_REG_LCDC_OFF:
     ori $at, $at, REG_LCDC_STATUS_MODE_1
     # todo check if LYC is 0
     write_register_direct $at, REG_LCDC_STATUS # set mode to 1
-
     write_register_direct $zero, REG_LY # set LY to 0
-    la $at, ~0
-    jal CALCULATE_NEXT_STOPPING_POINT # update stopping point
-    sw $at, CPU_STATE_NEXT_SCREEN(CPUState) # clear screen event   
+    jal REMOVE_STOPPING_POINT # update stopping point
+    li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_0
+    jal REMOVE_STOPPING_POINT # update stopping point
+    li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_1
+    jal REMOVE_STOPPING_POINT # update stopping point
+    li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_2
+    jal REMOVE_STOPPING_POINT # update stopping point
+    li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_3
     lw $ra, 0($sp)
     addi $sp, $sp, 4 
 _GB_WRITE_REG_LCDC_WRITE:
@@ -438,9 +449,6 @@ _GB_CHECK_RISING_STAT:
 
     jal REQUEST_INTERRUPT
     li VAL, INTERRUPT_LCD_STAT
-
-    jal CALCULATE_NEXT_STOPPING_POINT
-    nop
 
 _GB_CHECK_RISING_STAT_FINISH:
     lw $ra, 0($sp)
