@@ -47,7 +47,6 @@ _CHECK_FOR_INVALID_STATE_INVALD:
     jr $ra
     nop
 
-.global OPEN_DEBUGGER
 OPEN_DEBUGGER:
     save_state_on_stack
 

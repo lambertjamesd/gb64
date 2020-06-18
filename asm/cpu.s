@@ -161,25 +161,6 @@ GB_BREAK_LOOP:
     lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
     sub $v0, CYCLES_RUN, $v0
 
-    # We don't want CYCLES_RUN
-    # to overflow while emulating the CPU
-    # since CPU_STATE_NEXT_TIMER should always
-    # be >= CYCLES_RUN
-    # to prevent this, when exiting the
-    # emulation we check if CYCLES_RUN is
-    # above 0x80000000 if it is we 
-    # decrement both CYCLES_RUN and
-    # by that much CPU_STATE_NEXT_TIMER
-    # TODO adjust all stopping points
-    lui TMP2, 0x8000
-    sltu $at, CYCLES_RUN, TMP2
-    bnez $at, _GB_BREAK_LOOP_SAVE_CYCLES
-    nop
-    lw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    sub $at, $at, TMP2
-    sw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    sub CYCLES_RUN, CYCLES_RUN, TMP2
-
 _GB_BREAK_LOOP_SAVE_CYCLES:
     sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
     

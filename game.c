@@ -42,7 +42,7 @@
 
 #define RUN_TESTS 0
 
-void OPEN_DEBUGGER();
+void _GB_WRITE_REG_LCDC();
 
 /*
  * This is the main routine of the app.
@@ -59,6 +59,7 @@ game(void)
 	OSTime lastTime;
 	OSTime lastDrawTime;
 	void* debugWrite;
+	bool running = TRUE;
 
 	loop = 0;
 	offset = 0;
@@ -104,6 +105,8 @@ game(void)
 
 	OSTime startTime = osGetTime();
 
+	DEBUG_PRINT_F("%X", _GB_WRITE_REG_LCDC);
+
     /*
      * Main game loop
      */
@@ -113,7 +116,11 @@ game(void)
 
         if ((pad[0]->button & U_CBUTTONS) && (~lastButton & U_CBUTTONS))
         {
-            useDebugger(&gGameboy.cpu, &gGameboy.memory);
+			if (running) {
+            	useDebugger(&gGameboy.cpu, &gGameboy.memory);
+			} else {
+				running = TRUE;
+			}
         }
 
 		lastButton = pad[0]->button;
@@ -138,28 +145,29 @@ game(void)
 		
 		// clearDebugOutput();
 		
+		if (running) {
+			loop = MAX_FRAME_SKIP;
+			while (accumulatedTime > USECS_PER_FRAME && loop > 0)
+			{
+				handleInput(&gGameboy, pad[0]);
+				emulateFrame(&gGameboy, NULL);
+				pad = ReadController(0);
+				accumulatedTime -= USECS_PER_FRAME;
+				--loop;
+			}
 
-		loop = MAX_FRAME_SKIP;
-		while (accumulatedTime > USECS_PER_FRAME && loop > 0)
-		{
+			while (accumulatedTime > USECS_PER_FRAME)
+			{
+				accumulatedTime -= USECS_PER_FRAME;
+			}
+
 			handleInput(&gGameboy, pad[0]);
-			emulateFrame(&gGameboy, NULL);
-			pad = ReadController(0);
+			emulateFrame(&gGameboy, getColorBuffer());
 			accumulatedTime -= USECS_PER_FRAME;
-			--loop;
+			finishAudioFrame(&gGameboy.memory);
+
+			osWritebackDCache(getColorBuffer(), sizeof(u16) * SCREEN_WD*SCREEN_HT);
 		}
-
-		while (accumulatedTime > USECS_PER_FRAME)
-		{
-			accumulatedTime -= USECS_PER_FRAME;
-		}
-
-		handleInput(&gGameboy, pad[0]);
-		emulateFrame(&gGameboy, getColorBuffer());
-		accumulatedTime -= USECS_PER_FRAME;
-		finishAudioFrame(&gGameboy.memory);
-
-		osWritebackDCache(getColorBuffer(), sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetTime();
 		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 

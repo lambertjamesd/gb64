@@ -100,6 +100,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     }
 
     tickAudio(&gameboy->memory, gameboy->cpu.unscaledCyclesRun);
+    adjustCPUTimer(&gameboy->cpu);
 }
 
 void handleInput(struct GameBoy* gameboy, OSContPad* pad)

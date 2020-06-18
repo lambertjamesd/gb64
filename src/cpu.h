@@ -77,4 +77,15 @@ extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun
 extern void initializeCPU(struct CPUState* state);
 extern void addStoppingPoint(struct CPUState* state, struct CPUStoppingPoint stoppingPoint);
 
+// We don't want CYCLES_RUN
+// to overflow while emulating the CPU
+// since CPU_STATE_NEXT_TIMER should always
+// be >= CYCLES_RUN
+// to prevent this, when exiting the
+// emulation we check if CYCLES_RUN is
+// above 0x80000000 if it is we 
+// decrement both CYCLES_RUN and
+// by that much CPU_STATE_NEXT_TIMER
+extern void adjustCPUTimer(struct CPUState* state);
+
 #endif

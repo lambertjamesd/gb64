@@ -343,6 +343,7 @@ _GB_WRITE_REG_4X_TABLE:
     jr $ra
     sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_VRAM_BANK_INDEX + 1))(Memory)
 
+.global _GB_WRITE_REG_LCDC
 _GB_WRITE_REG_LCDC:
     read_register_direct $at, REG_LCDC
     xor $at, VAL, $at
@@ -363,13 +364,12 @@ _GB_WRITE_REG_LCDC_ON:
     # set up next stopping point to be the current cycle
     # with LY at the last line to update the current
     # lcd state on DECODE_NEXT
-    move $at, CYCLES_RUN
+    li $at, GB_SCREEN_LINES - 1
+    write_register_direct $at, REG_LY # set LY to 0
 
-    write_register_direct $zero, REG_LY
-
-    sll $at, CYCLES_RUN, 8
+    sll TMP2, CYCLES_RUN, 8
     jal QUEUE_STOPPING_POINT
-    addi $at, $at, CPU_STOPPING_POINT_TYPE_SCREEN_2
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_2
       
     lw $ra, 0($sp)
     j _GB_WRITE_REG_LCDC_WRITE

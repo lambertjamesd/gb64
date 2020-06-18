@@ -24,9 +24,9 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     add $at, CYCLES_RUN, $at # make offset relative to cycles run
     # calculate the next interrupt time
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    sll $at, $at, 8
+    sll TMP2, $at, 8
     jal QUEUE_STOPPING_POINT
-    addi $at, $at, CPU_STOPPING_POINT_TYPE_TIMER
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER
     jr $ra
     nop
 _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
@@ -189,7 +189,7 @@ _CHECK_LCDC_STAT_FLAG_1:
 ########################
 
 DEQUEUE_STOPPING_POINT:
-    addi $ra, $ra, -4
+    addi $sp, $sp, -4
     sw $ra, 0($sp)
 
     lw $at, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
@@ -202,12 +202,18 @@ DEQUEUE_STOPPING_POINT:
     
     # load previous stopping reason
     lw $at, (CPU_STATE_STOPPING_POINTS - CPU_STATE_STOPPING_POINT_SIZE)(TMP2)
+    sw $zero, (CPU_STATE_STOPPING_POINTS - CPU_STATE_STOPPING_POINT_SIZE)(TMP2) # clear next stopping point
     andi $at, $at, 0xFF # mask the stopping point type
+
+    sltiu TMP2, $at, CPU_STOPPING_POINT_TYPE_EXIT
+    beqz TMP2, HANDLE_DEQUEUE_EXIT
+
     sll $at, $at, 2 # align jump table to 4 bytes
     la TMP2, DEQUEUE_STOPPING_POINT_J_TABLE
     add $at, TMP2, $at
     lw $at, 0($at)
     jr $at
+    nop
 .data
 DEQUEUE_STOPPING_POINT_J_TABLE: .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3, HANDLE_DEQUEUE_TIMER, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
 .text
@@ -256,13 +262,11 @@ ENTER_MODE_1:
     addi Param0, Param0, 1
     addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_1_CYCLES
     sll TMP2, TMP2, 8
-    slti $at, TMP3, GB_SCREEN_LINES
+    slti $at, TMP3, GB_SCREEN_LINES - 1
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
     bnez $at, _ENTER_MODE_1_NEXT_MODE
     addi TMP3, TMP3, 1
-    li TMP3, 0
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
-    # todo CPU_STATE_RUN_UNTIL_FRAME
 _ENTER_MODE_1_NEXT_MODE:
     jal QUEUE_STOPPING_POINT
     add TMP2, TMP2, TMP4
@@ -277,9 +281,22 @@ ENTER_MODE_2:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 2
     addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_2_CYCLES
+    sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
     addi TMP3, TMP3, 1
+    li $at, GB_SCREEN_LINES
+    bne $at, TMP3, _ENTER_MODE_2_SKIP_SCREEN_START
+    nop
+    lbu $at, CPU_STATE_RUN_UNTIL_FRAME(CPUState)
+    beqz $at, _ENTER_MODE_2_SKIP_SCREEN_START
+    li TMP3, 0
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_TYPE_EXIT
+    sll TMP2, CYCLES_RUN, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_EXIT
+_ENTER_MODE_2_SKIP_SCREEN_START:
     j CHECK_LSTAT_INTERRUPT
     write_register_direct TMP3, REG_LY
 
@@ -291,6 +308,7 @@ ENTER_MODE_3:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 3
     addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_3_CYCLES
+    sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_0
     j CHECK_LSTAT_INTERRUPT
@@ -380,12 +398,12 @@ _HANDLE_DEQUEUE_INTERRUPT_SAVE:
     
 HANDLE_DEQUEUE_EXIT:
     j GB_BREAK_LOOP
-    addi $ra, $ra, 4
+    addi $sp, $sp, 4
 
 _FINISH_DEQUEUE_INTERRUPT:
     lw $ra, 0($sp)
     jr $ra
-    addi $ra, $ra, 4
+    addi $sp, $sp, 4
 
 
 ########################
@@ -433,10 +451,6 @@ READ_NEXT_STOPPING_POINT:
     jr $ra
     srl CycleTo, CycleTo, 8 # timer is stored in the upper 24 bits
 
-    # todo
-    # implement handle stopping point
-    # immplement using queue stopping point
-
 #######################
 
 REMOVE_STOPPING_POINT:
@@ -449,7 +463,7 @@ _REMOVE_STOPPING_POINT_NEXT:
     beqz $at, _REMOVE_STOPPING_POINT_END
     andi $at, $at, 0xFF
     # check if this element should be removed
-    bne $at, Param0, _REMOVE_STOPPING_POINT_SKIP
+    beq $at, Param0, _REMOVE_STOPPING_POINT_SKIP
     addi TMP3, TMP3, -CPU_STATE_STOPPING_POINT_SIZE
     addi TMP2, TMP2, -CPU_STATE_STOPPING_POINT_SIZE
 _REMOVE_STOPPING_POINT_SKIP:
@@ -458,12 +472,12 @@ _REMOVE_STOPPING_POINT_SKIP:
     sw $at, 0(TMP2)
 _REMOVE_STOPPING_POINT_END:
     sub $at, TMP2, CPUState
-    addi $at, $at, -CPU_STATE_STOPPING_POINTS
+    addi $at, $at, CPU_STATE_STOPPING_POINT_SIZE-CPU_STATE_STOPPING_POINTS
     sw $at, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
 _REMOVE_STOPPING_POINT_ZERO_LOOP:
-    addi TMP2, TMP2, -CPU_STATE_STOPPING_POINT_SIZE 
     beq TMP2, TMP3, _REMOVE_STOPPING_POINT_EXIT
     sw $zero, 0(TMP2)
+    addi TMP2, TMP2, -CPU_STATE_STOPPING_POINT_SIZE 
     j _REMOVE_STOPPING_POINT_ZERO_LOOP
     nop
 _REMOVE_STOPPING_POINT_EXIT:
