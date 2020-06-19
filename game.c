@@ -42,7 +42,7 @@
 
 #define RUN_TESTS 0
 
-void _GB_WRITE_REG_LCDC();
+void _GB_WRITE_REG_TAC();
 
 /*
  * This is the main routine of the app.
@@ -105,7 +105,7 @@ game(void)
 
 	OSTime startTime = osGetTime();
 
-	DEBUG_PRINT_F("%X", _GB_WRITE_REG_LCDC);
+	DEBUG_PRINT_F("%X", _GB_WRITE_REG_TAC);
 
     /*
      * Main game loop

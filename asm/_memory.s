@@ -196,7 +196,8 @@ _GB_WRITE_REG_TIMA:
 _GB_WRITE_REG_TMA:
     jr $ra
     write_register_direct VAL, REG_TMA
-    
+
+.global _GB_WRITE_REG_TAC    
 _GB_WRITE_REG_TAC:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
@@ -343,7 +344,6 @@ _GB_WRITE_REG_4X_TABLE:
     jr $ra
     sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_VRAM_BANK_INDEX + 1))(Memory)
 
-.global _GB_WRITE_REG_LCDC
 _GB_WRITE_REG_LCDC:
     read_register_direct $at, REG_LCDC
     xor $at, VAL, $at

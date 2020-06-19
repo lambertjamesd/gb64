@@ -5,6 +5,8 @@
 ########################
 
 CALCULATE_NEXT_TIMER_INTERRUPT:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
     beqz $at, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
@@ -27,12 +29,16 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     sll TMP2, $at, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER
+    lw $ra, 0($sp)
     jr $ra
+    addi $sp, $sp, 4
     nop
 _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
     la $at, 0xFFFFFFFF
-    jr $ra
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 4
 
 ########################
 # Update DIV register to the correct value
@@ -458,28 +464,34 @@ REMOVE_STOPPING_POINT:
     addi TMP2, CPUState, CPU_STATE_STOPPING_POINTS + (CPU_STATE_STOPPING_POINT_MAX_COUNT - 1) * CPU_STATE_STOPPING_POINT_SIZE
     addi TMP3, CPUState, CPU_STATE_STOPPING_POINTS + (CPU_STATE_STOPPING_POINT_MAX_COUNT - 1) * CPU_STATE_STOPPING_POINT_SIZE
 _REMOVE_STOPPING_POINT_NEXT:
-    lw $at, 0(TMP3)
+    addi $at, CPUState, CPU_STATE_STOPPING_POINTS - CPU_STATE_STOPPING_POINT_SIZE
     # check if end has been reached
+    beq $at, TMP3, _REMOVE_STOPPING_POINT_END
+    lw $at, 0(TMP3)
+    # check if empty stopping point has been reached
     beqz $at, _REMOVE_STOPPING_POINT_END
     andi $at, $at, 0xFF
     # check if this element should be removed
     beq $at, Param0, _REMOVE_STOPPING_POINT_SKIP
+    nop
+_REMOVE_STOPPING_POINT_KEEP:
+    lw $at, 0(TMP3)
+    sw $at, 0(TMP2)
     addi TMP3, TMP3, -CPU_STATE_STOPPING_POINT_SIZE
+    j _REMOVE_STOPPING_POINT_NEXT
     addi TMP2, TMP2, -CPU_STATE_STOPPING_POINT_SIZE
 _REMOVE_STOPPING_POINT_SKIP:
-    lw $at, 0(TMP3)
     j _REMOVE_STOPPING_POINT_NEXT
-    sw $at, 0(TMP2)
+    addi TMP3, TMP3, -CPU_STATE_STOPPING_POINT_SIZE
 _REMOVE_STOPPING_POINT_END:
     sub $at, TMP2, CPUState
     addi $at, $at, CPU_STATE_STOPPING_POINT_SIZE-CPU_STATE_STOPPING_POINTS
     sw $at, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
 _REMOVE_STOPPING_POINT_ZERO_LOOP:
     beq TMP2, TMP3, _REMOVE_STOPPING_POINT_EXIT
-    sw $zero, 0(TMP2)
     addi TMP2, TMP2, -CPU_STATE_STOPPING_POINT_SIZE 
     j _REMOVE_STOPPING_POINT_ZERO_LOOP
-    nop
+    sw $zero, CPU_STATE_STOPPING_POINT_SIZE(TMP2)
 _REMOVE_STOPPING_POINT_EXIT:
     jr $ra
     nop
