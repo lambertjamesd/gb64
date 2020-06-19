@@ -218,6 +218,7 @@ _GB_WRITE_REG_TAC:
 _GB_WRITE_REG_INT_REQ:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
+    ori VAL, VAL, 0xE0 # upper 3 bits are always 1
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
     lw $ra, 0($sp)

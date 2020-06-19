@@ -43,7 +43,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/tests/instr_timing/instr_timing.gb"
+	include "data/tests/halt_bug.gb"
 endseg
 
 beginwave

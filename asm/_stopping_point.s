@@ -145,22 +145,23 @@ _REQUEST_INTERRUPT_FINISH:
 # Check to unhalt the CPUState
 ########################
 
-CHECK_FOR_UNHALT:
+CHECK_FOR_HALT_BUG:
     lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    bnez $at, CHECK_FOR_UNHALT_SKIP
+    bnez $at, CHECK_FOR_HALT_BUG_SKIP
     nop
     read_register_direct $at, REG_INTERRUPTS_REQUESTED
     read_register_direct TMP2, REG_INTERRUPTS_ENABLED
     and $at, $at, TMP2
     andi $at, $at, 0x1F
-    bnez $at, CHECK_FOR_UNHALT_DO_IT
+    bnez $at, CHECK_FOR_HALT_BUG_DO_IT
     nop
-CHECK_FOR_UNHALT_SKIP:
+CHECK_FOR_HALT_BUG_SKIP:
     jr $ra
     nop
-CHECK_FOR_UNHALT_DO_IT:
-    # TODO handle halt bug
-    jr $ra
+CHECK_FOR_HALT_BUG_DO_IT:
+    jal GB_DO_READ
+    move ADDR, GB_PC
+    j DECODE_V0
     sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
 
 ########################

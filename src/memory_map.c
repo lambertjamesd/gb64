@@ -203,4 +203,6 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     {
         memory->registerWriters[index] = defaultRegisterWrite;
     }
+
+    WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
 }
