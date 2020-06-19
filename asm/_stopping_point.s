@@ -23,7 +23,14 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     addi $at, $at, 0x100
     # shift the diffence by the clock divider
     sllv $at, $at, TMP2
-    # todo, adjust based on DIV_OFFSET
+
+    # adjust timer offset by hidden div bits
+    addi TMP2, TMP2, -1
+    read_register16_direct TMP3, _REG_DIV_OFFSET
+    srl TMP3, TMP3, 2
+    and TMP3, TMP3, TMP2
+    sub $at, $at, TMP3
+
     add $at, CYCLES_RUN, $at # make offset relative to cycles run
     # calculate the next interrupt time
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
@@ -51,7 +58,7 @@ CALCULATE_DIV_VALUE:
     sll $v0, CYCLES_RUN, 2
     read_register16_direct $at, _REG_DIV_OFFSET
     add $v0, $v0, $at
-    srl $v0, $v0, 6
+    srl $v0, $v0, 8
     andi $v0, $v0, 0xFF
     jr $ra
     write_register_direct $v0, REG_DIV

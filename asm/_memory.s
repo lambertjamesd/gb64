@@ -180,8 +180,14 @@ _GB_WRITE_REG_DIV:
     # _REG_DIV_OFFSET = -(CYCLES_RUN << 2) & 0xFFFF
     sll $at, CYCLES_RUN, 2
     sub $at, $zero, $at
-    jr $ra
     write_register16_direct $at, _REG_DIV_OFFSET
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
+    lw $ra, 0($sp)
+    j CALCULATE_NEXT_TIMER_INTERRUPT
+    addi $sp, $sp, 4
     
 _GB_WRITE_REG_TIMA:
     addi $sp, $sp, -4
