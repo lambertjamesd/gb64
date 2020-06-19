@@ -187,7 +187,7 @@ _GB_WRITE_REG_TIMA:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
     jal REMOVE_STOPPING_POINT
-    li Param0, CPU_STOPPING_POINT_TYPE_TIMER
+    li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     j CALCULATE_NEXT_TIMER_INTERRUPT
@@ -203,7 +203,7 @@ _GB_WRITE_REG_TAC:
     jal CALCULATE_TIMA_VALUE
     nop
     jal REMOVE_STOPPING_POINT
-    li Param0, CPU_STOPPING_POINT_TYPE_TIMER
+    li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     j CALCULATE_NEXT_TIMER_INTERRUPT

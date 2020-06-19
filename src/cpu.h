@@ -34,7 +34,6 @@ enum CPUStoppingPointType {
     CPUStoppingPointTypeScreenMode1,
     CPUStoppingPointTypeScreenMode2,
     CPUStoppingPointTypeScreenMode3,
-    CPUStoppingPointTypeTimer,
     CPUStoppingPointTypeTimerReset,
     CPUStoppingPointTypeInterrupt,
     CPUStoppingPointTypeExit,

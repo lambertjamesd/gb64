@@ -5,7 +5,7 @@ GB_RET_NC:
     bne $at, $zero, DECODE_NEXT # if C_FLAG != 0 skip return
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j _GB_RET
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     nop
     nop
     nop
@@ -77,7 +77,7 @@ GB_RET_C:
     beq $at, $zero, DECODE_NEXT # if Z_FLAG == 0 skip RET
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j _GB_RET
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     nop
     nop
     nop

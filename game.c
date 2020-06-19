@@ -42,8 +42,6 @@
 
 #define RUN_TESTS 0
 
-void GB_HALT();
-
 /*
  * This is the main routine of the app.
  */
@@ -105,7 +103,7 @@ game(void)
 
 	OSTime startTime = osGetTime();
 
-	DEBUG_PRINT_F("\n%X\n", GB_HALT);
+	DEBUG_PRINT_F("\n%X\n", 0);
 
     /*
      * Main game loop

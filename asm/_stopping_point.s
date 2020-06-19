@@ -23,12 +23,13 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     addi $at, $at, 0x100
     # shift the diffence by the clock divider
     sllv $at, $at, TMP2
+    # todo, adjust based on DIV_OFFSET
     add $at, CYCLES_RUN, $at # make offset relative to cycles run
     # calculate the next interrupt time
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
     sll TMP2, $at, 8
     jal QUEUE_STOPPING_POINT
-    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     jr $ra
     addi $sp, $sp, 4
@@ -50,7 +51,7 @@ CALCULATE_DIV_VALUE:
     sll $v0, CYCLES_RUN, 2
     read_register16_direct $at, _REG_DIV_OFFSET
     add $v0, $v0, $at
-    srl $v0, $v0, 8
+    srl $v0, $v0, 6
     andi $v0, $v0, 0xFF
     jr $ra
     write_register_direct $v0, REG_DIV
@@ -222,7 +223,7 @@ DEQUEUE_STOPPING_POINT:
     jr $at
     nop
 .data
-DEQUEUE_STOPPING_POINT_J_TABLE: .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3, HANDLE_DEQUEUE_TIMER, HANDLE_DEQUEUE_TIMER_RESET, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
+DEQUEUE_STOPPING_POINT_J_TABLE: .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3, HANDLE_DEQUEUE_TIMER_RESET, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
 .text
 
 ########################
@@ -265,6 +266,9 @@ ENTER_MODE_1:
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
+    # request interrupt
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPT_V_BLANK
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
     addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_1_CYCLES
@@ -332,14 +336,6 @@ CHECK_LSTAT_INTERRUPT:
     jal REQUEST_INTERRUPT
     li VAL, INTERRUPT_LCD_STAT
 CHECK_LSTAT_INTERRUPT_SKIP_INTERRUPT:
-    j _FINISH_DEQUEUE_INTERRUPT
-    nop
-    
-HANDLE_DEQUEUE_TIMER:
-    addi TMP2, CYCLES_RUN, 1
-    sll TMP2, TMP2, 8
-    jal QUEUE_STOPPING_POINT
-    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     j _FINISH_DEQUEUE_INTERRUPT
     nop
 
