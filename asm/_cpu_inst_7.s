@@ -54,6 +54,7 @@ GB_LD_HL_L:
     nop
     nop
     nop
+.global GB_HALT
 GB_HALT:
     li $at, STOP_REASON_HALT
     jal CHECK_FOR_UNHALT
