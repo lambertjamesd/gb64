@@ -98,7 +98,6 @@ CHECK_FOR_INTERRUPT:
     and $at, $at, TMP2
     beqz $at, _CHECK_FOR_INTERRUPT_FINISH
     nop
-    sb $zero, CPU_STATE_STOP_REASON(CPUState)
     sll TMP2, CYCLES_RUN, 8
     j QUEUE_STOPPING_POINT 
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_INTERRUPT
@@ -137,17 +136,19 @@ _REQUEST_INTERRUPT_FINISH:
 # TODO handle halt bug
 CHECK_FOR_UNHALT:
     lbu $at, CPU_STATE_INTERRUPTS(CPUState)
-    beqz $at, CHECK_FOR_UNHALT_DO_IT
+    bnez $at, DECODE_NEXT
+    nop
     read_register_direct $at, REG_INTERRUPTS_REQUESTED
     read_register_direct TMP2, REG_INTERRUPTS_ENABLED
     and $at, $at, TMP2
     andi $at, $at, 0x1F
     bnez $at, CHECK_FOR_UNHALT_DO_IT
     nop
-    j CHECK_FOR_INTERRUPT
+    j DECODE_NEXT
     nop
 CHECK_FOR_UNHALT_DO_IT:
     j DECODE_NEXT
+    nop
     sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
 
 ########################

@@ -197,7 +197,6 @@ _GB_WRITE_REG_TMA:
     jr $ra
     write_register_direct VAL, REG_TMA
 
-.global _GB_WRITE_REG_TAC    
 _GB_WRITE_REG_TAC:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
