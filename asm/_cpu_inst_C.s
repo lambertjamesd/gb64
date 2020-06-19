@@ -29,7 +29,7 @@ GB_JP_NZ:
     nop
 GB_JP:
     jal READ_NEXT_INSTRUCTION_16
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     jal SET_GB_PC
     move Param0, $v0
     j DECODE_NEXT
@@ -66,7 +66,7 @@ GB_ADD_A_d8:
 GB_RST_00H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0000
@@ -138,7 +138,7 @@ GB_ADC_A_d8:
 GB_RST_08H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0008

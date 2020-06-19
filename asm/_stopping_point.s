@@ -4,6 +4,7 @@
 # Stomps on TMP2
 ########################
 
+.global CALCULATE_NEXT_TIMER_INTERRUPT
 CALCULATE_NEXT_TIMER_INTERRUPT:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
@@ -25,9 +26,12 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     sllv $at, $at, TMP2
 
     # adjust timer offset by hidden div bits
+    li TMP3, 1
+    sllv TMP2, TMP3, TMP2
     addi TMP2, TMP2, -1
     read_register16_direct TMP3, _REG_DIV_OFFSET
     srl TMP3, TMP3, 2
+    add TMP3, CYCLES_RUN, TMP3
     and TMP3, TMP3, TMP2
     sub $at, $at, TMP3
 

@@ -66,7 +66,7 @@ GB_SUB_A_d8:
 GB_RST_10H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0010
@@ -85,7 +85,7 @@ GB_RETI:
     li $at, INTERRUPTS_ENABLED
     jal CHECK_FOR_INTERRUPT
     sb $at, CPU_STATE_INTERRUPTS(CPUState)
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     j _GB_RET
     nop
     nop
@@ -138,7 +138,7 @@ GB_SBC_A_d8:
 GB_RST_18H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0018

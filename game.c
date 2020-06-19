@@ -42,6 +42,8 @@
 
 #define RUN_TESTS 0
 
+void CALCULATE_NEXT_TIMER_INTERRUPT();
+
 /*
  * This is the main routine of the app.
  */
@@ -102,7 +104,7 @@ game(void)
 
 	OSTime startTime = osGetTime();
 
-	DEBUG_PRINT_F("\n%X\n", 0);
+	DEBUG_PRINT_F("\n%X\n", CALCULATE_NEXT_TIMER_INTERRUPT);
 
     /*
      * Main game loop

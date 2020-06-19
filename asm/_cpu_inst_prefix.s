@@ -46,7 +46,7 @@ _GB_PREFIX_DECODE_REGISTER:
     move GB_L, Param0
     
     j _GB_PREFIX_DECODE_HL
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 1 # update cycles run
     nop
     nop
     
@@ -61,6 +61,7 @@ _GB_PREFIX_DECODE_HL:
     or ADDR, ADDR, GB_L
     jal _GB_PREFIX_DECODE_INSTRUCTION
     move Param0, $v0
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 1 # update cycles run separate. This allows the bit instructions to take 3 cycles
     sll ADDR, GB_H, 8
     or ADDR, ADDR, GB_L
     j GB_DO_WRITE
