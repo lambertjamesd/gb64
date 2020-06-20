@@ -2,6 +2,7 @@
 #include "gameboy.h"
 #include "graphics.h"
 #include "debugger.h"
+#include "debug_out.h"
 
 struct GameBoy gGameboy;
 
@@ -62,7 +63,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     if (gameboy->cpu.stopReason == STOP_REASON_STOP && (READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & REG_KEY1_SPEED_REQUEST))
     {
         // TODO change timing
-        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_KEY1, REG_KEY1_SPEED ^ READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1));
+        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_KEY1, REG_KEY1_SPEED ^ READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & ~REG_KEY1_SPEED_REQUEST);
         gameboy->cpu.stopReason = STOP_REASON_NONE;
     }
 
@@ -77,7 +78,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             runCPU(
                 &gameboy->cpu, 
                 &gameboy->memory, 
-                (GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
+                (2 + GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
             );
             gameboy->cpu.runUntilNextFrame = 0;
         }

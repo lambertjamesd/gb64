@@ -5,7 +5,7 @@
 
 #include "debug_out.h"
 
-#define ENABLE_AUDIO 0
+#define ENABLE_AUDIO 1
 
 u8 wavePattern[4][8] = {
     {0, 1, 1, 1, 1, 1, 1, 1},

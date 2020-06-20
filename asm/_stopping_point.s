@@ -277,13 +277,14 @@ _ENTER_MODE_0_NEXT_MODE:
     nop
 
 ENTER_MODE_1:
+    # request v blank interrupt
+    jal REQUEST_INTERRUPT
+    li VAL, INTERRUPT_V_BLANK
     read_register_direct TMP3, REG_LY
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
     # request interrupt
-    jal REQUEST_INTERRUPT
-    li VAL, INTERRUPT_V_BLANK
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
     addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_1_CYCLES
@@ -311,17 +312,23 @@ ENTER_MODE_2:
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
     addi TMP3, TMP3, 1
-    li $at, GB_SCREEN_LINES
-    bne $at, TMP3, _ENTER_MODE_2_SKIP_SCREEN_START
+    slti $at, TMP3, GB_SCREEN_LINES
+    bnez $at, _ENTER_MODE_2_SKIP_SCREEN_START
     nop
     lbu $at, CPU_STATE_RUN_UNTIL_FRAME(CPUState)
     beqz $at, _ENTER_MODE_2_SKIP_SCREEN_START
     li TMP3, 0
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_EXIT
+    
+    read_register_direct Param0, REG_LCDC_STATUS # reload status into Param0
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
+    addi Param0, Param0, 2
+    li TMP3, 0
+    
     sll TMP2, CYCLES_RUN, 8
     jal QUEUE_STOPPING_POINT
-    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_EXIT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_EXIT # signal to stop running cpu
 _ENTER_MODE_2_SKIP_SCREEN_START:
     j CHECK_LSTAT_INTERRUPT
     write_register_direct TMP3, REG_LY
