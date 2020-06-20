@@ -42,7 +42,7 @@
 
 #define RUN_TESTS 0
 
-void CALCULATE_NEXT_TIMER_INTERRUPT();
+void _GB_WRITE_DMA();
 
 /*
  * This is the main routine of the app.
@@ -68,7 +68,6 @@ game(void)
 	lastDrawTime = 0;
 	lastTime = osGetTime();
 	gGameboy.cpu.cyclesRun = 0;
-	clearDebugOutput();
 #if RUN_TESTS
 	runTests(str);
 #endif
@@ -104,7 +103,8 @@ game(void)
 
 	OSTime startTime = osGetTime();
 
-	DEBUG_PRINT_F("\n%X\n", CALCULATE_NEXT_TIMER_INTERRUPT);
+	clearDebugOutput();
+	DEBUG_PRINT_F("\n%X\n", _GB_WRITE_DMA);
 
     /*
      * Main game loop

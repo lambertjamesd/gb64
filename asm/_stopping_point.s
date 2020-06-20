@@ -4,7 +4,6 @@
 # Stomps on TMP2
 ########################
 
-.global CALCULATE_NEXT_TIMER_INTERRUPT
 CALCULATE_NEXT_TIMER_INTERRUPT:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
@@ -225,7 +224,7 @@ DEQUEUE_STOPPING_POINT:
     sw $zero, (CPU_STATE_STOPPING_POINTS - CPU_STATE_STOPPING_POINT_SIZE)(TMP2) # clear next stopping point
     andi $at, $at, 0xFF # mask the stopping point type
 
-    sltiu TMP2, $at, CPU_STOPPING_POINT_TYPE_EXIT
+    sltiu TMP2, $at, (DEQUEUE_STOPPING_POINT_J_TABLE_END - DEQUEUE_STOPPING_POINT_J_TABLE) / 4
     beqz TMP2, HANDLE_DEQUEUE_EXIT
 
     sll $at, $at, 2 # align jump table to 4 bytes
@@ -239,6 +238,7 @@ DEQUEUE_STOPPING_POINT_J_TABLE:
     .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3
     .word HANDLE_DEQUEUE_TIMER_RESET, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
     .word HANDLE_DMA_DEQUEUE
+DEQUEUE_STOPPING_POINT_J_TABLE_END: 
 .text
 
 ########################
@@ -433,6 +433,7 @@ HANDLE_DMA_DEQUEUE:
     read_register_direct Param0, _REG_DMA_CURRENT
 
     sub TMP3, CYCLES_RUN, TMP3 # cycles run since last DMA
+    andi TMP3, TMP3, 0xFFFF
     add TMP3, Param0, TMP3
 
     slti $at, TMP3, SPRITE_COUNT * SPRITE_SIZE
@@ -448,7 +449,7 @@ _HANDLE_DMA_DEQUEUE_QUEUE_NEXT:
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_DMA
     write_register_direct TMP3, _REG_DMA_CURRENT
-    write_register_direct CYCLES_RUN, _REG_DMA_LAST_CYCLE
+    write_register16_direct CYCLES_RUN, _REG_DMA_LAST_CYCLE
 _HANDLE_DMA_DEQUEUE_LOOP:
     beq Param0, TMP3, _FINISH_DEQUEUE_INTERRUPT
     read_register_direct ADDR, REG_DMA
@@ -456,6 +457,7 @@ _HANDLE_DMA_DEQUEUE_LOOP:
     jal GB_DO_READ
     add ADDR, ADDR, Param0
     addi ADDR, Param0, MM_REGISTER_START
+    andi ADDR, ADDR, 0xFFFF
     jal GB_DO_WRITE_CALL
     move VAL, $v0
     j _HANDLE_DMA_DEQUEUE_LOOP

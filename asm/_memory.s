@@ -463,25 +463,25 @@ _GB_CHECK_RISING_STAT_FINISH:
     
 ############################
 
+.global _GB_WRITE_DMA
 _GB_WRITE_DMA:
-    andi $at, VAL, 0xF0 # calculate memory bank address offset
-    srl $at, $at, 2
-    add $at, Memory, $at # offset from memory bank start
-    lw ADDR, 0($at) # load the memory bank
-    sll TMP2, VAL, 8 # calculate offset from bank
-    andi TMP2, TMP2, 0xFFF # mask away upper bits
-    add ADDR, ADDR, TMP2 # calucate starting point inside memory bank
-    addi TMP3, Memory, MEMORY_MISC_START # load start of misc memory
-    li TMP2, 0xA0 # loop once per sprite
-_GB_DMA_LOOP:
-    lw $at, 0(ADDR)
-    sw $at, 0(TMP3)
-    addi TMP2, TMP2, -4 # decrease counter
-    addi ADDR, ADDR, 4 # increase read address
-    bnez TMP2, _GB_DMA_LOOP # loop until zero
-    addi TMP3, TMP3, 4 # increase write address
-    jr $ra
-    nop
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+    # cancel any existing DMA
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_TYPE_DMA
+
+    write_register_direct VAL, REG_DMA # save DMA addresss
+    write_register_direct $zero, _REG_DMA_CURRENT # restart dma copy
+    addi $at, CYCLES_RUN, CYCLES_PER_INSTR
+    write_register16_direct $at, _REG_DMA_LAST_CYCLE # start copy 1 cycle from now
+
+    addi TMP2, CYCLES_RUN, CYCLES_PER_INSTR * 2
+    sll TMP2, TMP2, 8
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_DMA # first byte finsihes 2 cycles from now
+    lw $ra, 0($sp)
+    j QUEUE_STOPPING_POINT
+    addi $sp, $sp, 4 
 
 ############################
 

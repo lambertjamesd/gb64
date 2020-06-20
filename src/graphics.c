@@ -150,6 +150,7 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
         if (
             currentSprite.y - SPRITE_Y_OFFSET > state->row ||
             currentSprite.y - SPRITE_Y_OFFSET + spriteHeight <= state->row
+
         )
         {
             // sprite not on this row
@@ -157,8 +158,13 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
         }
         else
         {
-            sourceX = x - (currentSprite.x - SPRITE_WIDTH);
+            sourceX = x - ((int)currentSprite.x - SPRITE_WIDTH);
             ++renderedSprites;
+        }
+
+        if (sourceX >= SPRITE_WIDTH)
+        {
+            continue;
         }
         
         while (x < GB_SCREEN_W && sourceX < 0)
