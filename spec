@@ -43,7 +43,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/tests/halt_bug.gb"
+	include "data/PokemonBlue.gb"
 endseg
 
 beginwave

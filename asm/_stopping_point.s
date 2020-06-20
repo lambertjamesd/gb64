@@ -235,7 +235,10 @@ DEQUEUE_STOPPING_POINT:
     jr $at
     nop
 .data
-DEQUEUE_STOPPING_POINT_J_TABLE: .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3, HANDLE_DEQUEUE_TIMER_RESET, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
+DEQUEUE_STOPPING_POINT_J_TABLE: 
+    .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3
+    .word HANDLE_DEQUEUE_TIMER_RESET, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
+    .word HANDLE_DMA_DEQUEUE
 .text
 
 ########################
@@ -408,6 +411,8 @@ _HANDLE_DEQUEUE_INTERRUPT_SAVE:
 
     sb $zero, CPU_STATE_INTERRUPTS(CPUState) # disable interrupts
     sb $zero, CPU_STATE_STOP_REASON(CPUState) # wake up from stop/halt
+
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 5 # update cycles run
     
     addi GB_SP, GB_SP, -2 # reserve space in stack
     andi GB_SP, GB_SP, 0xFFFF
@@ -423,6 +428,39 @@ HANDLE_DEQUEUE_EXIT:
     j GB_BREAK_LOOP
     addi $sp, $sp, 4
 
+HANDLE_DMA_DEQUEUE:
+    read_register16_direct TMP3, _REG_DMA_LAST_CYCLE
+    read_register_direct Param0, _REG_DMA_CURRENT
+
+    sub TMP3, CYCLES_RUN, TMP3 # cycles run since last DMA
+    add TMP3, Param0, TMP3
+
+    slti $at, TMP3, SPRITE_COUNT * SPRITE_SIZE
+    bnez $at, _HANDLE_DMA_DEQUEUE_QUEUE_NEXT
+    nop
+    write_register_direct $zero, _REG_DMA_CURRENT
+    write_register16_direct $zero, _REG_DMA_LAST_CYCLE
+    j _HANDLE_DMA_DEQUEUE_LOOP
+    li TMP3, SPRITE_COUNT * SPRITE_SIZE
+_HANDLE_DMA_DEQUEUE_QUEUE_NEXT:
+    addi TMP2, CYCLES_RUN, CYCLES_PER_INSTR
+    sll TMP2, TMP2, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_DMA
+    write_register_direct TMP3, _REG_DMA_CURRENT
+    write_register_direct CYCLES_RUN, _REG_DMA_LAST_CYCLE
+_HANDLE_DMA_DEQUEUE_LOOP:
+    beq Param0, TMP3, _FINISH_DEQUEUE_INTERRUPT
+    read_register_direct ADDR, REG_DMA
+    sll ADDR, ADDR, 8
+    jal GB_DO_READ
+    add ADDR, ADDR, Param0
+    addi ADDR, Param0, MM_REGISTER_START
+    jal GB_DO_WRITE_CALL
+    move VAL, $v0
+    j _HANDLE_DMA_DEQUEUE_LOOP
+    addi Param0, Param0, 1
+    
 _FINISH_DEQUEUE_INTERRUPT:
     lw $ra, 0($sp)
     jr $ra
