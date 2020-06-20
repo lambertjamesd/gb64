@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "debug_out.h"
 
 void initializeCPU(struct CPUState* state)
 {
@@ -38,13 +39,13 @@ void addStoppingPoint(struct CPUState* state, struct CPUStoppingPoint stoppingPo
 
 void adjustCPUTimer(struct CPUState* state)
 {
-    if (state->cyclesRun >= 0x00800000)
+    if (state->cyclesRun >= MAX_CYCLE_TIME)
     {
-        state->cyclesRun -= 0x00800000;
+        state->cyclesRun -= MAX_CYCLE_TIME;
 
         if (state->nextTimerTrigger != ~0)
         {
-            state->nextTimerTrigger -= 0x00800000;
+            state->nextTimerTrigger -= MAX_CYCLE_TIME;
         }
 
         int index;
@@ -54,7 +55,7 @@ void adjustCPUTimer(struct CPUState* state)
             index += sizeof(struct CPUStoppingPoint)
         )
         {
-            state->stoppingPoints[index >> 2].cycleTime -= 0x00800000;
+            state->stoppingPoints[index >> 2].cycleTime -= MAX_CYCLE_TIME;
         }
     }
 }
