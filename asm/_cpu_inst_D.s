@@ -29,7 +29,7 @@ GB_JP_NC:
     nop
 GB_ERROR_0:
     j OPEN_DEBUGGER # exit early
-    nop
+    li TMP2, 0
     nop
     nop
     nop

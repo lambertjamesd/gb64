@@ -4,6 +4,7 @@
 #include "graphics.h"
 #include "../boot.h"
 #include "debug_out.h"
+#include "../memory.h"
 
 #define WRITE_PIXEL(pixelIndex, pallete, x, targetMemory, spriteBuffer, spritePallete, maxX)    \
     if (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)) \
@@ -15,11 +16,9 @@
     if (x == maxX)                                                                       \
         break;
 
-#define WRITE_SPRITE_PIXEL(spriteRow, palleteOffset, x, targetMemory, pixel)                    \
-    if (READ_PIXEL_INDEX(spriteRow, pixel))                                                     \
+#define WRITE_SPRITE_PIXEL(spriteRow, palleteOffset, x, targetMemory, pixel)                                     \
+    if (READ_PIXEL_INDEX(spriteRow, pixel) && *targetMemory == 0)                                                                                       \
         *targetMemory = READ_PIXEL_INDEX(spriteRow, pixel) + palleteOffset;                     \
-    else                                                                                        \
-        *targetMemory = 0;                                                                      \
     ++x;                                                                                        \
     ++targetMemory;                                                                             \
     if (x == GB_SCREEN_W)                                                                       \
@@ -137,6 +136,7 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     int renderedSprites = 0;
     int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT * 2 : SPRITE_BASE_HEIGHT;
     u8* targetMemory = state->spriteIndexBuffer;
+    zeroMemory(targetMemory, GB_SCREEN_W);
 
     x = 0;
     currentSpriteIndex = 0;
@@ -162,6 +162,20 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
             ++renderedSprites;
         }
 
+        if (sourceX > 0)
+        {
+            targetMemory -= sourceX;
+            x -= sourceX;
+            sourceX = 0;
+
+            if (x < 0)
+            {
+                targetMemory -= x;
+                sourceX -= x;
+                x = 0;
+            }
+        }
+        
         if (sourceX >= SPRITE_WIDTH)
         {
             continue;

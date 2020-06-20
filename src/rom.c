@@ -42,6 +42,7 @@ void loadRomSegment(void* target, void *romLocation, int bankNumber)
 
     osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    osInvalDCache(target, ROM_BANK_SIZE);
 }
 
 void initRomLayout(struct ROMLayout* romLayout, void *romLocation)

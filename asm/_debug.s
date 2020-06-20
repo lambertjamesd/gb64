@@ -68,5 +68,7 @@ OPEN_DEBUGGER:
     addi GB_PC, GB_PC, 1 # back PC back to the begginning of current instruction
     andi GB_PC, GB_PC, 0xFFFF
 
-    j DECODE_V0 # the value of the next instruction to execute is returne from useDebugger
+    beqz TMP2, DECODE_V0
+    nop
+    jr $ra
     nop

@@ -38,6 +38,7 @@ enum CPUStoppingPointType {
     CPUStoppingPointTypeInterrupt,
     CPUStoppingPointTypeExit,
     CPUStoppingPointTypeDMA,
+    CPUStoppingPointTypeDebugger,
 };
 
 struct CPUStoppingPoint {
