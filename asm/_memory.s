@@ -229,6 +229,14 @@ _GB_WRITE_REG_INT_REQ:
 ############################
 
 _GB_WRITE_SOUND_REG:
+    li $at, REG_NR52
+    beq $at, ADDR, _GB_SOUND_ENABLED
+    li TMP2, 3
+    
+    read_register_direct $at, REG_NR52
+    andi $at, $at, REG_NR52_ON_OFF
+    beqz $at, _GB_WRITE_SOUND_OFF
+
     li $at, REG_NR14
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 0
@@ -244,9 +252,14 @@ _GB_WRITE_SOUND_REG:
     li $at, REG_NR44
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 3
-
+    
     j _GB_BASIC_REGISTER_WRITE
     nop
+
+_GB_WRITE_SOUND_OFF:
+    jr $ra
+    nop
+
 
 _GB_RESTART_SOUND:
     andi $at, VAL, 0x80
@@ -271,6 +284,54 @@ _GB_RESTART_SOUND:
 
     jr $ra
     nop
+
+_GB_SOUND_ENABLED:
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+    sb VAL, 4($sp)
+    jal _GB_SYNC_AUDIO
+    nop
+    lbu VAL, 4($sp)
+    andi VAL, VAL, REG_NR52_ON_OFF
+    read_register_direct $at, REG_NR52
+    andi $at, $at, %lo(~REG_NR52_ON_OFF)
+    or VAL, VAL, $at
+    write_register_direct VAL, REG_NR52
+    andi $at, VAL, REG_NR52_ON_OFF
+    bnez $at, _GB_SOUND_ENABLED_END
+    nop
+    write_register_direct $zero, REG_NR10 + 0
+    write_register_direct $zero, REG_NR10 + 1
+    write_register_direct $zero, REG_NR10 + 2
+    write_register_direct $zero, REG_NR10 + 3
+    write_register_direct $zero, REG_NR10 + 4
+
+    write_register_direct $zero, REG_NR10 + 5
+    write_register_direct $zero, REG_NR10 + 6
+    write_register_direct $zero, REG_NR10 + 7
+    write_register_direct $zero, REG_NR10 + 8
+    write_register_direct $zero, REG_NR10 + 9
+    
+    write_register_direct $zero, REG_NR10 + 10
+    write_register_direct $zero, REG_NR10 + 11
+    write_register_direct $zero, REG_NR10 + 12
+    write_register_direct $zero, REG_NR10 + 13
+    write_register_direct $zero, REG_NR10 + 14
+    
+    write_register_direct $zero, REG_NR10 + 15
+    write_register_direct $zero, REG_NR10 + 16
+    write_register_direct $zero, REG_NR10 + 17
+    write_register_direct $zero, REG_NR10 + 18
+    write_register_direct $zero, REG_NR10 + 19
+    
+    write_register_direct $zero, REG_NR10 + 20
+    write_register_direct $zero, REG_NR10 + 21
+    write_register_direct $zero, REG_NR10 + 22
+
+_GB_SOUND_ENABLED_END:
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 8
 
 _GB_SYNC_AUDIO:
     save_state_on_stack
@@ -463,7 +524,6 @@ _GB_CHECK_RISING_STAT_FINISH:
     
 ############################
 
-.global _GB_WRITE_DMA
 _GB_WRITE_DMA:
     addi $sp, $sp, -4
     sw $ra, 0($sp)
@@ -670,9 +730,19 @@ GB_DO_READ_REGISTERS:
     beq $at, ADDR, CALCULATE_TIMA_VALUE
 
     li $at, REG_NR52
-    beq $at, ADDR, _GB_DO_READ_SOUND_ENABLE
+    beq $at, ADDR, _GB_DO_READ_SOUND
     nop
 
+    li $at, REG_NR10
+    slt $at, ADDR, $at
+    bnez $at, _GB_DO_READ_REGISTERS_DIRECT
+
+    li $at, REG_LCDC
+    slt $at, ADDR, $at
+    bnez $at, _GB_DO_READ_SOUND
+    nop
+
+_GB_DO_READ_REGISTERS_DIRECT:
     li $at, MEMORY_MISC_START-MM_REGISTER_START
     add ADDR, $at, ADDR # ADDR relative to MISC memory
     add ADDR, Memory, ADDR # Relative to memory
@@ -680,16 +750,36 @@ GB_DO_READ_REGISTERS:
     lbu $v0, 0(ADDR)
 
 
-_GB_DO_READ_SOUND_ENABLE:
-    addi $sp, $sp, -4
+_GB_DO_READ_SOUND:
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
+    sh ADDR, 4($sp)
 
     jal _GB_SYNC_AUDIO
     nop
 
-    read_register_direct $v0, REG_NR52
+    lhu ADDR, 4($sp)
+
+    la $at, (_SOUND_READ_MASKS - REG_NR10)
+    add $at, $at, ADDR
+    jal _GB_DO_READ_REGISTERS_DIRECT
+    lbu TMP2, 0($at)
+
+    or $v0, $v0, TMP2
 
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     
+
+.data    
+_SOUND_READ_MASKS:
+     .byte 0x80,0x3F,0x00,0xFF,0xBF                     # NR10-NR15
+     .byte 0xFF,0x3F,0x00,0xFF,0xBF                     # NR20-NR25
+     .byte 0x7F,0xFF,0x9F,0xFF,0xBF                     # NR30-NR35
+     .byte 0xFF,0xFF,0x00,0x00,0xBF                     # NR40-NR45
+     .byte 0x00,0x00,0x70                               # NR50-NR52
+     .byte 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
+     .byte 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00      # Wave RAM
+     .byte 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+.text

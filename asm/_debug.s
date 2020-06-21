@@ -66,9 +66,6 @@ OPEN_DEBUGGER:
     restore_state_from_stack
     
     addi GB_PC, GB_PC, 1 # back PC back to the begginning of current instruction
+    j DECODE_V0
     andi GB_PC, GB_PC, 0xFFFF
 
-    beqz TMP2, DECODE_V0
-    nop
-    jr $ra
-    nop

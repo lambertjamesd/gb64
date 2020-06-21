@@ -12,7 +12,7 @@
 struct Memory;
 
 #define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)
-#define GET_SOUND_LENGTH(length_pattern) ((length_pattern) & 0x1F)
+#define GET_SOUND_LENGTH(length_pattern) (64 - ((length_pattern) & 0x3F))
 
 #define GET_SWEEP_TIME(sweep) (((sweep) >> 4) & 0x7)
 #define GET_SWEEP_DIR(sweep) (((sweep) >> 3) & 0x1)

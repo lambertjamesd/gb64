@@ -277,10 +277,18 @@ _ENTER_MODE_0_NEXT_MODE:
     nop
 
 ENTER_MODE_1:
+    read_register_direct TMP3, REG_LY
+    li $at, GB_SCREEN_H
+    bne $at, TMP3, _MODE_1_SKIP_V_BLANK
+    nop
     # request v blank interrupt
     jal REQUEST_INTERRUPT
     li VAL, INTERRUPT_V_BLANK
-    read_register_direct TMP3, REG_LY
+    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
+    addi $at, $at, 1
+    sb $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
+_MODE_1_SKIP_V_BLANK:
+
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
@@ -471,11 +479,8 @@ _HANDLE_DMA_DEQUEUE_LOOP:
     addi Param0, Param0, 1
 
 HANDLE_DEBUGGER_DEQUEUE:
-    li TMP2, 1
-    jal OPEN_DEBUGGER
-    addi GB_PC, GB_PC, 1
     j _FINISH_DEQUEUE_INTERRUPT
-    addi GB_PC, GB_PC, -1
+    nop
     
 _FINISH_DEQUEUE_INTERRUPT:
     lw $ra, 0($sp)

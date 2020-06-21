@@ -97,11 +97,11 @@ GB_LDI_A_HL:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     sll ADDR, GB_H, 8 # load upper address
     or ADDR, ADDR, GB_L # load lower address
-    jal GB_DO_READ # call read instruction
     addi GB_L, ADDR, 1 # increment L
-    addi GB_A, $v0, 0 # store result into a
-    j _MASK_HL
+    jal GB_DO_READ # call read instruction
     srl GB_H, GB_L, 8 # store incremented H
+    j _MASK_HL
+    addi GB_A, $v0, 0 # store result into a
 GB_DEC_HL:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     addi GB_L, GB_L, -1 # decrement E

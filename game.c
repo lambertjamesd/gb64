@@ -42,8 +42,6 @@
 
 #define RUN_TESTS 0
 
-void _GB_WRITE_DMA();
-
 /*
  * This is the main routine of the app.
  */
@@ -53,7 +51,7 @@ game(void)
     OSContPad	**pad;
     char 	*cstring;
     char	str[200];
-	int loop, offset, color;
+	int loop;
 	int lastButton;
 	int accumulatedTime;
 	OSTime lastTime;
@@ -61,8 +59,6 @@ game(void)
 	void* debugWrite;
 
 	loop = 0;
-	offset = 0;
-	color = 0;
 	lastButton = 0;
 
 	lastDrawTime = 0;
@@ -104,7 +100,7 @@ game(void)
 	OSTime startTime = osGetTime();
 
 	clearDebugOutput();
-	DEBUG_PRINT_F("\n%X\n", _GB_WRITE_DMA);
+	// DEBUG_PRINT_F("\n%X\n", 0);
 
     /*
      * Main game loop
@@ -139,6 +135,7 @@ game(void)
 		// for every one frame rendered
 		
 		// clearDebugOutput();
+
 		
 		loop = MAX_FRAME_SKIP;
 		while (accumulatedTime > USECS_PER_FRAME && loop > 0)

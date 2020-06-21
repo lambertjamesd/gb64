@@ -250,7 +250,10 @@ u16 tickSweep(struct AudioSweep* envelope, u16 frequency)
 			u16 stepAmount = frequency >> envelope->stepShift;
 			if (envelope->stepDir)
 			{
-				frequency -= stepAmount;
+				if (stepAmount <= frequency)
+				{
+					frequency -= stepAmount;
+				}
 			}
 			else
 			{
@@ -274,6 +277,10 @@ void tickSquareWave(struct SquareWaveSound* squareWave)
 		TICK_LENGTH(squareWave->length);
 		squareWave->frequency = tickSweep(&squareWave->sweep, squareWave->frequency);
 		tickEnvelope(&squareWave->envelope);
+
+		if (squareWave->frequency & 0xF800) {
+			squareWave->length = 0;
+		}
 	}
 }
 
@@ -298,23 +305,33 @@ void tickAudio(struct Memory* memory, int untilCyles)
 {
 	struct AudioState* audio = &memory->audio;
 
-	while (audio->cyclesEmulated < untilCyles)
+	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
 	{
-		int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2);
-
-		if (tickTo > audio->samplesPerBuffer)
+		while (audio->cyclesEmulated < untilCyles)
 		{
-			renderAudio(memory, audio->samplesPerBuffer);
-			advanceWriteBuffer(audio);
-			tickTo -= audio->samplesPerBuffer;
-		}
-		renderAudio(memory, tickTo);
-		tickSquareWave(&audio->sound1);
-		tickSquareWave(&audio->sound2);
-		tickPCM(&audio->pcmSound);
-		tickNoise(&audio->noiseSound);
+			int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2);
 
-		audio->cyclesEmulated += CYCLES_PER_TICK;
+			if (tickTo > audio->samplesPerBuffer)
+			{
+				renderAudio(memory, audio->samplesPerBuffer);
+				advanceWriteBuffer(audio);
+				tickTo -= audio->samplesPerBuffer;
+			}
+			renderAudio(memory, tickTo);
+			tickSquareWave(&audio->sound1);
+			tickSquareWave(&audio->sound2);
+			tickPCM(&audio->pcmSound);
+			tickNoise(&audio->noiseSound);
+
+			audio->cyclesEmulated += CYCLES_PER_TICK;
+		}
+	}
+	else
+	{
+		audio->sound1.length = 0;
+		audio->sound2.length = 0;
+		audio->pcmSound.length = 0;
+		audio->noiseSound.length = 0;
 	}
 
 	updateOnOffRegister(memory);
@@ -427,7 +444,7 @@ void finishAudioFrame(struct Memory* memory)
 void updateOnOffRegister(struct Memory* memory)
 {
 	u8 existingValue = READ_REGISTER_DIRECT(memory, REG_NR52);
-	u8 result = existingValue & REG_NR52_ENABLED;
+	u8 result = existingValue & REG_NR52_ENABLED | 0x70;
 	struct AudioState* audio = &memory->audio;
 
 	if (existingValue & REG_NR52_ENABLED)

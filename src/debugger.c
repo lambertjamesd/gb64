@@ -755,8 +755,9 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
     
     gDebugMenu.memoryValues.addressStart = ~gDebugMenu.memoryAddresses.addressStart; // this forces a page refresh
     memoryValuesCheckReread(&gDebugMenu.memoryValues);
-    instructionsReload(&gDebugMenu.instructionMenuItem, cpu->pc);
-    clearDebugOutput();
+    if (cpu->pc < gDebugMenu.instructionMenuItem.instructions[0].address || cpu->pc >= gDebugMenu.instructionMenuItem.instructions[MI_INSTRUCTIONS_LINE_COUNT - 4].address) {
+        instructionsReload(&gDebugMenu.instructionMenuItem, cpu->pc);
+    }
     gDebugMenu.state.isDebugging = TRUE;
 
     while (gDebugMenu.state.isDebugging)
@@ -802,6 +803,7 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
         lastButton = pad[0]->button;
     }
 
+    clearDebugOutput();
     zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
     return result;

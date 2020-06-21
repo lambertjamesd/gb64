@@ -37,11 +37,10 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
         (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED))
     )
     {
-        if (gameboy->cpu.interrupts && !gameboy->cpu.nextInterrupt)
-        {
-            gameboy->cpu.nextInterrupt = interrupt;
-            gameboy->cpu.nextInterruptTrigger = gameboy->cpu.cyclesRun + 1;
-        }
+        struct CPUStoppingPoint stoppingPoint;
+        stoppingPoint.cycleTime = gameboy->cpu.cyclesRun;
+        stoppingPoint.stoppingPointType = CPUStoppingPointTypeInterrupt;
+        addStoppingPoint(&gameboy->cpu, stoppingPoint);
         
         if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
         {
@@ -102,6 +101,12 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 
     tickAudio(&gameboy->memory, gameboy->cpu.unscaledCyclesRun);
     adjustCPUTimer(&gameboy->cpu);
+
+    if (gameboy->cpu.unscaledCyclesRun >= MAX_CYCLE_TIME)
+    {
+        gameboy->cpu.unscaledCyclesRun -= MAX_CYCLE_TIME;
+        gameboy->memory.audio.cyclesEmulated -= MAX_CYCLE_TIME;
+    }
 }
 
 void handleInput(struct GameBoy* gameboy, OSContPad* pad)
