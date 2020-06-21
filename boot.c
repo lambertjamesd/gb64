@@ -128,11 +128,21 @@ idle(void *arg)
 	 */
 	osCreateViManager(OS_PRIORITY_VIMGR);
 
-	osViSetMode(&osViModeTable[OS_VI_NTSC_LAN1]);
-	osViSetSpecialFeatures(OS_VI_GAMMA_ON |
-			OS_VI_GAMMA_DITHER_ON |
-			OS_VI_DIVOT_ON |
-			OS_VI_DITHER_FILTER_ON);
+	switch (osTvType) {
+		case 0: // PAL
+			osViSetMode(&osViModeTable[OS_VI_PAL_LPF1]);
+			break;
+		case 1: // NTSC
+			osViSetMode(&osViModeTable[OS_VI_NTSC_LPF1]);
+			break;
+		case 2: // MPAL
+			osViSetMode(&osViModeTable[OS_VI_MPAL_LPF1]);
+			break;
+	}
+	osViSetSpecialFeatures(OS_VI_GAMMA_OFF |
+			OS_VI_GAMMA_DITHER_OFF |
+			OS_VI_DIVOT_OFF |
+			OS_VI_DITHER_FILTER_OFF);
 
 	/*
 	 * Start PI Mgr for access to cartridge

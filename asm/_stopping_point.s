@@ -285,11 +285,11 @@ ENTER_MODE_1:
     # request v blank interrupt
     jal REQUEST_INTERRUPT
     li VAL, INTERRUPT_V_BLANK
+    
+_MODE_1_SKIP_V_BLANK:
     lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
     addi $at, $at, 1
     sb $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
-_MODE_1_SKIP_V_BLANK:
-
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS

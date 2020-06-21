@@ -53,16 +53,16 @@ game(void)
     char	str[200];
 	int loop;
 	int lastButton;
-	int accumulatedTime;
-	OSTime lastTime;
-	OSTime lastDrawTime;
+	int accumulatedTime = 0;
+	u32 lastTime;
+	u32 lastDrawTime;
 	void* debugWrite;
 
 	loop = 0;
 	lastButton = 0;
 
 	lastDrawTime = 0;
-	lastTime = osGetTime();
+	lastTime = osGetCount();
 	gGameboy.cpu.cyclesRun = 0;
 #if RUN_TESTS
 	runTests(str);
@@ -97,7 +97,9 @@ game(void)
 	debugWrite = (void*)(0x80700000 - 8);
 	*((u32*)debugWrite) = (int)&gGameboy.cpu;
 
-	OSTime startTime = osGetTime();
+	OSTime startTime = osGetCount();
+
+	int frames = 0;
 
 	clearDebugOutput();
 	// DEBUG_PRINT_F("\n%X\n", 0);
@@ -116,19 +118,20 @@ game(void)
 
 		lastButton = pad[0]->button;
 
-		OSTime frameTime = lastTime;
-		lastTime = osGetTime();
+		u32 currentTime = osGetCount();
+		u32 frameTime = currentTime - lastTime;
+		lastTime = currentTime;
 
-		frameTime = lastTime - frameTime;
 
-		accumulatedTime += OS_CYCLES_TO_USEC(frameTime);
+		accumulatedTime += frameTime;
 
 		// time s  1024*1024 cycles/s 60 frames/s
 
 		cstring=str;
+
 		
 #if !RUN_TESTS
-		lastDrawTime = -osGetTime();
+		lastDrawTime = -osGetCount();
 
 		// gameboy is 60 fps N64 is 30
 		// we need to emulator two frames
@@ -138,28 +141,31 @@ game(void)
 
 		
 		loop = MAX_FRAME_SKIP;
-		while (accumulatedTime > USECS_PER_FRAME && loop > 0)
+		while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
 		{
 			handleInput(&gGameboy, pad[0]);
 			emulateFrame(&gGameboy, NULL);
 			pad = ReadController(0);
-			accumulatedTime -= USECS_PER_FRAME;
+			accumulatedTime -= CPU_TICKS_PER_FRAME;
 			--loop;
+			++frames;
 		}
 
-		while (accumulatedTime > USECS_PER_FRAME)
+		while (accumulatedTime > CPU_TICKS_PER_FRAME)
 		{
-			accumulatedTime -= USECS_PER_FRAME;
+			accumulatedTime -= CPU_TICKS_PER_FRAME;
 		}
 
 		handleInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, getColorBuffer());
-		accumulatedTime -= USECS_PER_FRAME;
+		accumulatedTime -= CPU_TICKS_PER_FRAME;
 		finishAudioFrame(&gGameboy.memory);
+		++frames;
 
 		osWritebackDCache(getColorBuffer(), sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
-		lastDrawTime += osGetTime();
+
+		lastDrawTime += osGetCount();
 		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
 		// 	gGameboy.cpu.cyclesRun, 
 		// 	(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 

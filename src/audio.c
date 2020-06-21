@@ -469,3 +469,10 @@ void updateOnOffRegister(struct Memory* memory)
 
 	WRITE_REGISTER_DIRECT(memory, REG_NR52, result);
 }
+
+u32 getAudioWriteHeadLead(struct AudioState* audioState)
+{
+	return (audioState->currentWriteBuffer - audioState->nextPlayBuffer) 
+		* audioState->samplesPerBuffer 
+		+ audioState->currentSampleIndex;
+}
