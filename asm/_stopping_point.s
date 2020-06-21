@@ -222,6 +222,7 @@ DEQUEUE_STOPPING_POINT:
     # load previous stopping reason
     lw $at, (CPU_STATE_STOPPING_POINTS - CPU_STATE_STOPPING_POINT_SIZE)(TMP2)
     sw $zero, (CPU_STATE_STOPPING_POINTS - CPU_STATE_STOPPING_POINT_SIZE)(TMP2) # clear next stopping point
+    srl TMP4, $at, 8  # Save cycle of current event into TMP4
     andi $at, $at, 0xFF # mask the stopping point type
 
     sltiu TMP2, $at, (DEQUEUE_STOPPING_POINT_J_TABLE_END - DEQUEUE_STOPPING_POINT_J_TABLE) / 4
@@ -263,7 +264,7 @@ ENTER_MODE_0:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
 
-    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_0_CYCLES
+    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_0_CYCLES
     sll TMP2, TMP2, 8
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
     slti $at, TMP3, GB_SCREEN_H
@@ -295,7 +296,7 @@ _MODE_1_SKIP_V_BLANK:
     # request interrupt
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
-    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_1_CYCLES
+    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_1_CYCLES
     sll TMP2, TMP2, 8
     slti $at, TMP3, GB_SCREEN_LINES - 1
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
@@ -315,7 +316,7 @@ ENTER_MODE_2:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 2
-    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_2_CYCLES
+    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_2_CYCLES
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
@@ -348,7 +349,7 @@ ENTER_MODE_3:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 3
-    addi TMP2, CYCLES_RUN, REG_LCDC_STATUS_MODE_3_CYCLES
+    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_3_CYCLES
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_0
