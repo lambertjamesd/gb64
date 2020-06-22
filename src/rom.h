@@ -43,6 +43,5 @@ int getRAMBankCount(struct ROMLayout* romLayout);
 int getCartType(struct ROMLayout* romLayout);
 
 void loadBIOS(struct ROMLayout* romLayout, int gbc);
-extern void unloadBIOS(struct ROMLayout* romLayout);
 
 #endif

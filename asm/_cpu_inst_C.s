@@ -5,7 +5,7 @@ GB_RET_NZ:
     bne $at, $zero, DECODE_NEXT # if Z_FLAG != 0 skip return
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j _GB_RET
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     nop
     nop
     nop
@@ -29,7 +29,7 @@ GB_JP_NZ:
     nop
 GB_JP:
     jal READ_NEXT_INSTRUCTION_16
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     jal SET_GB_PC
     move Param0, $v0
     j DECODE_NEXT
@@ -41,7 +41,7 @@ GB_CALL_NZ:
     bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip the call
     nop
     j _GB_CALL
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 4 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 5 # update cycles run
     nop
     nop
     nop
@@ -66,7 +66,7 @@ GB_ADD_A_d8:
 GB_RST_00H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0000
@@ -77,13 +77,13 @@ GB_RET_Z:
     beq $at, $zero, DECODE_NEXT # if Z_FLAG == 0 skip RET
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j _GB_RET
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     nop
     nop
     nop
 GB_RET:
     j _GB_RET
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     nop
     nop
     nop
@@ -113,13 +113,13 @@ GB_CALL_Z:
     beq $at, $zero, _SKIP_JP # if Z_FLAG == 0 skip call
     nop
     j _GB_CALL
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 4 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 5 # update cycles run
     nop
     nop
     nop
 GB_CALL:
     j _GB_CALL
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 4 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 5 # update cycles run
     nop
     nop
     nop
@@ -138,7 +138,7 @@ GB_ADC_A_d8:
 GB_RST_08H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0008

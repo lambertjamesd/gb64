@@ -3,6 +3,7 @@
 
 #include "../memory.h"
 #include "rom.h"
+#include "debug_out.h"
 
 extern OSMesgQueue     dmaMessageQ;
 extern OSMesg          dmaMessageBuf;
@@ -41,6 +42,7 @@ void loadRomSegment(void* target, void *romLocation, int bankNumber)
 
     osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    osInvalDCache(target, ROM_BANK_SIZE);
 }
 
 void initRomLayout(struct ROMLayout* romLayout, void *romLocation)
@@ -52,7 +54,6 @@ void initRomLayout(struct ROMLayout* romLayout, void *romLocation)
     romLayout->romBankCount = 0;
     romLayout->romLocation = romLocation;
 }
-
 
 void finishRomLoad(struct ROMLayout* romLayout)
 {
@@ -203,9 +204,4 @@ void loadBIOS(struct ROMLayout* romLayout, int gbc)
 
     osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-}
-
-void unloadBIOS(struct ROMLayout* romLayout)
-{
-    loadRomSegment(romLayout->mainBank, romLayout->romLocation, 0);
 }

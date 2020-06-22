@@ -56,10 +56,10 @@ GB_LD_HL_L:
     nop
 GB_HALT:
     li $at, STOP_REASON_HALT
-    j GB_SIMULATE_HALTED
+    jal CHECK_FOR_HALT_BUG
     sb $at, CPU_STATE_STOP_REASON(CPUState)
     nop
-    nop
+    j GB_SIMULATE_HALTED
     nop
     nop
     nop

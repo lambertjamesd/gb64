@@ -20,7 +20,7 @@
 
 #include <ultra64.h>
 #include "boot.h"
-#include "game.h"
+#include "render.h"
 
 /*
  * Remember, viewport structures have 2 bits of fraction in them.
@@ -82,25 +82,26 @@ Gfx init_dl[] = {
     gsSPEndDisplayList(),
 };
 
-
-/*
- * clear the z (depth) frame buffer
- */
-Gfx clearzbuffer_dl[] = {
-    gsDPSetScissor(G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT),
-    gsDPSetDepthImage(OS_K0_TO_PHYSICAL(zbuffer)),
-    gsDPSetCycleType(G_CYC_FILL),
-    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, 
-					OS_K0_TO_PHYSICAL(zbuffer)),
-    gsDPSetFillColor(GPACK_ZDZ(G_MAXFBZ,0) << 16 | GPACK_ZDZ(G_MAXFBZ,0)),
-    gsDPFillRectangle(0, 0, SCREEN_WD-1, SCREEN_HT-1),
-    gsSPEndDisplayList(),
-};
-
 /*
  * clear the color frame buffer
  */
 Gfx clearcfb_dl[] = {
+    gsDPSetCycleType(G_CYC_FILL),
+    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, rsp_cfb),
+#if 0
+    gsDPSetFillColor(GPACK_RGBA5551(64,64,255,1) << 16 | 
+		     GPACK_RGBA5551(64,64,255,1)),
+#endif
+    gsDPFillRectangle(0, 0, SCREEN_WD-1, SCREEN_HT-1),
+    gsSPEndDisplayList(),
+};
+
+
+
+/*
+ * clear the color frame buffer
+ */
+Gfx switchcfb_dl[] = {
     gsDPSetCycleType(G_CYC_FILL),
     gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, rsp_cfb),
 #if 0

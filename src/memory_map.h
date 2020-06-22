@@ -4,6 +4,8 @@
 
 #include <ultra64.h>
 #include "rom.h"
+#include "audio.h"
+#include "bool.h"
 
 #define MEMORY_MAP_SIZE 16
 #define MEMORY_MAP_SEGMENT_SIZE 0x1000
@@ -29,6 +31,35 @@
 #define REG_TMA         0xFF06
 #define REG_TAC         0xFF07
 
+#define REG_NR10        0xFF10
+#define REG_NR11        0xFF11
+#define REG_NR12        0xFF12
+#define REG_NR13        0xFF13
+#define REG_NR14        0xFF14
+
+#define REG_NR21        0xFF16
+#define REG_NR22        0xFF17
+#define REG_NR23        0xFF18
+#define REG_NR24        0xFF19
+
+#define REG_NR30        0xFF1A
+#define REG_NR31        0xFF1B
+#define REG_NR32        0xFF1C
+#define REG_NR33        0xFF1D
+#define REG_NR34        0xFF1E
+
+#define REG_NR41        0xFF20
+#define REG_NR42        0xFF21
+#define REG_NR43        0xFF22
+#define REG_NR44        0xFF23
+
+#define REG_NR50        0xFF24
+#define REG_NR51        0xFF25
+#define REG_NR52        0xFF26
+#define REG_NR52_ENABLED 0x80
+
+#define REG_WAVE_PAT    0xFF30
+
 #define REG_LCDC        0xFF40
 #define REG_LCD_STAT    0xFF41
 #define REG_LCD_STAT_MODE 0x3
@@ -36,6 +67,8 @@
 #define REG_SCX         0xFF43
 #define REG_LY          0xFF44
 #define REG_LCY         0xFF45
+#define REG_WY          0xFF4A
+#define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D
 
 #define REG_KEY1_SPEED_REQUEST  0x1
@@ -52,6 +85,7 @@
 
 #define WRITE_REGISTER_DIRECT(mm, addr, val) (mm)->miscBytes[(addr) - MISC_START] = (val)
 #define READ_REGISTER_DIRECT(mm, addr) ((mm)->miscBytes[(addr) - MISC_START])
+#define GET_REGISTER_ADDRESS(mm, addr) ((mm)->miscBytes + (addr) - MISC_START)
 
 /*
     Sprite.flags
@@ -70,6 +104,27 @@
 #define SPRITE_FLAGS_DMA_PALLETE    0x10
 #define SPRITE_FLAGS_VRAM_BANK      0x08
 #define SPRITE_FLAGS_GBC_PALLETE    0x07
+
+#define DEBUG_INSTRUCTION  0xD3
+
+enum BreakpointType {
+    BreakpointTypeNone,
+    BreakpointTypeUser,
+    BreakpointTypeStep,
+};
+
+struct Breakpoint {
+    u16 address;
+    u8 existingInstruction;
+    u8 breakpointType;
+    u8* memoryAddress;
+};
+
+#define USER_BREAK_POINTS       8
+#define SYSTEM_BREAK_POINTS     2
+#define BREAK_POINT_COUNT       (USER_BREAK_POINTS + SYSTEM_BREAK_POINTS)
+
+#define SYSTEM_BREAK_POINT_START    USER_BREAK_POINTS
 
 struct Sprite {
     unsigned char y;
@@ -92,6 +147,8 @@ struct Tile {
     unsigned short rows[8];
 };
 
+#define OBJ_PALLETE_INDEX_START 32
+
 struct GraphicsMemory {
     struct Tile tiles[384];
     unsigned char tilemap0[1024];
@@ -101,8 +158,9 @@ struct GraphicsMemory {
     unsigned char tilemap0Atts[1024];
     unsigned char tilemap1Atts[1024];
     
-    u16 bgColorPalletes[32];
-    u16 objColorPalletes[32];
+    // first 32 colors are background pallettes
+    // last 32 colors are obj palletes
+    u16 colorPalletes[64];
 };
 
 struct Memory;
@@ -124,6 +182,20 @@ struct Memory {
         unsigned char vramBytes[sizeof(struct GraphicsMemory)];
     };
     struct ROMLayout* rom;
+    struct AudioState audio;
+    struct Breakpoint breakpoints[BREAK_POINT_COUNT];
+    u8* timerMemoryBank;
+};
+
+#define MBC_FLAGS_RAM       0x1
+#define MBC_FLAGS_BATTERY   0x2
+#define MBC_FLAGS_TIMER     0x4
+#define MBC_FLAGS_RUMBLE    0x8
+
+struct MBCData {
+    RegisterWriter bankSwitch;
+    u16 id;
+    u16 flags;
 };
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);

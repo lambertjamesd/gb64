@@ -111,8 +111,9 @@ GB_RR_IMPL:
     andi GB_F, $at, C_FLAG                 # set carry new carry flag
 
     srl Param0, Param0, 1                   # shift the bit once
-    beq Param0, $zero, _GB_BITWISE_ADD_Z
     andi Param0, Param0, 0xFF               # set to 8 bits
+    beq Param0, $zero, _GB_BITWISE_ADD_Z
+    nop
     jr $ra
     nop
 

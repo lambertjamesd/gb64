@@ -5,6 +5,8 @@
 .include "asm/registers.inc"
 .include "asm/memory.inc"
 
+.include "asm/_debug.s"
+
 .macro clear_flags flags
     andi GB_F, GB_F, %lo(~(\flags))
 .endm
@@ -14,6 +16,7 @@
 .endm
 
 .set DEBUG_OUT, 0
+.set VALIDATE_STATE, 0
 
 .global runCPU 
 .balign 4 
@@ -52,14 +55,14 @@ runCPU:
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
-    add $at, CycleTo, CYCLES_RUN    # calculate upper bound of execution
-    sw $at, ST_CYCLE_TO($fp)
-
-    jal CALCULATE_NEXT_STOPPING_POINT
-    nop
+    add TMP2, CycleTo, CYCLES_RUN    # calculate upper bound of execution
+    sll TMP2, TMP2, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_EXIT
 
     lbu $at, CPU_STATE_STOP_REASON(CPUState)
     bnez $at, GB_SIMULATE_HALTED
+    nop
 
 .if DEBUG_OUT
     la $at, 0x80700000 - 4
@@ -68,16 +71,22 @@ runCPU:
 .endif
 
 DECODE_NEXT:
+.if VALIDATE_STATE
+    nop
+    jal CHECK_FOR_INVALID_STATE
+    nop
+.endif
+
     sltu $at, CYCLES_RUN, CycleTo
     bnez $at, _DECODE_NEXT_READ
     nop
-    jal HANDLE_STOPPING_POINT
+    jal DEQUEUE_STOPPING_POINT
     nop
     j DECODE_NEXT
     nop
 _DECODE_NEXT_READ:
     jal READ_NEXT_INSTRUCTION # get the next instruction to decode
-    nop
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR
 
 .if DEBUG_OUT
 DEBUG_START:
@@ -99,11 +108,12 @@ _DEBUG_SKIP:
     sw TMP4, 0($at)
 .endif
 
+DECODE_V0:
     la $at, GB_NOP # load start of jump table
     sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
     add $ra, $at, $v0
     jr $ra
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR
+    nop
     #################
     # Each entry in the jump table needs
     # to be 8 instructions apart
@@ -144,28 +154,12 @@ GB_BREAK_LOOP:
 
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
-    
+
+    # TODO speed switching
+    sw CYCLES_RUN, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     # calculate the number of cycles run
     lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
     sub $v0, CYCLES_RUN, $v0
-
-    # We don't want CYCLES_RUN
-    # to overflow while emulating the CPU
-    # since CPU_STATE_NEXT_TIMER should always
-    # be >= CYCLES_RUN
-    # to prevent this, when exiting the
-    # emulation we check if CYCLES_RUN is
-    # above 0x80000000 if it is we 
-    # decrement both CYCLES_RUN and
-    # by that much CPU_STATE_NEXT_TIMER
-    lui TMP2, 0x8000
-    sltu $at, CYCLES_RUN, TMP2
-    bnez $at, _GB_BREAK_LOOP_SAVE_CYCLES
-    nop
-    lw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    sub $at, $at, TMP2
-    sw $at, CPU_STATE_NEXT_TIMER(CPUState)
-    sub CYCLES_RUN, CYCLES_RUN, TMP2
 
 _GB_BREAK_LOOP_SAVE_CYCLES:
     sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
@@ -250,12 +244,12 @@ _SET_GB_PC_FINISH:
 ######################
 
 GB_SIMULATE_HALTED:
-    jal HANDLE_STOPPING_POINT # handle the next stopping point
+    jal DEQUEUE_STOPPING_POINT # handle the next stopping point
     move CYCLES_RUN, CycleTo # update the clock
     lbu $at, CPU_STATE_STOP_REASON(CPUState) # check if CPU was woken up by an interrupt
     beqz $at, DECODE_NEXT
     nop
-    j GB_SIMULATE_HALTED # loop, HANDLE_STOPPING_POINT will break the loop once it has been simulated
+    j GB_SIMULATE_HALTED # loop, DEQUEUE_STOPPING_POINT will break the loop once it has been simulated
     nop
 
 .include "asm/_stopping_point.s"

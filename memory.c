@@ -8,7 +8,6 @@ struct HeapSegment* gFirstHeapSegment;
  * Symbol genererated by "makerom" (RAM)
  */
 extern char     _codeSegmentEnd[];
-extern char     _zbufferSegmentStart[];
 extern char    *_gEndSegments;
 
 extern char     _cfbSegmentStart[];
@@ -21,8 +20,8 @@ void initHeap()
     gFirstHeapSegment->nextSegment = 0;
     gFirstHeapSegment->segmentEnd = (void*)(osGetMemSize() | 0x80000000);
 
-    markAllocated(_zbufferSegmentStart, 
-        (int)_gEndSegments - (int)_zbufferSegmentStart
+    markAllocated(_codeSegmentEnd, 
+        (int)_gEndSegments - (int)_codeSegmentEnd
     );
     markAllocated(_cfbSegmentStart,
         (int)_cfbSegmentEnd - (int)_cfbSegmentStart
@@ -205,18 +204,7 @@ int calculateLargestFreeChunk()
 
 void zeroMemory(void* memory, int size)
 {
-    int* asInt;
-    unsigned char* asChar;
-
-    asInt = (int*)memory;
-
-    while (size > 3) {
-        *asInt = 0;
-        ++asInt;
-        size -= 4;
-    }
-
-    asChar = (unsigned char*)asInt;
+    unsigned char* asChar = (unsigned char*)memory;
     
     while (size > 0) {
         *asChar = 0;
@@ -227,23 +215,11 @@ void zeroMemory(void* memory, int size)
 
 void memCopy(void* target, void* src, int size)
 {
-    int* targetAsInt;
     unsigned char* targetAsChar;
-    int* srcAsInt;
     unsigned char* srcAsChar;
 
-    targetAsInt = (int*)target;
-    srcAsInt = (int*)src;
-
-    while (size > 3) {
-        *targetAsInt = *srcAsInt;
-        ++targetAsInt;
-        ++srcAsInt;
-        size -= 4;
-    }
-
-    targetAsChar = (unsigned char*)targetAsInt;
-    srcAsChar = (unsigned char*)srcAsInt;
+    targetAsChar = (unsigned char*)target;
+    srcAsChar = (unsigned char*)src;
     
     while (size > 0) {
         *targetAsChar = *srcAsChar;

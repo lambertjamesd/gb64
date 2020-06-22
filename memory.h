@@ -5,6 +5,9 @@
 #define offsetof(st, m) \
     ((int)&(((st *)0)->m))
 
+// Aligns size to 8 bytes
+#define ALIGN_8(size) (((size) + 0x7) & ~0x7);
+
 extern struct HeapSegment* gFirstHeapSegment;
 
 struct HeapSegment

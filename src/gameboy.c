@@ -1,6 +1,8 @@
 
 #include "gameboy.h"
 #include "graphics.h"
+#include "debugger.h"
+#include "debug_out.h"
 
 struct GameBoy gGameboy;
 
@@ -35,11 +37,10 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
         (interrupt & READ_REGISTER_DIRECT(&gameboy->memory, REG_INT_ENABLED))
     )
     {
-        if (gameboy->cpu.interrupts && !gameboy->cpu.nextInterrupt)
-        {
-            gameboy->cpu.nextInterrupt = interrupt;
-            gameboy->cpu.nextInterruptTrigger = gameboy->cpu.cyclesRun + 1;
-        }
+        struct CPUStoppingPoint stoppingPoint;
+        stoppingPoint.cycleTime = gameboy->cpu.cyclesRun;
+        stoppingPoint.stoppingPointType = CPUStoppingPointTypeInterrupt;
+        addStoppingPoint(&gameboy->cpu, stoppingPoint);
         
         if (gameboy->cpu.stopReason == STOP_REASON_HALT || gameboy->cpu.stopReason == STOP_REASON_STOP)
         {
@@ -61,7 +62,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     if (gameboy->cpu.stopReason == STOP_REASON_STOP && (READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & REG_KEY1_SPEED_REQUEST))
     {
         // TODO change timing
-        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_KEY1, REG_KEY1_SPEED ^ READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1));
+        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_KEY1, REG_KEY1_SPEED ^ READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & ~REG_KEY1_SPEED_REQUEST);
         gameboy->cpu.stopReason = STOP_REASON_NONE;
     }
 
@@ -76,7 +77,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             runCPU(
                 &gameboy->cpu, 
                 &gameboy->memory, 
-                (GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
+                (2 + GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
             );
             gameboy->cpu.runUntilNextFrame = 0;
         }
@@ -89,6 +90,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             graphicsState.row = line;
 		    renderPixelRow(&gameboy->memory, &graphicsState, targetMemory);
             runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE);
+
         }
 
         runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES - MODE_2_CYCLES);
@@ -96,6 +98,15 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     else
     {
         runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
+    }
+
+    tickAudio(&gameboy->memory, gameboy->cpu.unscaledCyclesRun);
+    adjustCPUTimer(&gameboy->cpu);
+
+    if (gameboy->cpu.unscaledCyclesRun >= MAX_CYCLE_TIME)
+    {
+        gameboy->cpu.unscaledCyclesRun -= MAX_CYCLE_TIME;
+        gameboy->memory.audio.cyclesEmulated -= MAX_CYCLE_TIME;
     }
 }
 
@@ -153,4 +164,14 @@ void handleInput(struct GameBoy* gameboy, OSContPad* pad)
     }
     
     WRITE_REGISTER_DIRECT(&gameboy->memory, REG_JOYP, nextJoy);
+}
+
+void unloadBIOS(struct Memory* memory)
+{
+    loadRomSegment(memory->rom->mainBank, memory->rom->romLocation, 0);
+    int index;
+    for (index = 0; index < BREAK_POINT_COUNT; ++index)
+    {
+        reapplyBreakpoint(&memory->breakpoints[index]);
+    }
 }

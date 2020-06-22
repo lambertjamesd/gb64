@@ -6,6 +6,7 @@
 #include "rom.h"
 #include "cpu.h"
 #include "memory_map.h"
+#include "audio.h"
 
 #define GB_BUTTON_RIGHT     0x01
 #define GB_BUTTON_LEFT      0x02
@@ -16,6 +17,9 @@
 #define GB_BUTTON_B         0x20
 #define GB_BUTTON_SELECT    0x40
 #define GB_BUTTON_START     0x80
+
+#define CPU_TICKS_PER_FRAME     781250
+#define MAX_FRAME_SKIP      6
 
 
 struct GameBoy
@@ -36,5 +40,6 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt);
 void emulateFrame(struct GameBoy* gameboy, void* targetMemory);
 
 void handleInput(struct GameBoy* gameboy, OSContPad* pad);
+void unloadBIOS(struct Memory* memory);
 
 #endif

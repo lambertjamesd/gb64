@@ -66,7 +66,7 @@ GB_AND_A_d8:
 GB_RST_20H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0020
@@ -138,7 +138,7 @@ GB_XOR_A_d8:
 GB_RST_28H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0028

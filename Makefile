@@ -17,12 +17,12 @@ FINAL = YES
 ifeq ($(FINAL), YES)
 OPTIMIZER       = -O2 -std=gnu90 -Werror
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
-ASFLAGS         = -mabi=32
+ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_rom
 else
 OPTIMIZER       = -g -std=gnu90 -Werror
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
-ASFLAGS         = -mabi=32
+ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_d
 endif
 
@@ -31,7 +31,7 @@ APP =		bin/gb.out
 TARGETS =	bin/gb.n64
 
 HFILES =	boot.h game.h controller.h font.h font_ext.h \
-		letters_img.h static.h \
+		gbfont_img.h static.h \
 		src/test/cpu_test.h    \
 		src/cpu.h              \
 		src/memory_map.h
@@ -60,7 +60,12 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        memory.c                              \
        src/test/graphics_test.c              \
        src/test/test.c                       \
-       src/debug_out.c 
+       src/debug_out.c                       \
+       src/audio.c                           \
+       src/debugger.c                        \
+       render.c                              \
+       src/menu.c                            \
+       src/decoder.c 
 
 S_FILES = asm/cpu.s
 
@@ -68,8 +73,7 @@ CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
 DATAFILES   =	gfxinit.c \
 		rsp_cfb.c \
-		cfb.c \
-		zbuffer.c
+		cfb.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 
@@ -89,6 +93,7 @@ default:	$(TARGETS)
 asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \
        asm/_cpu_inst_prefix.s asm/_math.s asm/_stopping_point.s \
        asm/_memory.s \
+       asm/_debug.s \
        asm/_cpu_inst_0.s asm/_cpu_inst_1.s asm/_cpu_inst_2.s asm/_cpu_inst_3.s \
        asm/_cpu_inst_4.s asm/_cpu_inst_5.s asm/_cpu_inst_6.s asm/_cpu_inst_7.s \
        asm/_cpu_inst_8.s asm/_cpu_inst_9.s asm/_cpu_inst_A.s asm/_cpu_inst_B.s \
@@ -108,7 +113,7 @@ $(TARGETS) $(APP):      spec $(OBJECTS)
 	$(MAKEROM) -r $(TARGETS) -e $(APP) spec
 endif
 
-font.o:		./letters_img.h
+font.o:		./gbfont_img.h
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)

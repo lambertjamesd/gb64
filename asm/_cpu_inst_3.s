@@ -2,7 +2,7 @@
 ### 0x3X
 GB_JR_NC:
     andi $at, GB_F, C_FLAG # check z flag
-    bne $at, $zero, _SKIP_JR # skip jump if not zero
+    bnez $at, _SKIP_JR # skip jump if not zero
     nop
     j GB_JR
     nop
@@ -76,7 +76,7 @@ GB_SCF:
     nop
 GB_JR_C:
     andi $at, GB_F, C_FLAG # check z flag
-    beq $at, $zero, _SKIP_JR # skip jump if not zero
+    beqz $at, _SKIP_JR # skip jump if not zero
     nop
     j GB_JR
     nop
@@ -96,11 +96,11 @@ GB_LDD_A_HL:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     sll ADDR, GB_H, 8 # load upper address
     or ADDR, ADDR, GB_L # load lower address
-    jal GB_DO_READ # call read instruction
     addi GB_L, ADDR, -1 # decrement L
-    addi GB_A, $v0, 0 # store result into a
-    j _MASK_HL
+    jal GB_DO_READ # call read instruction
     srl GB_H, GB_L, 8 # store incremented H
+    j _MASK_HL
+    addi GB_A, $v0, 0 # store result into a
 GB_DEC_SP:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     addi GB_SP, GB_SP, -1

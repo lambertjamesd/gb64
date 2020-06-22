@@ -66,7 +66,7 @@ GB_OR_A_d8:
 GB_RST_30H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0030
@@ -100,12 +100,12 @@ GB_LD_A_a16:
     nop
     nop
 GB_EI:
-    addi $at, $zero, INTERRUPTS_ENABLED
+    li $at, INTERRUPTS_ENABLED
     jal CHECK_FOR_INTERRUPT
     sb $at, CPU_STATE_INTERRUPTS(CPUState)
-    jal CALCULATE_NEXT_STOPPING_POINT
-    nop
     j DECODE_NEXT
+    nop
+    nop
     nop
     nop
 GB_ERROR_9:
@@ -138,7 +138,7 @@ GB_CP_A_d8:
 GB_RST_38H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     addi VAL, GB_PC, 0
     jal SET_GB_PC
     addi Param0, $zero, 0x0038

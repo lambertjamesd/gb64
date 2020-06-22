@@ -22,4 +22,4 @@
  */
 extern Gfx 	init_dl[];
 extern Gfx	clearcfb_dl[];
-extern Gfx	clearzbuffer_dl[];
+extern Gfx  switchcfb_dl[];

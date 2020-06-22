@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "debug_out.h"
 
 void initializeCPU(struct CPUState* state)
 {
@@ -13,4 +14,48 @@ void initializeCPU(struct CPUState* state)
     state->nextTimerTrigger = ~0;
     state->nextScreenTrigger = ~0;
     state->nextInterruptTrigger = ~0;
+    state->nextStoppingPoint = CPU_STOPPING_POINT_COUNT * sizeof(struct CPUStoppingPoint);
+}
+
+void addStoppingPoint(struct CPUState* state, struct CPUStoppingPoint stoppingPoint)
+{
+    int index = state->nextStoppingPoint;
+
+    while (index < CPU_STOPPING_POINT_COUNT * sizeof(struct CPUStoppingPoint))
+    {
+        if (CPU_STOPPING_POINT_AS_LONG(stoppingPoint) < CPU_STOPPING_POINT_AS_LONG(state->stoppingPoints[index >> 2]))
+        {
+            break;
+        }
+        else
+        {
+            state->stoppingPoints[(index >> 2) - 1] = state->stoppingPoints[index >> 2];
+        }
+    }
+
+    state->stoppingPoints[(index >> 2) - 1] = stoppingPoint;
+    state->nextStoppingPoint -= sizeof(struct CPUStoppingPoint);
+}
+
+void adjustCPUTimer(struct CPUState* state)
+{
+    if (state->cyclesRun >= MAX_CYCLE_TIME)
+    {
+        state->cyclesRun -= MAX_CYCLE_TIME;
+
+        if (state->nextTimerTrigger != ~0)
+        {
+            state->nextTimerTrigger -= MAX_CYCLE_TIME;
+        }
+
+        int index;
+        for (
+            index = state->nextStoppingPoint; 
+            index < CPU_STOPPING_POINT_COUNT * sizeof(struct CPUStoppingPoint); 
+            index += sizeof(struct CPUStoppingPoint)
+        )
+        {
+            state->stoppingPoints[index >> 2].cycleTime -= MAX_CYCLE_TIME;
+        }
+    }
 }
