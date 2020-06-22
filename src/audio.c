@@ -31,6 +31,7 @@ void initAudio(struct AudioState* audioState, int sampleRate, int frameRate)
 	zeroMemory(audioState, sizeof(struct AudioState));
 	audioState->sampleRate = osAiSetFrequency(sampleRate);
 	// align to 8 bytes
+	// * 2 since there are 2 gameboy frames for every n64 frame
 	audioState->samplesPerBuffer = (2 * audioState->sampleRate / frameRate) & ~1;
 
 	int index;
@@ -309,7 +310,10 @@ void tickAudio(struct Memory* memory, int untilCyles)
 	{
 		while (audio->cyclesEmulated < untilCyles)
 		{
-			int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2);
+			// subtract 1 to prevent writing audio to outpace playing it back
+			// if the frequency gets changed to 445000 then it should be -2
+			// not sure why
+			int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2) - 1;
 
 			if (tickTo > audio->samplesPerBuffer)
 			{
@@ -318,6 +322,11 @@ void tickAudio(struct Memory* memory, int untilCyles)
 				tickTo -= audio->samplesPerBuffer;
 			}
 			renderAudio(memory, tickTo);
+			if (tickTo == audio->samplesPerBuffer)
+			{
+				advanceWriteBuffer(audio);
+			}
+
 			tickSquareWave(&audio->sound1);
 			tickSquareWave(&audio->sound2);
 			tickPCM(&audio->pcmSound);

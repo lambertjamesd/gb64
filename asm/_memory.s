@@ -555,52 +555,57 @@ _GB_SPEED_KEY1:
     
 ############################
 
-_GB_PALLETE_COLORS:
     .data
-    .align 4
-    .word 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+_GB_PALLETE_COLORS:
+    .align 2
+    .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+    .text
 
 _GB_WRITE_BGP:
+    write_register_direct VAL, REG_BGP
     la $at, MEMORY_BG_PAL
-    jr $ra
+    j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_OBP0:
+    write_register_direct VAL, REG_OBP0
     la $at, MEMORY_OBJ_PAL
-    jr $ra
+    j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_OBP1:
+    write_register_direct VAL, REG_OBP1
     la $at, MEMORY_OBJ_PAL + 8 # second pallete index
-    jr $ra
+    j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_DMA_PAL:
     la TMP2, _GB_PALLETE_COLORS
 
     andi $at, VAL, 0x03
-    sll $at, $at, 2
+    sll $at, $at, 1
     add $at, TMP2, $at
-    lw $at, 0($at)
+    lhu $at, 0($at)
     sh $at, 0(ADDR)
 
     andi $at, VAL, 0x0C
+    srl $at, $at, 1
     add $at, TMP2, $at
-    lw $at, 0($at)
+    lhu $at, 0($at)
     sh $at, 2(ADDR)
 
     andi $at, VAL, 0x30
-    srl $at, $at, 2
+    srl $at, $at, 3
     add $at, TMP2, $at
-    lw $at, 0($at)
+    lhu $at, 0($at)
     sh $at, 4(ADDR)
 
     andi $at, VAL, 0xC0
-    srl $at, $at, 4
+    srl $at, $at, 5
     add $at, TMP2, $at
-    lw $at, 0($at)
+    lhu $at, 0($at)
     jr $ra
-    sh $at, 4(ADDR)
+    sh $at, 6(ADDR)
 
 
 

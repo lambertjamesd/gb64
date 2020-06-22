@@ -18,7 +18,7 @@
 #define GB_BUTTON_SELECT    0x40
 #define GB_BUTTON_START     0x80
 
-#define CPU_TICKS_PER_FRAME     781249
+#define CPU_TICKS_PER_FRAME     781250
 #define MAX_FRAME_SKIP      6
 
 
