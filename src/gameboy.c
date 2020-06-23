@@ -110,7 +110,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     }
 }
 
-void handleInput(struct GameBoy* gameboy, OSContPad* pad)
+void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)
 {
     int button;
     int joy;

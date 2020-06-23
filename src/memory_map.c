@@ -15,36 +15,42 @@ u16 palleteColors[] = {
     0x9DC2,
 };
 
-void loadRAM(struct Memory* memory, int size)
+void loadRAM(struct Memory* memory)
 {
-	OSIoMesg dmaIoMesgBuf;
+    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
+    {
+        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
+        OSIoMesg dmaIoMesgBuf;
 
-    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIoMesgBuf.dramAddr = memory->cartRam;
-    dmaIoMesgBuf.devAddr = 0x08000000; // SRAM address
-    dmaIoMesgBuf.size = size;
+        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+        dmaIoMesgBuf.dramAddr = memory->cartRam;
+        dmaIoMesgBuf.devAddr = 0x08000000; // SRAM address
+        dmaIoMesgBuf.size = size;
 
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
-	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-    osInvalDCache(memory, size);
+        osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osInvalDCache(memory, size);
+    }
 }
 
-void saveRAMBlock(void* start, int offset, int size)
+void saveRAM(struct Memory* memory)
 {
-	OSIoMesg dmaIoMesgBuf;
+    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
+    {
+        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
+        OSIoMesg dmaIoMesgBuf;
 
-    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIoMesgBuf.dramAddr = start;
-    dmaIoMesgBuf.devAddr = 0x08000000 + offset; // SRAM address
-    dmaIoMesgBuf.size = size;
+        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+        dmaIoMesgBuf.dramAddr = memory->cartRam;
+        dmaIoMesgBuf.devAddr = 0x08000000; // SRAM address
+        dmaIoMesgBuf.size = size;
 
-    osInvalDCache(start, size);
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_WRITE);
-	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-
-    DEBUG_PRINT_F("SAVED %X\n", offset);
+        osWritebackDCache(memory->cartRam, size);
+        osEPiStartDma(handler, &dmaIoMesgBuf, OS_WRITE);
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    }
 }
 
 // background color? 0xCADC9F
@@ -100,13 +106,9 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
 void handleMBC3Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
-    bool shouldSaveRAM = FALSE;
     if (writeRange == 0)
     {
-        if (!value)
-        {
-            shouldSaveRAM = TRUE;
-        }
+        // Do nothing
     }
     else if (writeRange == 1)
     {  
@@ -114,7 +116,6 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     }
     else if (writeRange == 2)
     {
-        shouldSaveRAM = memory->memoryMap[0xA] != memory->timerMemoryBank;
         memory->misc.romBankUpper = value;
     }
     else if (writeRange == 3)
@@ -128,10 +129,6 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     } else {
         // TODO actually implement timer
         ramBank = memory->timerMemoryBank;
-    }
-
-    if (shouldSaveRAM) {
-        saveRAMBlock(memory->memoryMap[0xA], (u8*)memory->memoryMap[0xA] - memory->cartRam, RAM_BANK_SIZE);
     }
 
     char* romBank = getROMBank(memory->rom, memory->misc.romBankLower & 0x7F);
@@ -198,11 +195,11 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
         }
     }
 
-    int ramSize = RAM_BANK_SIZE * getRAMBankCount(rom);
     zeroMemory(memory, sizeof(struct Memory));
+    memory->mbc = mbc;
     memory->rom = rom;
-    memory->cartRam = malloc(ramSize);
-    loadRAM(memory, ramSize);
+    memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
+    loadRAM(memory);
     
     if (!mbc) {
         DEBUG_PRINT_F("Bad MBC %X\n", mbcTypes[index].id);

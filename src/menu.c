@@ -58,7 +58,7 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad)
             
             if (menu->currentMenuItem->handleButtonDown)
             {
-                nextItem = menu->currentMenuItem->handleButtonDown(menu->currentMenuItem, buttonDown);
+                nextItem = menu->currentMenuItem->handleButtonDown(menu->currentMenuItem, buttonDown, buttons);
             }
 
             if (nextItem)

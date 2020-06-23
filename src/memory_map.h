@@ -167,6 +167,12 @@ struct Memory;
 
 typedef void (*RegisterWriter)(struct Memory*, int addr, int value);
 
+struct MBCData {
+    RegisterWriter bankSwitch;
+    u16 id;
+    u16 flags;
+};
+
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
     RegisterWriter registerWriters[REGISTER_WRITER_COUNT];
@@ -185,6 +191,7 @@ struct Memory {
     struct AudioState audio;
     struct Breakpoint breakpoints[BREAK_POINT_COUNT];
     u8* timerMemoryBank;
+    struct MBCData* mbc;
 };
 
 #define MBC_FLAGS_RAM       0x1
@@ -192,12 +199,8 @@ struct Memory {
 #define MBC_FLAGS_TIMER     0x4
 #define MBC_FLAGS_RUMBLE    0x8
 
-struct MBCData {
-    RegisterWriter bankSwitch;
-    u16 id;
-    u16 flags;
-};
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);
+void saveRAM(struct Memory* memory);
 
 #endif

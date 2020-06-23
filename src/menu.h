@@ -10,7 +10,7 @@
 struct MenuItem;
 
 typedef void (*MenuItemRender)(struct MenuItem* menuItem, struct MenuItem* highlightedItem);
-typedef struct MenuItem* (*MenuItemHandleInput)(struct MenuItem* menuItem, int buttons);
+typedef struct MenuItem* (*MenuItemHandleInput)(struct MenuItem* menuItem, int buttonsDown, int buttonsState);
 typedef void (*MenuItemSetActive)(struct MenuItem* menuItem, int isActive);
 
 struct MenuItem {

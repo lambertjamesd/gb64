@@ -39,6 +39,7 @@
 #include "src/debug_out.h"
 #include "render.h"
 #include "src/debugger.h"
+#include "src/mainmenu.h"
 
 #define RUN_TESTS 0
 
@@ -99,6 +100,8 @@ game(void)
 
 	OSTime startTime = osGetCount();
 
+	initMainMenu(&gMainMenu);
+
 	int frames = 0;
 
 	// clearDebugOutput();
@@ -111,7 +114,7 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-        if ((pad[0]->button & U_CBUTTONS) && (~lastButton & U_CBUTTONS))
+        if ((pad[0]->button & L_CBUTTONS) && (~lastButton & L_CBUTTONS))
         {
             useDebugger(&gGameboy.cpu, &gGameboy.memory);
         }
@@ -143,7 +146,7 @@ game(void)
 		loop = MAX_FRAME_SKIP;
 		while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
 		{
-			handleInput(&gGameboy, pad[0]);
+			handleGameboyInput(&gGameboy, pad[0]);
 			emulateFrame(&gGameboy, NULL);
 			pad = ReadController(0);
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
@@ -156,7 +159,7 @@ game(void)
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
 		}
 
-		handleInput(&gGameboy, pad[0]);
+		handleGameboyInput(&gGameboy, pad[0]);
 		emulateFrame(&gGameboy, getColorBuffer());
 		accumulatedTime -= CPU_TICKS_PER_FRAME;
 		finishAudioFrame(&gGameboy.memory);
@@ -175,6 +178,10 @@ game(void)
 #endif
 		preRenderFrame(0);
 		renderDebugLog();
+
+		updateMainMenu(&gMainMenu, pad[0]);
+		renderMainMenu(&gMainMenu);
+
 		finishRenderFrame();
     }
 }
