@@ -11,7 +11,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
     loadBIOS(gameboy->memory.rom, 0);
-
+    
     gameboy->cpu.a = 0x0;
     gameboy->cpu.f = 0x0;
     gameboy->cpu.b = 0x0;

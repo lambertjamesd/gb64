@@ -101,7 +101,7 @@ game(void)
 
 	int frames = 0;
 
-	clearDebugOutput();
+	// clearDebugOutput();
 	// DEBUG_PRINT_F("\n%X\n", 0);
 
     /*
