@@ -89,7 +89,6 @@ void renderDebugLog()
     gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
 
     font_init( &glistp );
-    font_set_transparent( 1 );
     
     font_set_scale( 1.0, 1.0 );
     font_set_win( 200, 1 );

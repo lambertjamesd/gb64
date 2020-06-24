@@ -233,7 +233,11 @@ mainproc(void *arg)
 	 * Wait for DMA to finish
 	 */
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+	
 
+	/*
+	 * Stick the texture segment right after the static segment
+	 */
 	_gEndSegments = staticSegment + 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
 

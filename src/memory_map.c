@@ -15,6 +15,15 @@ u16 palleteColors[] = {
     0x9DC2,
 };
 
+/**
+ * Save file order
+ * CartRAM
+ * InternalRam
+ * VRAM
+ * MiscMemory
+ * CPU
+ */
+
 void loadRAM(struct Memory* memory)
 {
     if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)

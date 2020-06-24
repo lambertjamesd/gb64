@@ -1,6 +1,34 @@
 #include "mainmenu.h"
 #include "../render.h"
 #include "gameboy.h"
+#include "../tex/guiitems.h"
+
+#define C_BUTTON_BITMAP_COUNT   1
+
+static Bitmap cButtonBM[C_BUTTON_BITMAP_COUNT] = {
+    {16, 16, 0, 0, GUIItems, 16, 0},
+};
+
+static Gfx      cButtonDL[NUM_DL(C_BUTTON_BITMAP_COUNT)];
+
+Sprite cButtonSprite = {
+    0, 0,
+    0, 0,
+    1.0, 1.0,
+    0, 0,
+    SP_TRANSPARENT,
+    0x1234,
+    255, 255, 255, 255,
+    0, 4, (int*)GUIItemsPalette,
+    0, 1,
+    C_BUTTON_BITMAP_COUNT, NUM_DL(C_BUTTON_BITMAP_COUNT),
+    16, 32,
+    G_IM_FMT_CI,
+    G_IM_SIZ_8b,
+    cButtonBM,
+    cButtonDL,
+    NULL,
+};
 
 void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
@@ -24,6 +52,15 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
 
         SHOWFONT(&glistp, "SAVED", 32, 16);
     }
+
+    cButtonSprite.width = 16;
+    cButtonSprite.height = 16;
+
+    // Gfx *gxp, *dl;
+    // gxp = glistp;
+    // dl = spDraw( &cButtonSprite );
+    // gSPDisplayList( gxp++, dl );
+    // glistp = gxp;
 }
 
 struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown, int buttonsState)
@@ -41,6 +78,8 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
 
 void initMainMenu(struct MainMenu* mainMenu)
 {
+    cButtonSprite.rsp_dl_next = cButtonSprite.rsp_dl;
+
     menuItemInit(
         &mainMenu->menuItems[MainMenuItemSaveState],
         &mainMenu->saveState,
