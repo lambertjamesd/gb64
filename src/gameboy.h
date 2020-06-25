@@ -41,5 +41,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory);
 
 void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad);
 void unloadBIOS(struct Memory* memory);
+void loadGameboyState(struct GameBoy* gameboy);
+void saveGameboyState(struct GameBoy* gameboy);
 
 #endif

@@ -98,14 +98,19 @@ enum SoundIndex {
     SoundIndexNoise,
 };
 
-struct AudioState
+struct AudioRenderState
 {
-    struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
     struct SquareWaveSound sound1;
     struct SquareWaveSound sound2;
     struct PCMSound pcmSound;
     struct NoiseSound noiseSound;
     u32 cyclesEmulated;
+};
+
+struct AudioState
+{
+    struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
+    struct AudioRenderState renderState;
     u16 sampleRate;
     u16 samplesPerBuffer;
     u16 currentWriteBuffer;

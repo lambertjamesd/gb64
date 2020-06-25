@@ -3,64 +3,12 @@
 #include "../memory.h"
 #include "debug_out.h"
 
-extern OSMesgQueue     dmaMessageQ;
-extern OSMesg          dmaMessageBuf;
-extern OSPiHandle	   *handler;
-extern OSIoMesg        dmaIOMessageBuf;
-
 u16 palleteColors[] = {
     0x09C2,
     0x330C,
     0x8D42,
     0x9DC2,
 };
-
-/**
- * Save file order
- * CartRAM
- * InternalRam
- * VRAM
- * MiscMemory
- * CPU
- */
-
-void loadRAM(struct Memory* memory)
-{
-    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
-    {
-        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
-        OSIoMesg dmaIoMesgBuf;
-
-        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-        dmaIoMesgBuf.dramAddr = memory->cartRam;
-        dmaIoMesgBuf.devAddr = 0x08000000; // SRAM address
-        dmaIoMesgBuf.size = size;
-
-        osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
-        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        osInvalDCache(memory, size);
-    }
-}
-
-void saveRAM(struct Memory* memory)
-{
-    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
-    {
-        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
-        OSIoMesg dmaIoMesgBuf;
-
-        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-        dmaIoMesgBuf.dramAddr = memory->cartRam;
-        dmaIoMesgBuf.devAddr = 0x08000000; // SRAM address
-        dmaIoMesgBuf.size = size;
-
-        osWritebackDCache(memory->cartRam, size);
-        osEPiStartDma(handler, &dmaIoMesgBuf, OS_WRITE);
-        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-    }
-}
 
 // background color? 0xCADC9F
 
@@ -208,7 +156,6 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     memory->mbc = mbc;
     memory->rom = rom;
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
-    loadRAM(memory);
     
     if (!mbc) {
         DEBUG_PRINT_F("Bad MBC %X\n", mbcTypes[index].id);

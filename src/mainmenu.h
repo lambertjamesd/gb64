@@ -8,6 +8,9 @@
 #define SAVE_TIMER_FRAMES       96
 #define SAVE_TIMER_FADE_TIME    64
 
+#define LOAD_TIMER_START_FRAMES 30
+#define LOAD_TIMER_FRAMES       96
+
 #define LEFT_PANEL_WIDTH    80
 
 enum MainMenuItems {
@@ -16,8 +19,9 @@ enum MainMenuItems {
 };
 
 struct SaveState {
-    int showSaveTimer;
-    int showLoadTimer;
+    u16 showSaveTimer;
+    u8 isLoading;
+    u8 showLoadTimer;
 };
 
 struct MainMenu {

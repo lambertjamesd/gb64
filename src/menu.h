@@ -21,6 +21,7 @@ struct MenuItem {
     void* data;
     MenuItemRender renderCallback;
     MenuItemHandleInput handleButtonDown;
+    MenuItemHandleInput handleButtonUp;
     MenuItemSetActive setActive;
 };
 

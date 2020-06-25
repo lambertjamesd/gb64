@@ -95,6 +95,13 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad)
             }
         }
 
+        int buttonUp = (menu->lastButtons ^ buttons) & ~buttons;
+
+        if (buttonUp && menu->currentMenuItem->handleButtonUp)
+        {
+            menu->currentMenuItem->handleButtonUp(menu->currentMenuItem, buttonUp, buttons);
+        }
+
         menu->lastButtons = buttons;
     }
 }
@@ -114,6 +121,7 @@ void menuItemInit(struct MenuItem* menuItem, void* data, MenuItemRender renderCa
     menuItem->data = data;
     menuItem->renderCallback = renderCallback;
     menuItem->handleButtonDown = handleButtonDown;
+    menuItem->handleButtonUp = NULL;
     menuItem->setActive = setActive;
 }
 

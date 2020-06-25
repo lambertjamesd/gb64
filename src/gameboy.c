@@ -6,11 +6,130 @@
 
 struct GameBoy gGameboy;
 
+extern OSMesgQueue     dmaMessageQ;
+extern OSMesg          dmaMessageBuf;
+extern OSPiHandle	   *handler;
+extern OSIoMesg        dmaIOMessageBuf;
+
+#define ALIGN_SRAM_OFFSET(offset) (((offset) + 0xFF) & ~0xFF)
+
+/**
+ * Save file order
+ * CartRAM
+ * InternalRam
+ * VRAM
+ * MiscMemory
+ * CPU
+ */
+
+void loadFromSRAM(void* target, int sramOffset, int length)
+{
+    OSIoMesg dmaIoMesgBuf;
+
+    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+    dmaIoMesgBuf.dramAddr = target;
+    dmaIoMesgBuf.devAddr = 0x08000000 + sramOffset; // SRAM address
+    dmaIoMesgBuf.size = length;
+
+    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
+    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    osInvalDCache(target, length);
+}
+
+void saveToSRAM(void *from, int sramOffset, int length)
+{
+    OSIoMesg dmaIoMesgBuf;
+
+    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+    dmaIoMesgBuf.dramAddr = from;
+    dmaIoMesgBuf.devAddr = 0x08000000 + sramOffset; // SRAM address
+    dmaIoMesgBuf.size = length;
+
+    osWritebackDCache(from, length);
+    osEPiStartDma(handler, &dmaIoMesgBuf, OS_WRITE);
+    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+}
+
+void loadRAM(struct Memory* memory)
+{
+    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
+    {
+        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
+        loadFromSRAM(memory->cartRam, 0, size);
+    }
+}
+
+struct MiscSaveStateData
+{
+    struct CPUState cpu;
+    char cpuPadding[128 - sizeof(struct CPUState)];
+    struct AudioRenderState audioState;
+};
+
+void loadGameboyState(struct GameBoy* gameboy)
+{
+    int offset = 0;
+    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    loadFromSRAM(gameboy->memory.cartRam, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    sectionSize = sizeof(struct GraphicsMemory);
+    loadFromSRAM(&gameboy->memory.vram, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    sectionSize = MAX_RAM_SIZE;
+    loadFromSRAM(gameboy->memory.internalRam, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    
+    sectionSize = sizeof(struct MiscMemory);
+    loadFromSRAM(&gameboy->memory.misc, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    struct MiscSaveStateData miscData;
+    sectionSize = sizeof(struct MiscSaveStateData);
+    loadFromSRAM(&miscData, offset, sectionSize);
+    gameboy->cpu = miscData.cpu;
+    gameboy->memory.audio.renderState = miscData.audioState;
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    gameboy->memory.bankSwitch(&gameboy->memory, -1, 0);
+}
+
+void saveGameboyState(struct GameBoy* gameboy)
+{
+    int offset = 0;
+    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    saveToSRAM(gameboy->memory.cartRam, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    sectionSize = sizeof(struct GraphicsMemory);
+    saveToSRAM(&gameboy->memory.vram, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    sectionSize = MAX_RAM_SIZE;
+    saveToSRAM(gameboy->memory.internalRam, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    
+    sectionSize = sizeof(struct MiscMemory);
+    saveToSRAM(&gameboy->memory.misc, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+
+    struct MiscSaveStateData miscData;
+    miscData.cpu = gameboy->cpu;
+    miscData.audioState = gameboy->memory.audio.renderState;
+    sectionSize = sizeof(struct MiscSaveStateData);
+    saveToSRAM(&miscData, offset, sectionSize);
+    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+}
+
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 {
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
     loadBIOS(gameboy->memory.rom, 0);
+    loadRAM(&gameboy->memory);
     
     gameboy->cpu.a = 0x0;
     gameboy->cpu.f = 0x0;
@@ -106,7 +225,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     if (gameboy->cpu.unscaledCyclesRun >= MAX_CYCLE_TIME)
     {
         gameboy->cpu.unscaledCyclesRun -= MAX_CYCLE_TIME;
-        gameboy->memory.audio.cyclesEmulated -= MAX_CYCLE_TIME;
+        gameboy->memory.audio.renderState.cyclesEmulated -= MAX_CYCLE_TIME;
     }
 }
 

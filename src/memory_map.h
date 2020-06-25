@@ -201,6 +201,5 @@ struct Memory {
 
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);
-void saveRAM(struct Memory* memory);
 
 #endif
