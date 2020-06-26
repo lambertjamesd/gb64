@@ -11,45 +11,60 @@ extern OSMesg          dmaMessageBuf;
 extern OSPiHandle	   *handler;
 extern OSIoMesg        dmaIOMessageBuf;
 
-#define ALIGN_SRAM_OFFSET(offset) (((offset) + 0xFF) & ~0xFF)
+#define FLASH_BLOCK_SIZE    0x80
 
-/**
- * Save file order
- * CartRAM
- * InternalRam
- * VRAM
- * MiscMemory
- * CPU
- */
+#define ALIGN_FLASH_OFFSET(offset) (((offset) + 0x7F) & ~0x7F)
 
-void loadFromSRAM(void* target, int sramOffset, int length)
+int loadFromFlash(void* target, int sramOffset, int length)
 {
     OSIoMesg dmaIoMesgBuf;
-
-    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIoMesgBuf.dramAddr = target;
-    dmaIoMesgBuf.devAddr = 0x08000000 + sramOffset; // SRAM address
-    dmaIoMesgBuf.size = length;
-
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
-    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
     osInvalDCache(target, length);
+    if (osFlashReadArray(
+            &dmaIoMesgBuf, 
+            OS_MESG_PRI_NORMAL, 
+            sramOffset / FLASH_BLOCK_SIZE,
+            target,
+            length / FLASH_BLOCK_SIZE,
+            &dmaMessageQ
+        ) == -1) 
+    {
+        return -1;
+    }
+    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+
+    return 0;
 }
 
-void saveToSRAM(void *from, int sramOffset, int length)
+int saveToFlash(void *from, int sramOffset, int length)
 {
-    OSIoMesg dmaIoMesgBuf;
+    while (length > 0)
+    {
+        OSIoMesg dmaIoMesgBuf;
+        int pageNumber = sramOffset / FLASH_BLOCK_SIZE;
 
-    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIoMesgBuf.dramAddr = from;
-    dmaIoMesgBuf.devAddr = 0x08000000 + sramOffset; // SRAM address
-    dmaIoMesgBuf.size = length;
+        osWritebackDCache(from, FLASH_BLOCK_SIZE);
+        if (osFlashWriteBuffer(
+                &dmaIoMesgBuf, 
+                OS_MESG_PRI_NORMAL,
+                from,
+                &dmaMessageQ
+            ) == -1
+        ) 
+        {
+            return -1;
+        }
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        if (osFlashWriteArray(pageNumber) == -1)
+        {
+            return -1;
+        }
 
-    osWritebackDCache(from, length);
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_WRITE);
-    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        from = (char*)from + FLASH_BLOCK_SIZE;
+        sramOffset += FLASH_BLOCK_SIZE;
+        length -= FLASH_BLOCK_SIZE;
+    }
+
+    return 0;
 }
 
 void loadRAM(struct Memory* memory)
@@ -57,7 +72,7 @@ void loadRAM(struct Memory* memory)
     if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
     {
         int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
-        loadFromSRAM(memory->cartRam, 0, size);
+        loadFromFlash(memory->cartRam, 0, size);
     }
 }
 
@@ -68,60 +83,84 @@ struct MiscSaveStateData
     struct AudioRenderState audioState;
 };
 
-void loadGameboyState(struct GameBoy* gameboy)
+int loadGameboyState(struct GameBoy* gameboy)
 {
     int offset = 0;
-    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-    loadFromSRAM(gameboy->memory.cartRam, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    int sectionSize;
+    sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    if (loadFromFlash(gameboy->memory.cartRam, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = sizeof(struct GraphicsMemory);
-    loadFromSRAM(&gameboy->memory.vram, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    if (loadFromFlash(&gameboy->memory.vram, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = MAX_RAM_SIZE;
-    loadFromSRAM(gameboy->memory.internalRam, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    if (loadFromFlash(gameboy->memory.internalRam, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = sizeof(struct MiscMemory);
-    loadFromSRAM(&gameboy->memory.misc, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    if (loadFromFlash(&gameboy->memory.misc, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     struct MiscSaveStateData miscData;
     sectionSize = sizeof(struct MiscSaveStateData);
-    loadFromSRAM(&miscData, offset, sectionSize);
+    if (loadFromFlash(&miscData, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
     gameboy->cpu = miscData.cpu;
     gameboy->memory.audio.renderState = miscData.audioState;
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     gameboy->memory.bankSwitch(&gameboy->memory, -1, 0);
+    // TODO VRAM Bank/Internal GBC RAM Bank
+
+    return 0;
 }
 
-void saveGameboyState(struct GameBoy* gameboy)
-{
+int saveGameboyState(struct GameBoy* gameboy)
+{    
+    if (osFlashAllErase()) {
+        return -1;
+    }
     int offset = 0;
     int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-    saveToSRAM(gameboy->memory.cartRam, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    saveToFlash(gameboy->memory.cartRam, offset, sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = sizeof(struct GraphicsMemory);
-    saveToSRAM(&gameboy->memory.vram, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    saveToFlash(&gameboy->memory.vram, offset, sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = MAX_RAM_SIZE;
-    saveToSRAM(gameboy->memory.internalRam, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    saveToFlash(gameboy->memory.internalRam, offset, sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = sizeof(struct MiscMemory);
-    saveToSRAM(&gameboy->memory.misc, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    saveToFlash(&gameboy->memory.misc, offset, sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     struct MiscSaveStateData miscData;
     miscData.cpu = gameboy->cpu;
     miscData.audioState = gameboy->memory.audio.renderState;
     sectionSize = sizeof(struct MiscSaveStateData);
-    saveToSRAM(&miscData, offset, sectionSize);
-    offset = ALIGN_SRAM_OFFSET(offset + sectionSize);
+    saveToFlash(&miscData, offset, sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    return 0;
 }
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)

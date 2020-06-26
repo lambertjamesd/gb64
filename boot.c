@@ -240,6 +240,8 @@ mainproc(void *arg)
 	 */
 	_gEndSegments = staticSegment + 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
+		
+  	osFlashInit();
 
 	initHeap();
 

@@ -74,7 +74,7 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         }
         else
         {
-            buttonAlpha = 255 * ((saveState->showSaveTimer + 0x1F) & 0x60)  / SAVE_TIMER_FADE_TIME;
+            buttonAlpha = 255 * saveState->showSaveTimer / SAVE_TIMER_FADE_TIME;
             FONTCOL(
                 40,
                 255,
