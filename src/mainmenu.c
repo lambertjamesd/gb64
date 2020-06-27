@@ -1,82 +1,14 @@
 #include "mainmenu.h"
 #include "../render.h"
 #include "gameboy.h"
-#include "../tex/cbuttons.h"
-#include "../tex/dpad.h"
-#include "../tex/facebuttons.h"
-#include "../tex/guiitems.h"
-#include "../tex/triggers.h"
 #include "debug_out.h"
 
-#define C_BUTTON_BITMAP_COUNT   1
-
-static Bitmap cButtonRight[C_BUTTON_BITMAP_COUNT] = {
-    {16, 32, 0, 0, tex_cbuttons, 16, 0},
-};
-
-static Bitmap cButtonLeft[C_BUTTON_BITMAP_COUNT] = {
-    {16, 32, 16, 0, tex_cbuttons, 16, 0},
-};
-
-static Bitmap cButtonDown[C_BUTTON_BITMAP_COUNT] = {
-    {16, 32, 0, 16, tex_cbuttons, 16, 0},
-};
-
-static Bitmap cButtonUp[C_BUTTON_BITMAP_COUNT] = {
-    {16, 32, 16, 16, tex_cbuttons, 16, 0},
-};
-
-static Gfx      cButtonDL[NUM_DL(C_BUTTON_BITMAP_COUNT)];
-
-unsigned short gGUIPallete[] = {
-	0x0001,
-	0xEF2B,
-	0xEE87,
-	0xBC83,
-	0x1,
-	0xC631,
-	0x6B5D,
-	0x2109,
-	0x1,
-	0xBE3F,
-	0xCFB1,
-	0x1935,
-	0x1E05,
-	0x2055,
-	0x2C5,
-	0xF5EF,
-	0xC885,
-	0x5045,
-	0x1,
-	0xEF2B,
-	0x1,
-	0xC631,
-	0x6B5D,
-	0x2109,
-};
-
-Sprite cButtonSprite = {
-    0, 0,
-    32, 32,
-    1.0, 1.0,
-    0, 0,
-    SP_TRANSPARENT | SP_CUTOUT,
-    0x1234,
-    255, 255, 255, 255,
-    0, 4, (int*)gGUIPallete,
-    0, 0,
-    C_BUTTON_BITMAP_COUNT, NUM_DL(C_BUTTON_BITMAP_COUNT),
-    32, 32,
-    G_IM_FMT_CI,
-    G_IM_SIZ_8b,
-    cButtonDown,
-    cButtonDL,
-    NULL,
-};
+///////////////////////////////////
 
 void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     int buttonAlpha = 0;
+    gButtonSprite.nbitmaps = 0;
 
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
@@ -86,6 +18,11 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
 
         if (saveState->showLoadTimer == LOAD_TIMER_FRAMES)
         {
+            if (gGameboy.memory.misc.biosLoaded)
+            {
+                unloadBIOS(&gGameboy.memory);
+            }
+
             if (loadGameboyState(&gGameboy))
             {
                 DEBUG_PRINT_F("Failed to load save state\n");
@@ -104,7 +41,7 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         buttonAlpha = 255 * saveState->showLoadTimer / LOAD_TIMER_FRAMES;
         FONTCOL(255, 255, 255, buttonAlpha);
         SHOWFONT(&glistp, "HOLD TO LOAD", 32, 16);
-        cButtonSprite.bitmap = cButtonUp;
+        gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.load];
     }
     else if (saveState->showSaveTimer)
     {
@@ -125,19 +62,15 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         }
 
         SHOWFONT(&glistp, "SAVED", 32, 16);
-        cButtonSprite.bitmap = cButtonDown;
+        gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.save];
     }
-
-    cButtonSprite.width = 16;
-    cButtonSprite.height = 16;
 
     Gfx *gxp, *dl;
     gxp = glistp;
-    cButtonSprite.rsp_dl_next = cButtonSprite.rsp_dl;
-    cButtonSprite.alpha = buttonAlpha;
-    spClearAttribute(&cButtonSprite, SP_HIDDEN);
-    spMove(&cButtonSprite, 8, 12);
-    dl = spDraw(&cButtonSprite);
+    gButtonSprite.alpha = buttonAlpha;
+    spMove(&gButtonSprite, 8, 12);
+    spScale(&gButtonSprite, 1, 1);
+    dl = spDraw(&gButtonSprite);
     gSPDisplayList(gxp++, dl);
     glistp = gxp;
 }
@@ -146,27 +79,29 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
 {
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
-    if (!gGameboy.memory.misc.biosLoaded)
+    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
     {
-        if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save))
+        saveState->isLoading = 1;
+        if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)
         {
-            saveGameboyState(&gGameboy);
-            saveState->showSaveTimer = SAVE_TIMER_FRAMES;
-            
-            if (!saveState->isLoading)
-            {
-                saveState->showLoadTimer = 0;
-            }
+            saveState->showLoadTimer = LOAD_TIMER_START_FRAMES;
         }
+    }
 
-        if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
+    if (!gGameboy.memory.misc.biosLoaded && (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save)))
+    {
+        saveGameboyState(&gGameboy);
+        saveState->showSaveTimer = SAVE_TIMER_FRAMES;
+        
+        if (!saveState->isLoading)
         {
-            saveState->isLoading = 1;
-            if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)
-            {
-                saveState->showLoadTimer = LOAD_TIMER_START_FRAMES;
-            }
+            saveState->showLoadTimer = 0;
         }
+    }
+
+    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.openMenu))
+    {
+        return saveState->mainMenu;
     }
 
     return menuItem;
@@ -176,13 +111,57 @@ struct MenuItem* saveStateHandleUp(struct MenuItem* menuItem, int buttonsUp, int
 {
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
-    if (buttonsUp & U_CBUTTONS)
+    if (buttonsUp & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
     {
         saveState->isLoading = 0;
     }
 
     return menuItem;
 }
+
+///////////////////////////////////
+
+void renderMenuBorder()
+{
+    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 10, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 80, 40, 1, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 80, 48, 1, 18);
+    renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 80, 192, 1, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 10, 1);
+}
+
+void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
+{
+    struct MainMenuState* mainMenuState = (struct MainMenuState*)menuItem->data;
+    
+    if (menuItem == highlightedItem || mainMenuState->openAnimation)
+    {
+        gButtonSprite.alpha = 255;
+
+        renderMenuBorder();
+        FONTCOL(255, 255, 255, 255);
+
+        renderCursorMenu(&mainMenuState->cursorMenu, 8, 56, 160);
+    }
+}
+
+struct MenuItem* mainMenuHandleInput(struct MenuItem* menuItem, int buttonsDown, int buttonsState)
+{
+    struct MainMenuState* mainMenuState = (struct MainMenuState*)menuItem->data;
+
+    struct MenuItem* result = inputCursorMenu(&mainMenuState->cursorMenu, buttonsDown, 160);
+
+    if (result)
+    {
+        return result;
+    }
+    else
+    {
+        return menuItem;
+    }
+}
+
+///////////////////////////////////
 
 void initMainMenu(struct MainMenu* mainMenu)
 {
@@ -193,8 +172,38 @@ void initMainMenu(struct MainMenu* mainMenu)
         saveStateHandleInput,
         NULL
     );
-
     mainMenu->menuItems[MainMenuItemSaveState].handleButtonUp = saveStateHandleUp;
+    
+    menuItemInit(
+        &mainMenu->menuItems[MainMenuItemMainMenu],
+        &mainMenu->mainMenuState,
+        mainMenuRender,
+        mainMenuHandleInput,
+        NULL
+    );
+
+    initCursorMenu(
+        &mainMenu->mainMenuState.cursorMenu, 
+        mainMenu->mainMenuState.items,
+        MainMenuStateItemsCount
+    );
+
+    initCursorMenuItem(
+        &mainMenu->mainMenuState.items[MainMenuStateItemsInput],
+        NULL,
+        "INPUT",
+        16
+    );
+
+    initCursorMenuItem(
+        &mainMenu->mainMenuState.items[MainMenuStateItemsScreen],
+        NULL,
+        "SCREEN",
+        16
+    );
+
+    mainMenu->saveState.mainMenu = &mainMenu->menuItems[MainMenuItemMainMenu];
+    mainMenu->mainMenuState.cursorMenu.parentMenu = &mainMenu->menuItems[MainMenuItemSaveState];
 
     initMenuState(&mainMenu->menu, mainMenu->menuItems, MainMenuItemsCount);
 }
@@ -211,9 +220,10 @@ void updateMainMenu(struct MainMenu* mainMenu, OSContPad* pad)
 
 void renderMainMenu(struct MainMenu* mainMenu)
 {
+    gButtonSprite.rsp_dl_next = gButtonSprite.rsp_dl;
+    gButtonSprite.nbitmaps = 0;
     menuStateRender(&mainMenu->menu);
 }
-
 
 bool isMainMenuOpen(struct MainMenu* mainMenu)
 {

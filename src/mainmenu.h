@@ -15,17 +15,32 @@
 
 enum MainMenuItems {
     MainMenuItemSaveState,
+    MainMenuItemMainMenu,
     MainMenuItemsCount,
+};
+
+enum MainMenuStateItems {
+    MainMenuStateItemsInput,
+    MainMenuStateItemsScreen,
+    MainMenuStateItemsCount,
+};
+
+struct MainMenuState {
+    struct CursorMenu cursorMenu;
+    struct CursorMenuItem items[MainMenuStateItemsCount];
+    u16 openAnimation;
 };
 
 struct SaveState {
     u16 showSaveTimer;
     u8 isLoading;
     u8 showLoadTimer;
+    struct MenuItem* mainMenu;
 };
 
 struct MainMenu {
     struct SaveState saveState;
+    struct MainMenuState mainMenuState;
     struct MenuState menu;
     struct MenuItem menuItems[MainMenuItemsCount];
     u16 leftPanelPosition;
