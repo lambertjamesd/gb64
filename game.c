@@ -114,7 +114,7 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-        if ((pad[0]->button & L_CBUTTONS) && (~lastButton & L_CBUTTONS))
+        if ((pad[0]->button & L_CBUTTONS) && (~lastButton & L_CBUTTONS) && (pad[0]->button & R_TRIG) && (pad[0]->button & L_TRIG))
         {
             useDebugger(&gGameboy.cpu, &gGameboy.memory);
         }

@@ -13,6 +13,8 @@ typedef void (*MenuItemRender)(struct MenuItem* menuItem, struct MenuItem* highl
 typedef struct MenuItem* (*MenuItemHandleInput)(struct MenuItem* menuItem, int buttonsDown, int buttonsState);
 typedef void (*MenuItemSetActive)(struct MenuItem* menuItem, int isActive);
 
+#define MENU_ITEM_FLAGS_HIDDEN  0x1
+
 struct MenuItem {
     struct MenuItem* toLeft;
     struct MenuItem* toRight;
@@ -23,6 +25,7 @@ struct MenuItem {
     MenuItemHandleInput handleButtonDown;
     MenuItemHandleInput handleButtonUp;
     MenuItemSetActive setActive;
+    u32 flags;
 };
 
 struct MenuState {

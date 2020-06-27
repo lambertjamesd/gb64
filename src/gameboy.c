@@ -63,6 +63,7 @@ int loadFromFlash(void* target, int sramOffset, int length)
 
     if (length % FLASH_BLOCK_SIZE != 0)
     {
+        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
         if (osFlashReadArray(
                 &dmaIoMesgBuf, 
                 OS_MESG_PRI_NORMAL, 
@@ -75,7 +76,6 @@ int loadFromFlash(void* target, int sramOffset, int length)
             return -1;
         }
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
         memCopy((char*)target + (length & ~0x7F), gFlashTmpBuffer, length % FLASH_BLOCK_SIZE);
     }
     return 0;
@@ -144,12 +144,14 @@ int loadGameboyState(struct GameBoy* gameboy)
     sectionSize = sizeof(struct GameboySettings);
     if (loadFromFlash(&settings, offset, sectionSize))
     {
+        DEBUG_PRINT_F("Could not load header\n");
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     if (settings.header != GB_SETTINGS_HEADER || settings.version != GB_SETTINGS_CURRENT_VERSION)
     {
+        DEBUG_PRINT_F("Invalid header %X %X\n", settings.header, settings.version);
         return -1;
     }
 
@@ -240,6 +242,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
     loadBIOS(gameboy->memory.rom, 0);
+    gameboy->memory.misc.biosLoaded = 1;
 
     loadFromFlash(&gameboy->settings, 0, sizeof(struct GameboySettings));
 
@@ -410,6 +413,7 @@ void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)
 void unloadBIOS(struct Memory* memory)
 {
     loadRomSegment(memory->rom->mainBank, memory->rom->romLocation, 0);
+    memory->misc.biosLoaded = 0;
     int index;
     for (index = 0; index < BREAK_POINT_COUNT; ++index)
     {

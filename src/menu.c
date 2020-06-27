@@ -112,7 +112,10 @@ void menuStateRender(struct MenuState* menu)
 
     for (index = 0; index < menu->menuItemCount; ++index)
     {
-        menu->allItems[index].renderCallback(&menu->allItems[index], menu->currentMenuItem);
+        if (!(menu->allItems[index].flags & MENU_ITEM_FLAGS_HIDDEN))
+        {
+            menu->allItems[index].renderCallback(&menu->allItems[index], menu->currentMenuItem);
+        }
     }
 }
 

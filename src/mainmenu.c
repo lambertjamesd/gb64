@@ -1,20 +1,59 @@
 #include "mainmenu.h"
 #include "../render.h"
 #include "gameboy.h"
+#include "../tex/cbuttons.h"
+#include "../tex/dpad.h"
+#include "../tex/facebuttons.h"
 #include "../tex/guiitems.h"
+#include "../tex/triggers.h"
 #include "debug_out.h"
 
 #define C_BUTTON_BITMAP_COUNT   1
 
+static Bitmap cButtonRight[C_BUTTON_BITMAP_COUNT] = {
+    {16, 32, 0, 0, tex_cbuttons, 16, 0},
+};
+
+static Bitmap cButtonLeft[C_BUTTON_BITMAP_COUNT] = {
+    {16, 32, 16, 0, tex_cbuttons, 16, 0},
+};
+
 static Bitmap cButtonDown[C_BUTTON_BITMAP_COUNT] = {
-    {16, 32, 16, 0, GUIItems, 16, 0},
+    {16, 32, 0, 16, tex_cbuttons, 16, 0},
 };
 
 static Bitmap cButtonUp[C_BUTTON_BITMAP_COUNT] = {
-    {16, 32, 0, 0, GUIItems, 16, 0},
+    {16, 32, 16, 16, tex_cbuttons, 16, 0},
 };
 
 static Gfx      cButtonDL[NUM_DL(C_BUTTON_BITMAP_COUNT)];
+
+unsigned short gGUIPallete[] = {
+	0x0001,
+	0xEF2B,
+	0xEE87,
+	0xBC83,
+	0x1,
+	0xC631,
+	0x6B5D,
+	0x2109,
+	0x1,
+	0xBE3F,
+	0xCFB1,
+	0x1935,
+	0x1E05,
+	0x2055,
+	0x2C5,
+	0xF5EF,
+	0xC885,
+	0x5045,
+	0x1,
+	0xEF2B,
+	0x1,
+	0xC631,
+	0x6B5D,
+	0x2109,
+};
 
 Sprite cButtonSprite = {
     0, 0,
@@ -24,7 +63,7 @@ Sprite cButtonSprite = {
     SP_TRANSPARENT | SP_CUTOUT,
     0x1234,
     255, 255, 255, 255,
-    0, 4, (int*)GUIItemsPalette,
+    0, 4, (int*)gGUIPallete,
     0, 0,
     C_BUTTON_BITMAP_COUNT, NUM_DL(C_BUTTON_BITMAP_COUNT),
     32, 32,
@@ -47,7 +86,10 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
 
         if (saveState->showLoadTimer == LOAD_TIMER_FRAMES)
         {
-            loadGameboyState(&gGameboy);
+            if (loadGameboyState(&gGameboy))
+            {
+                DEBUG_PRINT_F("Failed to load save state\n");
+            }
             saveState->showLoadTimer = 0;
             saveState->isLoading = 0;
         }
@@ -104,18 +146,26 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
 {
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
-    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save))
+    if (!gGameboy.memory.misc.biosLoaded)
     {
-        saveGameboyState(&gGameboy);
-        saveState->showSaveTimer = SAVE_TIMER_FRAMES;
-    }
-
-    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
-    {
-        saveState->isLoading = 1;
-        if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)
+        if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save))
         {
-            saveState->showLoadTimer = LOAD_TIMER_START_FRAMES;
+            saveGameboyState(&gGameboy);
+            saveState->showSaveTimer = SAVE_TIMER_FRAMES;
+            
+            if (!saveState->isLoading)
+            {
+                saveState->showLoadTimer = 0;
+            }
+        }
+
+        if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
+        {
+            saveState->isLoading = 1;
+            if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)
+            {
+                saveState->showLoadTimer = LOAD_TIMER_START_FRAMES;
+            }
         }
     }
 
