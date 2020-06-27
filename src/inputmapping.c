@@ -91,6 +91,10 @@ struct MenuItem* inputMappingHandleInput(struct MenuItem* menuItem, int buttonsD
         inputMapping->cursor.menuItems[inputMapping->cursor.cursorLocation].data = (void*)~0;
         return menuItem;
     }
+    else if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.openMenu))
+    {
+        return inputMapping->cursor.parentMenu;
+    }
     else
     {
         struct MenuItem* result = inputCursorMenu(&inputMapping->cursor, buttonsDown, 136);

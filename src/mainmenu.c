@@ -140,6 +140,11 @@ struct MenuItem* mainMenuHandleInput(struct MenuItem* menuItem, int buttonsDown,
 {
     struct MainMenuState* mainMenuState = (struct MainMenuState*)menuItem->data;
 
+    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.openMenu))
+    {
+        return mainMenuState->cursorMenu.parentMenu;
+    }
+
     struct MenuItem* result = inputCursorMenu(&mainMenuState->cursorMenu, buttonsDown, 160);
 
     if (result)
@@ -231,7 +236,7 @@ void renderMainMenu(struct MainMenu* mainMenu)
 
 bool isMainMenuOpen(struct MainMenu* mainMenu)
 {
-    return mainMenu->leftPanelPosition != 0;
+    return mainMenu->menu.currentMenuItem != mainMenu->menuItems;
 }
 
 struct MainMenu gMainMenu;
