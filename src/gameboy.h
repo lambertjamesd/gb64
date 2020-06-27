@@ -49,6 +49,22 @@ enum InputButtonSetting
 
 #define INPUT_BUTTON_TO_MASK(inputButton) (1 << (inputButton))
 
+enum InputButtonIndex
+{
+    InputButtonIndexRight,
+    InputButtonIndexLeft,
+    InputButtonIndexUp,
+    InputButtonIndexDown,
+    InputButtonIndexA,
+    InputButtonIndexB,
+    InputButtonIndexSelect,
+    InputButtonIndexStart,
+    InputButtonIndexSave,
+    InputButtonIndexLoad,
+    InputButtonIndexOpenMenu,
+    InputButtonIndexCount,
+};
+
 struct InputMapping
 {
     u8 right;
@@ -103,5 +119,8 @@ void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad);
 void unloadBIOS(struct Memory* memory);
 int loadGameboyState(struct GameBoy* gameboy);
 int saveGameboyState(struct GameBoy* gameboy);
+
+enum InputButtonSetting getButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex);
+void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex, enum InputButtonSetting setting);
 
 #endif

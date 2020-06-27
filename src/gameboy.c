@@ -420,3 +420,23 @@ void unloadBIOS(struct Memory* memory)
         reapplyBreakpoint(&memory->breakpoints[index]);
     }
 }
+
+enum InputButtonSetting getButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex)
+{
+    return ((u8*)inputMapping)[buttonIndex];
+}
+
+void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex, enum InputButtonSetting setting)
+{
+    u8* asInputArray = (u8*)inputMapping;
+    enum InputButtonSetting existingSetting = asInputArray[buttonIndex];
+    int i;
+    for (i = 0; i < InputButtonIndexCount; ++i)
+    {
+        if (asInputArray[i] == setting)
+        {
+            asInputArray[i] = existingSetting;
+        }
+    }
+    asInputArray[buttonIndex] = setting;
+}

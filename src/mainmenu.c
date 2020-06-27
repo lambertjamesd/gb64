@@ -121,15 +121,6 @@ struct MenuItem* saveStateHandleUp(struct MenuItem* menuItem, int buttonsUp, int
 
 ///////////////////////////////////
 
-void renderMenuBorder()
-{
-    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 10, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 80, 40, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 80, 48, 1, 18);
-    renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 80, 192, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 10, 1);
-}
-
 void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     struct MainMenuState* mainMenuState = (struct MainMenuState*)menuItem->data;
@@ -181,6 +172,14 @@ void initMainMenu(struct MainMenu* mainMenu)
         mainMenuHandleInput,
         NULL
     );
+    
+    menuItemInit(
+        &mainMenu->menuItems[MainMenuItemMainInput],
+        &mainMenu->inputMapping,
+        inputMappingRender,
+        inputMappingHandleInput,
+        NULL
+    );
 
     initCursorMenu(
         &mainMenu->mainMenuState.cursorMenu, 
@@ -190,7 +189,7 @@ void initMainMenu(struct MainMenu* mainMenu)
 
     initCursorMenuItem(
         &mainMenu->mainMenuState.items[MainMenuStateItemsInput],
-        NULL,
+        &mainMenu->menuItems[MainMenuItemMainInput],
         "INPUT",
         16
     );
@@ -204,6 +203,11 @@ void initMainMenu(struct MainMenu* mainMenu)
 
     mainMenu->saveState.mainMenu = &mainMenu->menuItems[MainMenuItemMainMenu];
     mainMenu->mainMenuState.cursorMenu.parentMenu = &mainMenu->menuItems[MainMenuItemSaveState];
+
+    initInputMappingMenu(
+        &mainMenu->inputMapping,
+        &mainMenu->menuItems[MainMenuItemMainMenu]
+    );
 
     initMenuState(&mainMenu->menu, mainMenu->menuItems, MainMenuItemsCount);
 }

@@ -92,4 +92,6 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height);
 void initCursorMenu(struct CursorMenu* menu, struct CursorMenuItem* menuItems, u16 menuItemCount);
 void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, char* label, u16 height);
 
+void renderMenuBorder();
+
 #endif

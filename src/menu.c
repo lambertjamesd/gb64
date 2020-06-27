@@ -9,7 +9,7 @@
 #include "../tex/guiitems.h"
 #include "../tex/triggers.h"
 
-#define BUTTON_ICON_COUNT   20
+#define BUTTON_ICON_COUNT   40
 
 Bitmap gButtonIconTemplates[] = {
     {16, 32, 0, 0, tex_cbuttons, 16, 0},
@@ -273,8 +273,6 @@ struct MenuItem* defaultInputCursorMenuItem(struct CursorMenuItem* menuItem, int
     return NULL;
 }
 
-#define SCROLL_CURSOR_HEIGHT    8
-
 void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
 {
     int maxY = y + height;
@@ -284,11 +282,9 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
     {
         renderSprite(
             &gGUIItemTemplates[GUIItemIconUp],
-            x, y,
+            x, y - 8,
             1, 1
         );
-
-        y += SCROLL_CURSOR_HEIGHT;
     }
 
     while (menuItemIndex < menu->menuItemCount && y < maxY)
@@ -365,9 +361,9 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
         if (menu->cursorLocation < menu->menuItemCount - 1)
         {
             int lastItemIndex = menu->scrollOffset;
-            int y = menu->scrollOffset ? SCROLL_CURSOR_HEIGHT : 0;
+            int y = 0;
             
-            while (lastItemIndex < menu->menuItemCount && y < height)
+            while (lastItemIndex < menu->menuItemCount)
             {
                 struct CursorMenuItem* cursorMenuItem = &menu->menuItems[lastItemIndex];
 
@@ -376,13 +372,19 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
                     y += cursorMenuItem->height;
                 }
 
+                if (y >= height)
+                {
+                    break;
+                }
+
                 ++lastItemIndex;
             }
 
-            if (menu->cursorLocation == lastItemIndex)
+            if (menu->cursorLocation + 1 >= lastItemIndex)
             {
                 ++menu->scrollOffset;
             }
+
             ++menu->cursorLocation;
         }
     }
@@ -408,4 +410,13 @@ void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, ch
     item->toMenu = toMenu;
     item->label = label;
     item->height = height;
+}
+
+void renderMenuBorder()
+{
+    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 10, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 80, 40, 1, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 80, 48, 1, 18);
+    renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 80, 192, 1, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 10, 1);
 }

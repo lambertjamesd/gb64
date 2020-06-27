@@ -66,7 +66,8 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        render.c                              \
        src/menu.c                            \
        src/decoder.c                         \
-       src/mainmenu.c 
+       src/mainmenu.c                        \
+       src/inputmapping.c 
 
 S_FILES = asm/cpu.s
 
