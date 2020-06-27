@@ -37,8 +37,7 @@ Sprite cButtonSprite = {
 
 void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
-    Bitmap* buttonBitmap = NULL;
-    int buttonAlpha = 255;
+    int buttonAlpha = 0;
 
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
@@ -63,7 +62,7 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         buttonAlpha = 255 * saveState->showLoadTimer / LOAD_TIMER_FRAMES;
         FONTCOL(255, 255, 255, buttonAlpha);
         SHOWFONT(&glistp, "HOLD TO LOAD", 32, 16);
-        buttonBitmap = cButtonUp;
+        cButtonSprite.bitmap = cButtonUp;
     }
     else if (saveState->showSaveTimer)
     {
@@ -84,37 +83,34 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         }
 
         SHOWFONT(&glistp, "SAVED", 32, 16);
-        buttonBitmap = cButtonDown;
+        cButtonSprite.bitmap = cButtonDown;
     }
 
-    if (buttonBitmap)
-    {
-        cButtonSprite.width = 16;
-        cButtonSprite.height = 16;
+    cButtonSprite.width = 16;
+    cButtonSprite.height = 16;
 
-        cButtonSprite.rsp_dl_next = cButtonSprite.rsp_dl;
-        Gfx *gxp, *dl;
-        gxp = glistp;
-        cButtonSprite.alpha = buttonAlpha;
-        cButtonSprite.bitmap = buttonBitmap;
-        spMove(&cButtonSprite, 8, 12);
-        dl = spDraw( &cButtonSprite );
-        gSPDisplayList( gxp++, dl );
-        glistp = gxp;
-    }
+    Gfx *gxp, *dl;
+    gxp = glistp;
+    cButtonSprite.rsp_dl_next = cButtonSprite.rsp_dl;
+    cButtonSprite.alpha = buttonAlpha;
+    spClearAttribute(&cButtonSprite, SP_HIDDEN);
+    spMove(&cButtonSprite, 8, 12);
+    dl = spDraw(&cButtonSprite);
+    gSPDisplayList(gxp++, dl);
+    glistp = gxp;
 }
 
 struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown, int buttonsState)
 {
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
-    if (buttonsDown & D_CBUTTONS)
+    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save))
     {
         saveGameboyState(&gGameboy);
         saveState->showSaveTimer = SAVE_TIMER_FRAMES;
     }
 
-    if (buttonsDown & U_CBUTTONS)
+    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
     {
         saveState->isLoading = 1;
         if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)

@@ -11,27 +11,73 @@ extern OSMesg          dmaMessageBuf;
 extern OSPiHandle	   *handler;
 extern OSIoMesg        dmaIOMessageBuf;
 
+struct GameboySettings gDefaultSettings = {
+    GB_SETTINGS_HEADER,
+    GB_SETTINGS_CURRENT_VERSION,
+    0,
+    0,
+    0,
+    {
+        InputButtonSetting_RD,
+        InputButtonSetting_LD,
+        InputButtonSetting_UD,
+        InputButtonSetting_DD,
+        
+        InputButtonSetting_A,
+        InputButtonSetting_B,
+        InputButtonSetting_Z,
+        InputButtonSetting_START,
+        
+        InputButtonSetting_DC,
+        InputButtonSetting_UC,
+        InputButtonSetting_RC,
+    }
+};
+
 #define FLASH_BLOCK_SIZE    0x80
 
 #define ALIGN_FLASH_OFFSET(offset) (((offset) + 0x7F) & ~0x7F)
+
+char gFlashTmpBuffer[FLASH_BLOCK_SIZE];
 
 int loadFromFlash(void* target, int sramOffset, int length)
 {
     OSIoMesg dmaIoMesgBuf;
     osInvalDCache(target, length);
-    if (osFlashReadArray(
-            &dmaIoMesgBuf, 
-            OS_MESG_PRI_NORMAL, 
-            sramOffset / FLASH_BLOCK_SIZE,
-            target,
-            length / FLASH_BLOCK_SIZE,
-            &dmaMessageQ
-        ) == -1) 
-    {
-        return -1;
-    }
-    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 
+    if (length / FLASH_BLOCK_SIZE > 0)
+    {
+        if (osFlashReadArray(
+                &dmaIoMesgBuf, 
+                OS_MESG_PRI_NORMAL, 
+                sramOffset / FLASH_BLOCK_SIZE,
+                target,
+                length / FLASH_BLOCK_SIZE,
+                &dmaMessageQ
+            ) == -1) 
+        {
+            return -1;
+        }
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    }
+
+    if (length % FLASH_BLOCK_SIZE != 0)
+    {
+        if (osFlashReadArray(
+                &dmaIoMesgBuf, 
+                OS_MESG_PRI_NORMAL, 
+                sramOffset / FLASH_BLOCK_SIZE + length / FLASH_BLOCK_SIZE,
+                gFlashTmpBuffer,
+                1,
+                &dmaMessageQ
+            )) 
+        {
+            return -1;
+        }
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
+        memCopy((char*)target + (length & ~0x7F), gFlashTmpBuffer, length % FLASH_BLOCK_SIZE);
+    }
     return 0;
 }
 
@@ -41,6 +87,13 @@ int saveToFlash(void *from, int sramOffset, int length)
     {
         OSIoMesg dmaIoMesgBuf;
         int pageNumber = sramOffset / FLASH_BLOCK_SIZE;
+
+        if (length < FLASH_BLOCK_SIZE)
+        {
+            memCopy(gFlashTmpBuffer, from, length);
+            zeroMemory(gFlashTmpBuffer + length, FLASH_BLOCK_SIZE - length);
+            from = gFlashTmpBuffer;
+        }
 
         osWritebackDCache(from, FLASH_BLOCK_SIZE);
         if (osFlashWriteBuffer(
@@ -72,7 +125,7 @@ void loadRAM(struct Memory* memory)
     if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
     {
         int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
-        loadFromFlash(memory->cartRam, 0, size);
+        loadFromFlash(memory->cartRam, ALIGN_FLASH_OFFSET(sizeof(struct GameboySettings)), size);
     }
 }
 
@@ -87,6 +140,21 @@ int loadGameboyState(struct GameBoy* gameboy)
 {
     int offset = 0;
     int sectionSize;
+    struct GameboySettings settings;
+    sectionSize = sizeof(struct GameboySettings);
+    if (loadFromFlash(&settings, offset, sectionSize))
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    if (settings.header != GB_SETTINGS_HEADER || settings.version != GB_SETTINGS_CURRENT_VERSION)
+    {
+        return -1;
+    }
+
+    gameboy->settings = settings;
+
     sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
     if (loadFromFlash(gameboy->memory.cartRam, offset, sectionSize) == -1)
     {
@@ -137,7 +205,11 @@ int saveGameboyState(struct GameBoy* gameboy)
         return -1;
     }
     int offset = 0;
-    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    int sectionSize = sizeof(struct GameboySettings);
+    saveToFlash(&gameboy->settings, offset, sectionSize);
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+    
+    sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
     saveToFlash(gameboy->memory.cartRam, offset, sectionSize);
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
@@ -168,7 +240,18 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
     loadBIOS(gameboy->memory.rom, 0);
-    loadRAM(&gameboy->memory);
+
+    loadFromFlash(&gameboy->settings, 0, sizeof(struct GameboySettings));
+
+    if (gameboy->settings.header != GB_SETTINGS_HEADER || gameboy->settings.version != GB_SETTINGS_CURRENT_VERSION)
+    {
+        gameboy->settings = gDefaultSettings;
+    }
+    else
+    {
+        loadRAM(&gameboy->memory);
+    }
+
     
     gameboy->cpu.a = 0x0;
     gameboy->cpu.f = 0x0;
@@ -276,28 +359,28 @@ void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)
 
     button = 0xFF;
 
-    if (pad->button & CONT_A)
+    if (pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.a))
         button &= ~GB_BUTTON_A;
 
-    if (pad->button & CONT_B)
+    if (pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.b))
         button &= ~GB_BUTTON_B;
 
-    if (pad->button & CONT_START)
+    if (pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.start))
         button &= ~GB_BUTTON_START;
 
-    if (pad->button & Z_TRIG)
+    if (pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.select))
         button &= ~GB_BUTTON_SELECT;
 
-    if ((pad->button & U_JPAD) || pad->stick_y > 0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.up)) || pad->stick_y > 0x40)
         button &= ~GB_BUTTON_UP;
     
-    if ((pad->button & L_JPAD) || pad->stick_x < -0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.left)) || pad->stick_x < -0x40)
         button &= ~GB_BUTTON_LEFT;
     
-    if ((pad->button & R_JPAD) || pad->stick_x > 0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.right)) || pad->stick_x > 0x40)
         button &= ~GB_BUTTON_RIGHT;
     
-    if ((pad->button & D_JPAD) || pad->stick_y < -0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.down)) || pad->stick_y < -0x40)
         button &= ~GB_BUTTON_DOWN;
 
     WRITE_REGISTER_DIRECT(&gameboy->memory, _REG_JOYSTATE, button);

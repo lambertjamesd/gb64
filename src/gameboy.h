@@ -21,9 +21,69 @@
 #define CPU_TICKS_PER_FRAME     781250
 #define MAX_FRAME_SKIP      6
 
+#define GB_SETTINGS_FLAGS_DISABLE_GBC   0x1
+
+#define GB_SETTINGS_HEADER              0x47423634
+#define GB_SETTINGS_CURRENT_VERSION     0
+
+enum InputButtonSetting
+{
+    InputButtonSetting_RC,
+    InputButtonSetting_LC,
+    InputButtonSetting_DC,
+    InputButtonSetting_UC,
+    
+    InputButtonSetting_R,
+    InputButtonSetting_L,
+
+    InputButtonSetting_RD = 8,
+    InputButtonSetting_LD,
+    InputButtonSetting_DD,
+    InputButtonSetting_UD,
+    
+    InputButtonSetting_START,
+    InputButtonSetting_Z,
+    InputButtonSetting_B,
+    InputButtonSetting_A,
+};
+
+#define INPUT_BUTTON_TO_MASK(inputButton) (1 << (inputButton))
+
+struct InputMapping
+{
+    u8 right;
+    u8 left;
+    u8 up;
+    u8 down;
+    u8 a;
+    u8 b;
+    u8 select;
+    u8 start;
+
+    u8 save;
+    u8 load;
+    u8 openMenu;
+
+    u8 reserved;
+    u32 reserved2;
+};
+
+struct GameboySettings
+{
+    // Always has the value 0x47423634 (GB64 as an ascii string)
+    u32 header;
+    // Used to check save file compatibility 
+    u32 version;
+    // color pallete to use for non color games
+    u16 palleteIndex;
+    u16 flags;
+    u32 reserved;
+    struct InputMapping inputMapping;
+};
 
 struct GameBoy
 {
+    struct GameboySettings settings;
     struct Memory memory;
     struct CPUState cpu;
 };
