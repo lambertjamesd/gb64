@@ -182,7 +182,10 @@ game(void)
 		// );
 		// debugInfo(str);
 #endif
-		preRenderFrame(0);
+		preRenderFrame();
+		
+    	gSPDisplayList(glistp++, gDrawScreen);
+
 		renderDebugLog();
 
 		updateMainMenu(&gMainMenu, pad[0]);

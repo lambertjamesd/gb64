@@ -766,7 +766,7 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 
         menuStateHandleInput(&gDebugMenu.menu, pad[0]);
     
-		preRenderFrame(1);
+		preRenderFrame();
 		renderDebugLog();
 
         menuStateRender(&gDebugMenu.menu);

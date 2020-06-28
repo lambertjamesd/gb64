@@ -35,7 +35,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 Dynamic     *dynamicp;
 
 
-void preRenderFrame(int clear)
+void preRenderFrame()
 {
     /*
     * pointers to build the display list.
@@ -66,7 +66,7 @@ void preRenderFrame(int clear)
             (int)1,
             (int)1,
             1));
-    gSPDisplayList(glistp++, clear ? clearcfb_dl : switchcfb_dl);
+    gSPDisplayList(glistp++, clearcfb_dl);
 
     /*
     * Initialize RCP state.

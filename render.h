@@ -73,7 +73,7 @@ extern Dynamic	dynamic;
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
-void preRenderFrame(int clear);
+void preRenderFrame();
 void renderDebugLog();
 void finishRenderFrame();
 u16* getColorBuffer();

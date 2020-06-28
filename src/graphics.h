@@ -8,6 +8,8 @@
 #define GB_SCREEN_H         144
 #define GB_SCREEN_LINES     154
 
+#define GB_RENDER_STRIP_HEIGHT  12
+
 #define RENDER_TO_X 80
 #define RENDER_TO_Y 48
 
@@ -48,6 +50,9 @@
 #define CYCLES_PER_FRAME        (CYCLES_PER_LINE * (GB_SCREEN_H + V_BLANK_LINES))
 
 #define READ_PIXEL_INDEX(pixel, x) ((x == 7) ? ((((pixel) >> 8) & 0x1) | (((pixel) << 1) & 0x2)) : ((((pixel) >> (15 - x)) & 0x1) | (((pixel) >> (6 - x)) & 0x2)))
+
+extern u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
+extern Gfx gDrawScreen[];
 
 struct GraphicsState {
     struct Sprite sortedSprites[SPRITE_COUNT];
