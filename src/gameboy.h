@@ -106,9 +106,9 @@ struct GameBoy
 };
 
 extern struct GameBoy gGameboy;
-extern u16* gGBPColors;
-extern u16* gOBP0Colors;
-extern u16* gOBP1Colors;
+extern u16 gBGPColors;
+extern u16 gOBP0Colors;
+extern u16 gOBP1Colors;
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 
@@ -128,6 +128,7 @@ enum InputButtonSetting getButtonMapping(struct InputMapping* inputMapping, enum
 void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex, enum InputButtonSetting setting);
 
 int getPalleteCount();
+u16* getPallete(int index);
 void updatePalleteInfo(struct GameBoy* gameboy);
 
 #endif

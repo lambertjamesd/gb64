@@ -34,6 +34,7 @@ extern u64	rdp_output[RDP_OUTPUT_LEN];	/* buffer for RDP DL */
 extern int		fontcol[4];	/* color for shadowed fonts */
 
 #define PACK16BIT(r, g, b) ((u16)(r) << 8 & 0xF800 | (u16)(g) << 3 & 0x07C0 | (u16)(b) >> 2 & 0x003E | 0x01)
+#define COL24TO16(rgb24) ((rgb24) >> 8 & 0xF800 | (rgb24) >> 5 & 0x07C0 | (rgb24) >> 2 & 0x003E | 0x01)
 #define GET_R(rgb16) ((rgb16) >> 8 & 0xF8)
 #define GET_G(rgb16) ((rgb16) >> 3 & 0xF8)
 #define GET_B(rgb16) ((rgb16) << 2 & 0xF8)

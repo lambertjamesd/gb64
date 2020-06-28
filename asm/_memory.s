@@ -556,12 +556,14 @@ _GB_SPEED_KEY1:
 ############################
 
     .data
-.global gGBPColors
-gGBPColors:
+.global gBGPColors
+gBGPColors:
     .align 2
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+.global gOBP0Colors
 gOBP0Colors:
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+.global gOBP1Colors
 gOBP1Colors:
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
     .text
@@ -569,7 +571,7 @@ gOBP1Colors:
 _GB_WRITE_BGP:
     write_register_direct VAL, REG_BGP
     la $at, MEMORY_BG_PAL
-    la TMP2, gGBPColors
+    la TMP2, gBGPColors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 

@@ -5,6 +5,7 @@
 #include "menu.h"
 #include "bool.h"
 #include "inputmapping.h"
+#include "graphicsmenu.h"
 
 #define SAVE_TIMER_FRAMES       96
 #define SAVE_TIMER_FADE_TIME    64
@@ -18,6 +19,7 @@ enum MainMenuItems {
     MainMenuItemSaveState,
     MainMenuItemMainMenu,
     MainMenuItemMainInput,
+    MainMenuItemMainScreen,
     MainMenuItemsCount,
 };
 
@@ -43,6 +45,7 @@ struct MainMenu {
     struct SaveState saveState;
     struct MainMenuState mainMenuState;
     struct InputMappingMenu inputMapping;
+    struct GraphicsMenu graphicsMenu;
     struct MenuState menu;
     struct MenuItem menuItems[MainMenuItemsCount];
     u16 leftPanelPosition;

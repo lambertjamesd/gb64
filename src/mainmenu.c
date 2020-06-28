@@ -185,6 +185,14 @@ void initMainMenu(struct MainMenu* mainMenu)
         inputMappingHandleInput,
         NULL
     );
+    
+    menuItemInit(
+        &mainMenu->menuItems[MainMenuItemMainScreen],
+        &mainMenu->graphicsMenu,
+        graphicsMenuRender,
+        graphicsMenuHandleInput,
+        NULL
+    );
 
     initCursorMenu(
         &mainMenu->mainMenuState.cursorMenu, 
@@ -201,7 +209,7 @@ void initMainMenu(struct MainMenu* mainMenu)
 
     initCursorMenuItem(
         &mainMenu->mainMenuState.items[MainMenuStateItemsScreen],
-        NULL,
+        &mainMenu->menuItems[MainMenuItemMainScreen],
         "SCREEN",
         16
     );
@@ -211,6 +219,11 @@ void initMainMenu(struct MainMenu* mainMenu)
 
     initInputMappingMenu(
         &mainMenu->inputMapping,
+        &mainMenu->menuItems[MainMenuItemMainMenu]
+    );
+
+    initGraphicsMenu(
+        &mainMenu->graphicsMenu,
         &mainMenu->menuItems[MainMenuItemMainMenu]
     );
 

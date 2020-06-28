@@ -7,10 +7,52 @@ void renderPalleteItem(struct CursorMenuItem* menuItem, int x, int y, int select
 {
     FONTCOL(255, 255, 255, 255);
     SHOWFONT(&glistp, menuItem->label, x, y);
+
+    u16* palleteIndexPtr = (u16*)menuItem->data;
+    u16* pallete = getPallete(*palleteIndexPtr);
+
+    if (selected)
+    {
+        renderSprite(&gGUIItemTemplates[GUIItemIconLeft], x, y + 12, 1, 1);
+        renderSprite(&gGUIItemTemplates[GUIItemIconRight], x + 60, y + 12, 1, 1);
+    }
+
+    setSpriteColor(GET_R(pallete[0]), GET_G(pallete[0]), GET_B(pallete[0]));
+    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 12, y + 12, 1, 1);
+    setSpriteColor(GET_R(pallete[1]), GET_G(pallete[1]), GET_B(pallete[1]));
+    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 24, y + 12, 1, 1);
+    setSpriteColor(GET_R(pallete[2]), GET_G(pallete[2]), GET_B(pallete[2]));
+    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 36, y + 12, 1, 1);
+    setSpriteColor(GET_R(pallete[3]), GET_G(pallete[3]), GET_B(pallete[3]));
+    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 48, y + 12, 1, 1);
+
+
+    setSpriteColor(255, 255, 255);
 }
 
 struct MenuItem* inputPalleteItem(struct CursorMenuItem* menuItem, int buttonDown)
 {
+    u16* palleteIndexPtr = (u16*)menuItem->data;
+
+    if (buttonDown & R_JPAD)
+    {
+        *palleteIndexPtr = (*palleteIndexPtr + 1) % getPalleteCount();
+        updatePalleteInfo(&gGameboy);
+    }
+
+    if (buttonDown & L_JPAD)
+    {
+        if (*palleteIndexPtr == 0)
+        {
+            *palleteIndexPtr = getPalleteCount() - 1;
+        }
+        else
+        {
+            *palleteIndexPtr = *palleteIndexPtr - 1;
+        }
+        updatePalleteInfo(&gGameboy);
+    }
+
     return NULL;
 }
 
@@ -61,7 +103,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemGBP],
         NULL,
         "BGP",
-        20
+        32
     );
     menu->menuItems[GraphicsMenuItemGBP].data = &gGameboy.settings.bgpIndex;
     menu->menuItems[GraphicsMenuItemGBP].render = renderPalleteItem;
@@ -71,7 +113,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemOBP0],
         NULL,
         "OBP0",
-        20
+        32
     );
     menu->menuItems[GraphicsMenuItemOBP0].data = &gGameboy.settings.obp0Index;
     menu->menuItems[GraphicsMenuItemOBP0].render = renderPalleteItem;
@@ -81,7 +123,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemOBP1],
         NULL,
         "OBP1",
-        20
+        32
     );
     menu->menuItems[GraphicsMenuItemOBP1].data = &gGameboy.settings.obp1Index;
     menu->menuItems[GraphicsMenuItemOBP1].render = renderPalleteItem;

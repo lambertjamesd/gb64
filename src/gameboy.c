@@ -244,6 +244,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
     loadBIOS(gameboy->memory.rom, 0);
+    updatePalleteInfo(gameboy);
     gameboy->memory.misc.biosLoaded = 1;
 
     loadFromFlash(&gameboy->settings, 0, sizeof(struct GameboySettings));
@@ -445,22 +446,206 @@ void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex b
 
 u16 gDMAPalletes[][4] = {
     {
-        PACK16BIT(0x9B, 0xBC, 0x0F), 
-        PACK16BIT(0x8B, 0xAC, 0x0F), 
-        PACK16BIT(0x30, 0x62, 0x30), 
-        PACK16BIT(0x0F, 0x38, 0x0F),
+        COL24TO16(0xE0F8D0), 
+        COL24TO16(0x88C070), 
+        COL24TO16(0x346856), 
+        COL24TO16(0x081820),
     },
     {
-        PACK16BIT(0xFF, 0xFF, 0xFF), 
-        PACK16BIT(0xA8, 0xA8, 0xA8), 
-        PACK16BIT(0x60, 0x60, 0x60), 
-        PACK16BIT(0x00, 0x00, 0x00),
+        COL24TO16(0xf8f8f8), 
+        COL24TO16(0xb8b8b8), 
+        COL24TO16(0x707070), 
+        COL24TO16(0x000000),
     },
     {
-        PACK16BIT(0xFC, 0xE4, 0xA8), 
-        PACK16BIT(0x71, 0x96, 0x9F), 
-        PACK16BIT(0xD7, 0x1A, 0x21), 
-        PACK16BIT(0x00, 0x32, 0x4D),
+        COL24TO16(0xFCE4A8), 
+        COL24TO16(0x71969F), 
+        COL24TO16(0xD71A21), 
+        COL24TO16(0x00324D),
+    },
+    // SGB palletes
+    {
+        COL24TO16(0xf8e8c8), 
+        COL24TO16(0xd89048), 
+        COL24TO16(0xa82820), 
+        COL24TO16(0x301850),
+    },
+    {
+        COL24TO16(0xd8d8c0), 
+        COL24TO16(0xc8b070), 
+        COL24TO16(0xb05010), 
+        COL24TO16(0x000000),
+    },
+    {
+        COL24TO16(0xf8c0f8), 
+        COL24TO16(0xe89850), 
+        COL24TO16(0x983860), 
+        COL24TO16(0x383898),
+    },
+    {
+        COL24TO16(0xf8f8a8), 
+        COL24TO16(0xc08048), 
+        COL24TO16(0xf80000), 
+        COL24TO16(0x501800),
+    },
+    {
+        COL24TO16(0xf8d8b0), 
+        COL24TO16(0x78c078), 
+        COL24TO16(0x688840), 
+        COL24TO16(0x583820),
+    },
+    {
+        COL24TO16(0xd8e8f8), 
+        COL24TO16(0xe08850), 
+        COL24TO16(0xa80000), 
+        COL24TO16(0x004010),
+    },
+    {
+        COL24TO16(0x000050), 
+        COL24TO16(0x00a0e8), 
+        COL24TO16(0x787800), 
+        COL24TO16(0xf8f858),
+    },
+    {
+        COL24TO16(0xf8e8e0), 
+        COL24TO16(0xf8b888), 
+        COL24TO16(0x804000), 
+        COL24TO16(0x301800),
+    },
+    
+    {
+        COL24TO16(0xf0c8a0), 
+        COL24TO16(0xc08848), 
+        COL24TO16(0x287800), 
+        COL24TO16(0x000000),
+    },
+    {
+        COL24TO16(0xf8f8f8), 
+        COL24TO16(0xf8e850), 
+        COL24TO16(0xf83000), 
+        COL24TO16(0x500058),
+    },
+    {
+        COL24TO16(0xf8c0f8), 
+        COL24TO16(0xe88888), 
+        COL24TO16(0x7830e8), 
+        COL24TO16(0x282898),
+    },
+    {
+        COL24TO16(0xf8f8a0), 
+        COL24TO16(0x00f800), 
+        COL24TO16(0xf83000), 
+        COL24TO16(0x000050),
+    },
+    {
+        COL24TO16(0xf8c880), 
+        COL24TO16(0x90b0e0), 
+        COL24TO16(0x281060), 
+        COL24TO16(0x100810),
+    },
+    {
+        COL24TO16(0xd0f8f8), 
+        COL24TO16(0xf89050), 
+        COL24TO16(0xa00000), 
+        COL24TO16(0x180000),
+    },
+    {
+        COL24TO16(0x68b838), 
+        COL24TO16(0xe05040), 
+        COL24TO16(0xe0b880), 
+        COL24TO16(0x001800),
+    },
+    
+    {
+        COL24TO16(0xf8d098), 
+        COL24TO16(0x70c0c0), 
+        COL24TO16(0xf86028), 
+        COL24TO16(0x304860),
+    },
+    {
+        COL24TO16(0xd8d8c0), 
+        COL24TO16(0xe08020), 
+        COL24TO16(0x005000), 
+        COL24TO16(0x001010),
+    },
+    {
+        COL24TO16(0xe0a8c8), 
+        COL24TO16(0xf8f878), 
+        COL24TO16(0x00b8f8), 
+        COL24TO16(0x202058),
+    },
+    {
+        COL24TO16(0xf0f8b8), 
+        COL24TO16(0xe0a878), 
+        COL24TO16(0x08c800), 
+        COL24TO16(0x000000),
+    },
+    {
+        COL24TO16(0xf8f8c0), 
+        COL24TO16(0xe0b068), 
+        COL24TO16(0xb07820), 
+        COL24TO16(0x504870),
+    },
+    {
+        COL24TO16(0x7878c8), 
+        COL24TO16(0xf868f8), 
+        COL24TO16(0xf8d000), 
+        COL24TO16(0x404040),
+    },
+    {
+        COL24TO16(0xf8f8f8), 
+        COL24TO16(0x60d850), 
+        COL24TO16(0xc83038), 
+        COL24TO16(0x380000),
+    },
+    
+    {
+        COL24TO16(0xf0a868), 
+        COL24TO16(0x78a8f8), 
+        COL24TO16(0xd000d0), 
+        COL24TO16(0x000078),
+    },
+    {
+        COL24TO16(0xf0e8f0), 
+        COL24TO16(0xe8a060), 
+        COL24TO16(0x407838), 
+        COL24TO16(0x180808),
+    },
+    {
+        COL24TO16(0xf8e0e0), 
+        COL24TO16(0xd8a0d0), 
+        COL24TO16(0x98a0e0), 
+        COL24TO16(0x080000),
+    },
+    {
+        COL24TO16(0xf8f8b8), 
+        COL24TO16(0x90c8c8), 
+        COL24TO16(0x486878), 
+        COL24TO16(0x082048),
+    },
+    {
+        COL24TO16(0xf8d8a8), 
+        COL24TO16(0xe0a878), 
+        COL24TO16(0x785888), 
+        COL24TO16(0x002030),
+    },
+    {
+        COL24TO16(0xb8d0d0), 
+        COL24TO16(0xd880d8), 
+        COL24TO16(0x8000a0), 
+        COL24TO16(0x380000),
+    },
+    {
+        COL24TO16(0xb0e018), 
+        COL24TO16(0xb82058), 
+        COL24TO16(0x281000), 
+        COL24TO16(0x008060),
+    },
+    {
+        COL24TO16(0xf8f8c8), 
+        COL24TO16(0xb8c058), 
+        COL24TO16(0x808840), 
+        COL24TO16(0x405028),
     },
 };
 
@@ -469,7 +654,48 @@ int getPalleteCount()
     return sizeof(gDMAPalletes) / sizeof(*gDMAPalletes);
 }
 
+u16* getPallete(int index)
+{
+    if (index >= 0 && index < getPalleteCount())
+    {
+        return gDMAPalletes[index];
+    }
+    else
+    {
+        return gDMAPalletes[0];
+    }
+}
+
 void updatePalleteInfo(struct GameBoy* gameboy)
 {
+    u16* src = getPallete(gameboy->settings.bgpIndex);
 
+    (&gBGPColors)[0] = src[0]; (&gBGPColors)[1] = src[1];
+    (&gBGPColors)[2] = src[2]; (&gBGPColors)[3] = src[3];
+
+    src = getPallete(gameboy->settings.obp0Index);
+    (&gOBP0Colors)[0] = src[0]; (&gOBP0Colors)[1] = src[1];
+    (&gOBP0Colors)[2] = src[2]; (&gOBP0Colors)[3] = src[3];
+    
+    src = getPallete(gameboy->settings.obp1Index);
+    (&gOBP1Colors)[0] = src[0]; (&gOBP1Colors)[1] = src[1];
+    (&gOBP1Colors)[2] = src[2]; (&gOBP1Colors)[3] = src[3];
+
+    u8 bgp = READ_REGISTER_DIRECT(&gameboy->memory, REG_BGP);
+    gameboy->memory.vram.colorPalletes[0] = (&gBGPColors)[bgp >> 0 & 0x3];
+    gameboy->memory.vram.colorPalletes[1] = (&gBGPColors)[bgp >> 2 & 0x3];
+    gameboy->memory.vram.colorPalletes[2] = (&gBGPColors)[bgp >> 4 & 0x3];
+    gameboy->memory.vram.colorPalletes[3] = (&gBGPColors)[bgp >> 6 & 0x3];
+    
+    u8 obp0 = READ_REGISTER_DIRECT(&gameboy->memory, REG_OBP0);
+    gameboy->memory.vram.colorPalletes[32] = (&gOBP0Colors)[obp0 >> 0 & 0x3];
+    gameboy->memory.vram.colorPalletes[33] = (&gOBP0Colors)[obp0 >> 2 & 0x3];
+    gameboy->memory.vram.colorPalletes[34] = (&gOBP0Colors)[obp0 >> 4 & 0x3];
+    gameboy->memory.vram.colorPalletes[35] = (&gOBP0Colors)[obp0 >> 6 & 0x3];
+    
+    u8 obp1 = READ_REGISTER_DIRECT(&gameboy->memory, REG_OBP1);
+    gameboy->memory.vram.colorPalletes[36] = (&gOBP1Colors)[obp1 >> 0 & 0x3];
+    gameboy->memory.vram.colorPalletes[37] = (&gOBP1Colors)[obp1 >> 2 & 0x3];
+    gameboy->memory.vram.colorPalletes[38] = (&gOBP1Colors)[obp1 >> 4 & 0x3];
+    gameboy->memory.vram.colorPalletes[39] = (&gOBP1Colors)[obp1 >> 6 & 0x3];
 }

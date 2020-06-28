@@ -67,6 +67,9 @@
 #define REG_SCX         0xFF43
 #define REG_LY          0xFF44
 #define REG_LCY         0xFF45
+#define REG_BGP         0xFF47
+#define REG_OBP0        0xFF48
+#define REG_OBP1        0xFF49
 #define REG_WY          0xFF4A
 #define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D

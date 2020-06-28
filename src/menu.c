@@ -9,7 +9,8 @@
 #include "../tex/guiitems.h"
 #include "../tex/triggers.h"
 
-#define BUTTON_ICON_COUNT   40
+#define BUTTON_ICON_COUNT   10
+#define BUTTON_ICON_DL_LENGTH   40
 
 Bitmap gButtonIconTemplates[] = {
     {16, 32, 0, 0, tex_cbuttons, 16, 0},
@@ -44,9 +45,11 @@ Bitmap gGUIItemTemplates[] = {
     {8, 32, 24, 8, tex_guiitems, 8, 0},
     {8, 32, 24, 0, tex_guiitems, 8, 0},
     {8, 32, 16, 8, tex_guiitems, 8, 0},
+    {8, 32, 0, 16, tex_guiitems, 8, 0},
+    {8, 32, 8, 16, tex_guiitems, 8, 0},
 };
 
-static Gfx      gButtonIconsDL[NUM_DL(BUTTON_ICON_COUNT)];
+static Gfx      gButtonIconsDL[NUM_DL(1) * BUTTON_ICON_DL_LENGTH];
 static Bitmap   gButtonIcons[BUTTON_ICON_COUNT];
 
 unsigned short gGUIPallete[] = {
@@ -70,6 +73,8 @@ unsigned short gGUIPallete[] = {
 	0x5045,
 	0x1,
 	0xEF2B,
+	0xFFFF,
+	0x0,
 	0x1,
 	0xC631,
 	0x6B5D,
@@ -86,7 +91,7 @@ Sprite gButtonSprite = {
     255, 255, 255, 255,
     0, sizeof(gGUIPallete) / sizeof(*gGUIPallete), (int*)gGUIPallete,
     0, 0,
-    BUTTON_ICON_COUNT, NUM_DL(BUTTON_ICON_COUNT),
+    BUTTON_ICON_COUNT, NUM_DL(1) * BUTTON_ICON_DL_LENGTH,
     32, 32,
     G_IM_FMT_CI,
     G_IM_SIZ_8b,
@@ -107,6 +112,13 @@ void renderSprite(Bitmap* bitmap, s32 x, s32 y, s32 w, s32 h)
     dl = spDraw(&gButtonSprite);
     gSPDisplayList(gxp++, dl);
     glistp = gxp;
+}
+
+void setSpriteColor(u8 r, u8 g, u8 b)
+{
+    gButtonSprite.red = r;
+    gButtonSprite.green = g;
+    gButtonSprite.blue = b;
 }
 
 void initMenuState(struct MenuState* menu, struct MenuItem* items, int itemCount)

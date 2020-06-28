@@ -11,10 +11,6 @@ enum GraphicsMenuItem {
     GraphicsMenuItemCount,
 };
 
-struct PalleteSelection {
-    u16* targetIndex;
-};
-
 struct GraphicsMenu {
     struct CursorMenu cursor;
     struct CursorMenuItem menuItems[GraphicsMenuItemCount];

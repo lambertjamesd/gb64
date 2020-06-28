@@ -68,6 +68,8 @@ enum GUIItemIcon
     GUIItemIconVert,
     GUIItemIconTopRight,
     GUIItemIconBottomRight,
+    GUIItemIconWhite,
+    GUIItemIconBorder,
 };
 
 struct CursorMenu {
@@ -92,6 +94,8 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height);
 void initCursorMenu(struct CursorMenu* menu, struct CursorMenuItem* menuItems, u16 menuItemCount);
 void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, char* label, u16 height);
 
+void renderSprite(Bitmap* bitmap, s32 x, s32 y, s32 w, s32 h);
+void setSpriteColor(u8 r, u8 g, u8 b);
 void renderMenuBorder();
 
 #endif
