@@ -125,7 +125,7 @@ void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     struct MainMenuState* mainMenuState = (struct MainMenuState*)menuItem->data;
     
-    if (menuItem == highlightedItem || mainMenuState->openAnimation)
+    if (menuItem == highlightedItem)
     {
         gButtonSprite.alpha = 255;
 

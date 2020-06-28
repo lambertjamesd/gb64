@@ -90,10 +90,11 @@ struct GameboySettings
     u32 header;
     // Used to check save file compatibility 
     u32 version;
-    // color pallete to use for non color games
-    u16 palleteIndex;
     u16 flags;
-    u32 reserved;
+    // color pallete to use for non color games
+    u16 bgpIndex;
+    u16 obp0Index;
+    u16 obp1Index;
     struct InputMapping inputMapping;
 };
 
@@ -105,6 +106,9 @@ struct GameBoy
 };
 
 extern struct GameBoy gGameboy;
+extern u16* gGBPColors;
+extern u16* gOBP0Colors;
+extern u16* gOBP1Colors;
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 
@@ -122,5 +126,8 @@ int saveGameboyState(struct GameBoy* gameboy);
 
 enum InputButtonSetting getButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex);
 void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex, enum InputButtonSetting setting);
+
+int getPalleteCount();
+void updatePalleteInfo(struct GameBoy* gameboy);
 
 #endif

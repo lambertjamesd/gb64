@@ -556,32 +556,38 @@ _GB_SPEED_KEY1:
 ############################
 
     .data
-_GB_PALLETE_COLORS:
+.global gGBPColors
+gGBPColors:
     .align 2
+    .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+gOBP0Colors:
+    .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+gOBP1Colors:
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
     .text
 
 _GB_WRITE_BGP:
     write_register_direct VAL, REG_BGP
     la $at, MEMORY_BG_PAL
+    la TMP2, gGBPColors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_OBP0:
     write_register_direct VAL, REG_OBP0
     la $at, MEMORY_OBJ_PAL
+    la TMP2, gOBP0Colors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_OBP1:
     write_register_direct VAL, REG_OBP1
     la $at, MEMORY_OBJ_PAL + 8 # second pallete index
+    la TMP2, gOBP1Colors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_DMA_PAL:
-    la TMP2, _GB_PALLETE_COLORS
-
     andi $at, VAL, 0x03
     sll $at, $at, 1
     add $at, TMP2, $at

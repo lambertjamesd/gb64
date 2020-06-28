@@ -3,6 +3,7 @@
 #include "graphics.h"
 #include "debugger.h"
 #include "debug_out.h"
+#include "../render.h"
 
 struct GameBoy gGameboy;
 
@@ -14,6 +15,7 @@ extern OSIoMesg        dmaIOMessageBuf;
 struct GameboySettings gDefaultSettings = {
     GB_SETTINGS_HEADER,
     GB_SETTINGS_CURRENT_VERSION,
+    0,
     0,
     0,
     0,
@@ -326,7 +328,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             gameboy->cpu.runUntilNextFrame = 0;
         }
 
-        initGraphicsState(&gameboy->memory, &graphicsState, 0);
+        initGraphicsState(&gameboy->memory, &graphicsState, gameboy->cpu.gbc);
 
         runCPU(&gameboy->cpu, &gameboy->memory, MODE_2_CYCLES);
         for (line = 0; line < GB_SCREEN_H; ++line)
@@ -439,4 +441,35 @@ void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex b
         }
     }
     asInputArray[buttonIndex] = setting;
+}
+
+u16 gDMAPalletes[][4] = {
+    {
+        PACK16BIT(0x9B, 0xBC, 0x0F), 
+        PACK16BIT(0x8B, 0xAC, 0x0F), 
+        PACK16BIT(0x30, 0x62, 0x30), 
+        PACK16BIT(0x0F, 0x38, 0x0F),
+    },
+    {
+        PACK16BIT(0xFF, 0xFF, 0xFF), 
+        PACK16BIT(0xA8, 0xA8, 0xA8), 
+        PACK16BIT(0x60, 0x60, 0x60), 
+        PACK16BIT(0x00, 0x00, 0x00),
+    },
+    {
+        PACK16BIT(0xFC, 0xE4, 0xA8), 
+        PACK16BIT(0x71, 0x96, 0x9F), 
+        PACK16BIT(0xD7, 0x1A, 0x21), 
+        PACK16BIT(0x00, 0x32, 0x4D),
+    },
+};
+
+int getPalleteCount()
+{
+    return sizeof(gDMAPalletes) / sizeof(*gDMAPalletes);
+}
+
+void updatePalleteInfo(struct GameBoy* gameboy)
+{
+
 }

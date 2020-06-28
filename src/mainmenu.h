@@ -30,7 +30,6 @@ enum MainMenuStateItems {
 struct MainMenuState {
     struct CursorMenu cursorMenu;
     struct CursorMenuItem items[MainMenuStateItemsCount];
-    u16 openAnimation;
 };
 
 struct SaveState {
