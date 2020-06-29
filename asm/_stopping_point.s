@@ -265,7 +265,12 @@ ENTER_MODE_0:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
 
     addi TMP2, TMP4, REG_LCDC_STATUS_MODE_0_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_0
     sll TMP2, TMP2, 8
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_0:
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
     slti $at, TMP3, GB_SCREEN_H
     bnez $at, _ENTER_MODE_0_NEXT_MODE
@@ -294,7 +299,12 @@ _MODE_1_SKIP_V_BLANK:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
     addi TMP2, TMP4, REG_LCDC_STATUS_MODE_1_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_1
     sll TMP2, TMP2, 8
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_1:
     slti $at, TMP3, GB_SCREEN_LINES - 1
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
     bnez $at, _ENTER_MODE_1_NEXT_MODE
@@ -314,7 +324,12 @@ ENTER_MODE_2:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 2
     addi TMP2, TMP4, REG_LCDC_STATUS_MODE_2_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_2
     sll TMP2, TMP2, 8
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_2:
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
     addi TMP3, TMP3, 1
@@ -347,7 +362,12 @@ ENTER_MODE_3:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 3
     addi TMP2, TMP4, REG_LCDC_STATUS_MODE_3_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_3
     sll TMP2, TMP2, 8
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_3:
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_0
     j CHECK_LSTAT_INTERRUPT
@@ -569,3 +589,18 @@ _REMOVE_STOPPING_POINT_ZERO_LOOP:
 _REMOVE_STOPPING_POINT_EXIT:
     jr $ra
     nop
+
+CHECK_FOR_SPEED_SWITCH:
+    read_register_direct TMP2, REG_KEY1
+    andi $at, TMP2, REG_KEY1_PREPARE_SWITCH
+    bnez $at, _DO_SPEED_SWITCH
+    nop
+    jr $ra
+    li $v0, 0
+
+_DO_SPEED_SWITCH:
+    andi TMP2, TMP2, %lo(~REG_KEY1_PREPARE_SWITCH)
+    xori TMP2, TMP2, REG_KEY1_CURRENT_SPEED
+    write_register_direct TMP2, REG_KEY1
+    jr $ra
+    li $v0, 1

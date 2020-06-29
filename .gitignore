@@ -4,6 +4,7 @@
 .vscode/*
 bin/*
 *.gb
+*.gbc
 data/*.hex
 data/dmg_boot.bin
 data/cgb_bios.bin

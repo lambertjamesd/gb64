@@ -74,8 +74,8 @@
 #define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D
 
-#define REG_KEY1_SPEED_REQUEST  0x1
-#define REG_KEY1_SPEED          0x80
+#define REG_KEY1_PREPARE_SWITCH  0x1
+#define REG_KEY1_CURRENT_SPEED  0x80
 
 #define REG_INT_REQUESTED   0xFF0F
 #define REG_INT_ENABLED     0xFFFF

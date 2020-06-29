@@ -44,8 +44,11 @@ char gFlashTmpBuffer[FLASH_BLOCK_SIZE];
 
 int loadFromFlash(void* target, int sramOffset, int length)
 {
+    // TODO check for bank switching
+
     OSIoMesg dmaIoMesgBuf;
     osInvalDCache(target, length);
+
 
     if (length / FLASH_BLOCK_SIZE > 0)
     {
@@ -85,6 +88,8 @@ int loadFromFlash(void* target, int sramOffset, int length)
 
 int saveToFlash(void *from, int sramOffset, int length)
 {
+    // TODO check for bank switching
+    
     while (length > 0)
     {
         OSIoMesg dmaIoMesgBuf;
@@ -243,7 +248,6 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 {
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
-    loadBIOS(gameboy->memory.rom, 0);
     updatePalleteInfo(gameboy);
     gameboy->memory.misc.biosLoaded = 1;
 
@@ -258,6 +262,13 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
         loadRAM(&gameboy->memory);
     }
 
+    if (gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
+        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] && !(gameboy->settings.flags & GB_SETTINGS_FLAGS_DISABLE_GBC)
+    ) {
+        gameboy->cpu.gbc = 1;
+    }
+
+    loadBIOS(gameboy->memory.rom, gameboy->cpu.gbc);
     
     gameboy->cpu.a = 0x0;
     gameboy->cpu.f = 0x0;
@@ -305,13 +316,6 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     int ly;
 
     screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
-
-    if (gameboy->cpu.stopReason == STOP_REASON_STOP && (READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & REG_KEY1_SPEED_REQUEST))
-    {
-        // TODO change timing
-        WRITE_REGISTER_DIRECT(&gameboy->memory, REG_KEY1, REG_KEY1_SPEED ^ READ_REGISTER_DIRECT(&gameboy->memory, REG_KEY1) & ~REG_KEY1_SPEED_REQUEST);
-        gameboy->cpu.stopReason = STOP_REASON_NONE;
-    }
 
     if (targetMemory && screenWasEnabled)
     {

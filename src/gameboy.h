@@ -21,11 +21,6 @@
 #define CPU_TICKS_PER_FRAME     781250
 #define MAX_FRAME_SKIP      6
 
-#define GB_SETTINGS_FLAGS_DISABLE_GBC   0x1
-
-#define GB_SETTINGS_HEADER              0x47423634
-#define GB_SETTINGS_CURRENT_VERSION     0
-
 enum InputButtonSetting
 {
     InputButtonSetting_RC,
@@ -83,6 +78,11 @@ struct InputMapping
     u8 reserved;
     u32 reserved2;
 };
+
+#define GB_SETTINGS_FLAGS_DISABLE_GBC   0x1
+
+#define GB_SETTINGS_HEADER              0x47423634
+#define GB_SETTINGS_CURRENT_VERSION     0
 
 struct GameboySettings
 {

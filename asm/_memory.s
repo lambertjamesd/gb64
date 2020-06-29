@@ -545,10 +545,10 @@ _GB_WRITE_DMA:
 
 ############################
 
-_GB_SPEED_KEY1:
+_GB_SPEED_KEY1:    
     read_register_direct $at, REG_KEY1
-    addi $at, $at, 0xFE
-    andi VAL, VAL, 0x01
+    andi $at, $at, %lo(~REG_KEY1_PREPARE_SWITCH)
+    andi VAL, VAL, REG_KEY1_PREPARE_SWITCH
     or VAL, VAL, $at
     jr $ra
     write_register_direct VAL, REG_KEY1
@@ -653,7 +653,9 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     lw $ra, 0x20($sp)
     lw $fp, 0x24($sp)
 
-    # TODO different initial values in GBC mode
+    lw $at, CPU_STATE_GBC(CPUState)
+    bnez $at, _GB_WRITE_REG_UNLOAD_BIOS_CGB
+
     li GB_A, 0x01
     li GB_F, 0xB0
     li GB_B, 0x00
@@ -662,9 +664,25 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     li GB_E, 0xD8
     li GB_H, 0x01
     li GB_L, 0x4D
+    li GB_SP, 0xFFFE
 
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+
+_GB_WRITE_REG_UNLOAD_BIOS_CGB:
+    li GB_A, 0x11
+    li GB_F, 0x80
+    li GB_B, 0x00
+    li GB_C, 0x00
+    li GB_D, 0xFF
+    li GB_E, 0x56
+    li GB_H, 0x00
+    li GB_L, 0x0D
+    li GB_SP, 0xFFFE
+
+    jr $ra
+    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+
 
     
 ############################

@@ -55,6 +55,13 @@ runCPU:
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
 
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _CALC_CYCLE_TO
+    nop
+    # double speed mode
+    sll $at, $at, 1
+_CALC_CYCLE_TO:
     add TMP2, CycleTo, CYCLES_RUN    # calculate upper bound of execution
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT

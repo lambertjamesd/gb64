@@ -12,7 +12,7 @@ extern OSIoMesg        dmaIOMessageBuf;
 
 struct ROMLayout gGBRom;
 
-#define EXTENDED_BANK_OFFSET    0x8
+#define EXTENDED_BANK_OFFSET    0x9
 #define EXTENDED_BANK_ID        0x52
 
 int _romBankSizes[] = {
@@ -24,6 +24,7 @@ int _romBankSizes[] = {
     64,
     128,
     256,
+    512,
     // extended bank starts here
     72,
     80,
@@ -109,9 +110,9 @@ char* getROMBank(struct ROMLayout* romLayout, int bankIndex)
 {
     struct VirtualBank *useBank;
 
-    if (bankIndex < 1)
+    if (bankIndex < 0)
     {
-        bankIndex = 1;
+        bankIndex = 0;
     }
     else if (bankIndex >= romLayout->romBankCount)
     {
@@ -177,13 +178,16 @@ int getROMBankCount(struct ROMLayout* romLayout)
 
 int getRAMBankCount(struct ROMLayout* romLayout)
 {
-    if (romLayout->mainBank[GB_ROM_H_RAM_SIZE] == 0x3)
-    {
-        return 4;
-    }
-    else
-    {
-        return 1;
+    switch (romLayout->mainBank[GB_ROM_H_RAM_SIZE])
+    { 
+        case 0x3:
+            return 4;
+        case 0x4:
+            return 16;
+        case 0x5:
+            return 8;
+        default:
+            return 1;
     }
 }
 
@@ -194,14 +198,43 @@ int getCartType(struct ROMLayout* romLayout)
 
 void loadBIOS(struct ROMLayout* romLayout, int gbc)
 {
-	OSIoMesg dmaIoMesgBuf;
+    if (gbc) 
+    {
+        OSIoMesg dmaIoMesgBuf;
 
-    dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
-    dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
-    dmaIoMesgBuf.dramAddr = romLayout->mainBank;
-    dmaIoMesgBuf.devAddr = (u32)_dmg_bootSegmentRomStart;
-    dmaIoMesgBuf.size = (u32)_dmg_bootSegmentRomEnd - (u32)_dmg_bootSegmentRomStart;
+        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+        dmaIoMesgBuf.dramAddr = romLayout->mainBank;
+        dmaIoMesgBuf.devAddr = (u32)_cgb_biosSegmentRomStart;
+        dmaIoMesgBuf.size = 0x100;
 
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
-	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+
+        // split into two dmas since the gbc bios doesn't overwrite addresses 0x100-0x1FF
+        
+        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+        dmaIoMesgBuf.dramAddr = romLayout->mainBank + 0x200;
+        dmaIoMesgBuf.devAddr = (u32)_cgb_biosSegmentRomStart + 0x200;
+        dmaIoMesgBuf.size = (u32)_cgb_biosSegmentRomEnd - (u32)_cgb_biosSegmentRomStart - 0x200;
+
+        osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osInvalDCache(romLayout->mainBank, ROM_BANK_SIZE);
+    }
+    else
+    {
+        OSIoMesg dmaIoMesgBuf;
+
+        dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
+        dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
+        dmaIoMesgBuf.dramAddr = romLayout->mainBank;
+        dmaIoMesgBuf.devAddr = (u32)_dmg_bootSegmentRomStart;
+        dmaIoMesgBuf.size = (u32)_dmg_bootSegmentRomEnd - (u32)_dmg_bootSegmentRomStart;
+
+        osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
+        (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osInvalDCache(romLayout->mainBank, ROM_BANK_SIZE);
+    }
 }

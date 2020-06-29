@@ -1,14 +1,15 @@
 
 #### 0x1X
+.global GB_STOP
 GB_STOP:
     jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
     nop
+    jal CHECK_FOR_SPEED_SWITCH
+    nop
+    bnez $v0, DECODE_NEXT
     addi $at, $zero, STOP_REASON_STOP
     j GB_SIMULATE_HALTED # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
-    nop
-    nop
-    nop
 GB_LD_DE_D16:
     jal READ_NEXT_INSTRUCTION # read immedate values
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run

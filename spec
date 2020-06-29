@@ -41,9 +41,15 @@ beginseg
 endseg
 
 beginseg
+	name "cgb_bios"
+	flags RAW
+	include "data/cgb_bios.bin"
+endseg
+
+beginseg
 	name "gbrom"
 	flags RAW
-	include "data/PokemonBlue.gb"
+	include "data/OracleOfAges.gbc"
 endseg
 
 beginwave
@@ -52,6 +58,7 @@ beginwave
 	include "static"
 	include "gbrom"
 	include "dmg_boot"
+	include "cgb_bios"
 	include "cfb"
 	include "rsp_cfb"
 endwave

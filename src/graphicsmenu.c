@@ -26,7 +26,6 @@ void renderPalleteItem(struct CursorMenuItem* menuItem, int x, int y, int select
     setSpriteColor(GET_R(pallete[3]), GET_G(pallete[3]), GET_B(pallete[3]));
     renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 48, y + 12, 1, 1);
 
-
     setSpriteColor(255, 255, 255);
 }
 
