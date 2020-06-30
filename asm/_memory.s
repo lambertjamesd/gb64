@@ -114,7 +114,7 @@ _GB_WRITE_JUMP_TABLE:
     nop
     j _GB_WRITE_REG_5X
     nop
-    jr $ra # TODO
+    j _GB_WRITE_REG_6X
     nop
     j _GB_WRITE_REG_7X
     nop
@@ -402,7 +402,8 @@ _GB_WRITE_REG_4X_TABLE:
     nop
     # VBK
     andi VAL, VAL, 0x1
-    sll VAL, VAL, 13 # mulitply by 0x8000 (VRAM bank size)
+    write_register_direct VAL, REG_VBK
+    sll VAL, VAL, 13 # mulitply by 0x2000 (VRAM bank size)
     li $at, MEMORY_VRAM
     add $at, $at, Memory
     add $at, $at, VAL
@@ -683,7 +684,51 @@ _GB_WRITE_REG_UNLOAD_BIOS_CGB:
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
 
+############################
 
+_GB_WRITE_REG_6X:
+    li $at, REG_BCPS
+    beq $at, ADDR, _GB_BASIC_REGISTER_WRITE
+
+    li $at, REG_BCPD
+    beq $at, ADDR, _GB_WRITE_PALLETE
+    li TMP2, 0
+
+    li $at, REG_OCPS
+    beq $at, ADDR, _GB_BASIC_REGISTER_WRITE
+    
+    li $at, REG_OCPD
+    beq $at, ADDR, _GB_WRITE_PALLETE
+    li TMP2, 1
+
+    jr $ra
+    nop
+
+_GB_WRITE_PALLETE:
+    sll TMP3, TMP2, 1
+    add TMP3, TMP3, Memory # TMP3 used to point to memory register
+
+    li $at, MEMORY_BG_PAL
+    sll TMP2, TMP2, 6
+    add TMP2, TMP2, $at # TMP2 used to point to pallete
+    add TMP2, TMP2, Memory
+
+    lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    andi $at, $at, 0x3F
+    add TMP2, TMP2, $at
+    sb VAL, 0(TMP2)
+    
+    lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    andi $at, $at, 0x80
+    beqz $at, _GB_WRITE_PALLETE_FINISH
+    nop
+    lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    addi $at, $at, 1
+    andi $at, $at, 0xBF
+    sb $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+_GB_WRITE_PALLETE_FINISH:
+    jr $ra
+    nop
     
 ############################
 

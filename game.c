@@ -43,8 +43,6 @@
 
 #define RUN_TESTS 0
 
-void GB_STOP();
-
 /*
  * This is the main routine of the app.
  */
@@ -107,7 +105,7 @@ game(void)
 	int frames = 0;
 
 	// clearDebugOutput();
-	DEBUG_PRINT_F("\n%X\n%X\n", GB_STOP, READ_REGISTER_DIRECT(&gGameboy.memory, REG_KEY1));
+	DEBUG_PRINT_F("\n%X\n%X\n", 0, 0);
 
     /*
      * Main game loop

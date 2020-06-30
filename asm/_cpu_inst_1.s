@@ -1,6 +1,5 @@
 
 #### 0x1X
-.global GB_STOP
 GB_STOP:
     jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
     nop
