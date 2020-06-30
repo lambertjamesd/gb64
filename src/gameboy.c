@@ -248,7 +248,6 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 {
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
-    updatePalleteInfo(gameboy);
     gameboy->memory.misc.biosLoaded = 1;
 
     loadFromFlash(&gameboy->settings, 0, sizeof(struct GameboySettings));
@@ -266,6 +265,17 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
         gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] && !(gameboy->settings.flags & GB_SETTINGS_FLAGS_DISABLE_GBC)
     ) {
         gameboy->cpu.gbc = 1;
+
+        int i;
+
+        for (i = 0; i < PALLETE_COUNT; ++i)
+        {
+            gGameboy.memory.vram.colorPalletes[i] = 0xFFFF;
+        }
+    }
+    else
+    {
+        updatePalleteInfo(gameboy);
     }
 
     loadBIOS(gameboy->memory.rom, gameboy->cpu.gbc);

@@ -8,6 +8,7 @@
 #include "gameboy.h"
 
 u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
+u16 gScreenPalette[PALLETE_COUNT];
 
 #define COPY_SCREEN_STRIP(blockY)                                        \
     gsDPLoadTextureTile(                                            \
@@ -37,7 +38,7 @@ Gfx gDrawScreen[] = {
     gsDPSetTexturePersp(G_TP_NONE),
     gsDPSetCombineMode(G_CC_BLENDRGBA, G_CC_BLENDRGBA),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
-    gsDPLoadTLUT_pal256(gGameboy.memory.vram.colorPalletes),
+    gsDPLoadTLUT_pal256(gScreenPalette),
     gsDPSetTextureLUT(G_TT_RGBA16),
 
     COPY_SCREEN_STRIP(0),
@@ -172,6 +173,20 @@ void initGraphicsState(
     else
     {
         state->spriteCount = 0;
+    }
+
+    if (gbc)
+    {
+        int i;
+
+        for (i = 0; i < PALLETE_COUNT; ++i)
+        {
+            gScreenPalette[i] = GBC_TO_N64_COLOR(gGameboy.memory.vram.colorPalletes[i]);
+        }
+    }
+    else
+    {
+        memCopy(gScreenPalette, gGameboy.memory.vram.colorPalletes, sizeof(gScreenPalette));
     }
 
     state->gbc = gbc;

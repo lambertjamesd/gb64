@@ -151,6 +151,7 @@ struct Tile {
     unsigned short rows[8];
 };
 
+#define PALLETE_COUNT   64
 #define OBJ_PALLETE_INDEX_START 32
 
 struct GraphicsMemory {
@@ -164,7 +165,7 @@ struct GraphicsMemory {
     
     // first 32 colors are background pallettes
     // last 32 colors are obj palletes
-    u16 colorPalletes[64];
+    u16 colorPalletes[PALLETE_COUNT];
 };
 
 struct Memory;

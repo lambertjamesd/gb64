@@ -591,6 +591,9 @@ _GB_WRITE_OBP1:
     add ADDR, Memory, $at
 
 _GB_WRITE_DMA_PAL:
+    lbu $at, CPU_STATE_GBC(CPUState)
+    bnez $at, _GB_WRITE_DMA_PAL_SKIP
+
     andi $at, VAL, 0x03
     sll $at, $at, 1
     add $at, TMP2, $at
@@ -616,6 +619,9 @@ _GB_WRITE_DMA_PAL:
     jr $ra
     sh $at, 6(ADDR)
 
+_GB_WRITE_DMA_PAL_SKIP:
+    jr $ra
+    nop
 
 
 ############################

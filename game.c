@@ -75,22 +75,6 @@ game(void)
 
 	initDebugMenu(&gDebugMenu, &gGameboy.cpu, &gGameboy.memory);
 
-	gGameboy.memory.vram.colorPalletes[0] = 0b1100011110110100;
-	gGameboy.memory.vram.colorPalletes[1] = 0b1000111000011100;
-	gGameboy.memory.vram.colorPalletes[2] = 0b0011001101010100;
-	gGameboy.memory.vram.colorPalletes[3] = 0b0000100011001000;
-	
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 0] = 0b1100011110110100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 1] = 0b1000111000011100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 2] = 0b0011001101010100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 3] = 0b0000100011001000;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 4] = 0b1100011110110100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 5] = 0b1000111000011100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 6] = 0b0011001101010100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 7] = 0b0000100011001000;
-
-	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
-
 	debugWrite = (void*)(0x80700000 - 12);
 	*((u32*)debugWrite) = (int)&gGameboy.memory;
 	debugWrite = (void*)(0x80700000 - 16);

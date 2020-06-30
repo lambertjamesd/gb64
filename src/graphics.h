@@ -51,7 +51,10 @@
 
 #define READ_PIXEL_INDEX(pixel, x) ((x == 7) ? ((((pixel) >> 8) & 0x1) | (((pixel) << 1) & 0x2)) : ((((pixel) >> (15 - x)) & 0x1) | (((pixel) >> (6 - x)) & 0x2)))
 
+#define GBC_TO_N64_COLOR(color) ((color) & 0x7C00 >> 9 | (color) & 0x3E0 << 1 | (color) & 0x1F << 11 | 0x1)
+
 extern u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
+extern u16 gScreenPalette[PALLETE_COUNT];
 extern Gfx gDrawScreen[];
 
 struct GraphicsState {
