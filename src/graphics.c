@@ -8,7 +8,7 @@
 #include "gameboy.h"
 
 u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
-u16 gScreenPalette[PALLETE_COUNT];
+u16 gScreenPalette[PALETTE_COUNT];
 
 #define COPY_SCREEN_STRIP(blockY)                                        \
     gsDPLoadTextureTile(                                            \
@@ -59,7 +59,7 @@ Gfx gDrawScreen[] = {
 
 #define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX)    \
     if (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)) \
-        *targetMemory = (spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY) + OBJ_PALLETE_INDEX_START;                \
+        *targetMemory = (spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY) + OBJ_PALETTE_INDEX_START;                \
     else                                                                                        \
         *targetMemory = pixelIndex;                            \
     ++x;                                                                                        \
@@ -67,9 +67,9 @@ Gfx gDrawScreen[] = {
     if (x == maxX)                                                                       \
         break;
 
-#define WRITE_SPRITE_PIXEL(spriteRow, palleteOffset, x, targetMemory, pixel)                                     \
+#define WRITE_SPRITE_PIXEL(spriteRow, paletteOffset, x, targetMemory, pixel)                                     \
     if (READ_PIXEL_INDEX(spriteRow, pixel) && *targetMemory == 0)                                                                                       \
-        *targetMemory = READ_PIXEL_INDEX(spriteRow, pixel) + palleteOffset;                     \
+        *targetMemory = READ_PIXEL_INDEX(spriteRow, pixel) + paletteOffset;                     \
     ++x;                                                                                        \
     ++targetMemory;                                                                             \
     if (x == GB_SCREEN_W)                                                                       \
@@ -179,14 +179,14 @@ void initGraphicsState(
     {
         int i;
 
-        for (i = 0; i < PALLETE_COUNT; ++i)
+        for (i = 0; i < PALETTE_COUNT; ++i)
         {
-            gScreenPalette[i] = GBC_TO_N64_COLOR(gGameboy.memory.vram.colorPalletes[i]);
+            gScreenPalette[i] = GBC_TO_N64_COLOR(gGameboy.memory.vram.colorPalettes[i]);
         }
     }
     else
     {
-        memCopy(gScreenPalette, gGameboy.memory.vram.colorPalletes, sizeof(gScreenPalette));
+        memCopy(gScreenPalette, gGameboy.memory.vram.colorPalettes, sizeof(gScreenPalette));
     }
 
     state->gbc = gbc;
@@ -254,13 +254,13 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
             ++x;
         }
 
-        u16 palleteIndex = state->gbc ? 
-            (currentSprite.flags & SPRITE_FLAGS_GBC_PALLETE) << 2 : 
-            ((currentSprite.flags & SPRITE_FLAGS_DMA_PALLETE) >> 2);
+        u16 paletteIndex = state->gbc ? 
+            (currentSprite.flags & SPRITE_FLAGS_GBC_PALETTE) << 2 : 
+            ((currentSprite.flags & SPRITE_FLAGS_DMA_PALETTE) >> 2);
 
         if (currentSprite.flags & SPRITE_FLAGS_PRIORITY)
         {
-            palleteIndex |= SPRITE_FLAGS_PRIORITY;
+            paletteIndex |= SPRITE_FLAGS_PRIORITY;
         }
 
         int yIndex = state->row - (currentSprite.y - SPRITE_Y_OFFSET);
@@ -287,38 +287,38 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
         switch (sourceX + ((currentSprite.flags & SPRITE_FLAGS_X_FLIP) ? 8 : 0))
         {
             case 0:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 0);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 0);
             case 1:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 1);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 1);
             case 2:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 2);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 2);
             case 3:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 3);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 3);
             case 4:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 4);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 4);
             case 5:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 5);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 5);
             case 6:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 6);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 6);
             case 7:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 7);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 7);
                 break;
             case 8:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 7);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 7);
             case 9:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 6);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 6);
             case 10:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 5);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 5);
             case 11:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 4);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 4);
             case 12:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 3);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 3);
             case 13:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 2);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 2);
             case 14:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 1);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 1);
             case 15:
-                WRITE_SPRITE_PIXEL(spriteRow, palleteIndex, x, targetMemory, 0);
+                WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 0);
                 break;
         }
     }

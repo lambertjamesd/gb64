@@ -18,7 +18,7 @@
 #define SPRITE_F_PRIORITY 0x80
 #define SPRITE_F_FLIPX    0x40
 #define SPRITE_F_FLIPY    0x20
-#define SPRITE_F_PALLETE  0x10
+#define SPRITE_F_PALETTE  0x10
 
 #define MISC_START              0xFE00
 #define REGISTERS_START         0xFF00
@@ -104,9 +104,9 @@
 #define SPRITE_FLAGS_PRIORITY       0x80
 #define SPRITE_FLAGS_Y_FLIP         0x40
 #define SPRITE_FLAGS_X_FLIP         0x20
-#define SPRITE_FLAGS_DMA_PALLETE    0x10
+#define SPRITE_FLAGS_DMA_PALETTE    0x10
 #define SPRITE_FLAGS_VRAM_BANK      0x08
-#define SPRITE_FLAGS_GBC_PALLETE    0x07
+#define SPRITE_FLAGS_GBC_PALETTE    0x07
 
 #define DEBUG_INSTRUCTION  0xD3
 
@@ -151,8 +151,8 @@ struct Tile {
     unsigned short rows[8];
 };
 
-#define PALLETE_COUNT   64
-#define OBJ_PALLETE_INDEX_START 32
+#define PALETTE_COUNT   64
+#define OBJ_PALETTE_INDEX_START 32
 
 struct GraphicsMemory {
     struct Tile tiles[384];
@@ -164,8 +164,8 @@ struct GraphicsMemory {
     unsigned char tilemap1Atts[1024];
     
     // first 32 colors are background pallettes
-    // last 32 colors are obj palletes
-    u16 colorPalletes[PALLETE_COUNT];
+    // last 32 colors are obj palettes
+    u16 colorPalettes[PALETTE_COUNT];
 };
 
 struct Memory;

@@ -585,7 +585,7 @@ _GB_WRITE_OBP0:
 
 _GB_WRITE_OBP1:
     write_register_direct VAL, REG_OBP1
-    la $at, MEMORY_OBJ_PAL + 8 # second pallete index
+    la $at, MEMORY_OBJ_PAL + 8 # second palette index
     la TMP2, gOBP1Colors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
@@ -697,26 +697,26 @@ _GB_WRITE_REG_6X:
     beq $at, ADDR, _GB_BASIC_REGISTER_WRITE
 
     li $at, REG_BCPD
-    beq $at, ADDR, _GB_WRITE_PALLETE
+    beq $at, ADDR, _GB_WRITE_PALETTE
     li TMP2, 0
 
     li $at, REG_OCPS
     beq $at, ADDR, _GB_BASIC_REGISTER_WRITE
     
     li $at, REG_OCPD
-    beq $at, ADDR, _GB_WRITE_PALLETE
+    beq $at, ADDR, _GB_WRITE_PALETTE
     li TMP2, 1
 
     jr $ra
     nop
 
-_GB_WRITE_PALLETE:
+_GB_WRITE_PALETTE:
     sll TMP3, TMP2, 1
     add TMP3, TMP3, Memory # TMP3 used to point to memory register
 
     li $at, MEMORY_BG_PAL
     sll TMP2, TMP2, 6
-    add TMP2, TMP2, $at # TMP2 used to point to pallete
+    add TMP2, TMP2, $at # TMP2 used to point to palette
     add TMP2, TMP2, Memory
 
     lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
@@ -726,13 +726,13 @@ _GB_WRITE_PALLETE:
     
     lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
     andi $at, $at, 0x80
-    beqz $at, _GB_WRITE_PALLETE_FINISH
+    beqz $at, _GB_WRITE_PALETTE_FINISH
     nop
     lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
     addi $at, $at, 1
     andi $at, $at, 0xBF
     sb $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
-_GB_WRITE_PALLETE_FINISH:
+_GB_WRITE_PALETTE_FINISH:
     jr $ra
     nop
     

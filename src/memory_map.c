@@ -3,7 +3,7 @@
 #include "../memory.h"
 #include "debug_out.h"
 
-u16 palleteColors[] = {
+u16 paletteColors[] = {
     0x09C2,
     0x330C,
     0x8D42,

@@ -3,13 +3,13 @@
 #include "../render.h"
 #include "gameboy.h"
 
-void renderPalleteItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
+void renderPaletteItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
 {
     FONTCOL(255, 255, 255, 255);
     SHOWFONT(&glistp, menuItem->label, x, y);
 
-    u16* palleteIndexPtr = (u16*)menuItem->data;
-    u16* pallete = getPallete(*palleteIndexPtr);
+    u16* paletteIndexPtr = (u16*)menuItem->data;
+    u16* palette = getPalette(*paletteIndexPtr);
 
     if (selected)
     {
@@ -17,39 +17,39 @@ void renderPalleteItem(struct CursorMenuItem* menuItem, int x, int y, int select
         renderSprite(&gGUIItemTemplates[GUIItemIconRight], x + 60, y + 12, 1, 1);
     }
 
-    setSpriteColor(GET_R(pallete[0]), GET_G(pallete[0]), GET_B(pallete[0]));
+    setSpriteColor(GET_R(palette[0]), GET_G(palette[0]), GET_B(palette[0]));
     renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 12, y + 12, 1, 1);
-    setSpriteColor(GET_R(pallete[1]), GET_G(pallete[1]), GET_B(pallete[1]));
+    setSpriteColor(GET_R(palette[1]), GET_G(palette[1]), GET_B(palette[1]));
     renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 24, y + 12, 1, 1);
-    setSpriteColor(GET_R(pallete[2]), GET_G(pallete[2]), GET_B(pallete[2]));
+    setSpriteColor(GET_R(palette[2]), GET_G(palette[2]), GET_B(palette[2]));
     renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 36, y + 12, 1, 1);
-    setSpriteColor(GET_R(pallete[3]), GET_G(pallete[3]), GET_B(pallete[3]));
+    setSpriteColor(GET_R(palette[3]), GET_G(palette[3]), GET_B(palette[3]));
     renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 48, y + 12, 1, 1);
 
     setSpriteColor(255, 255, 255);
 }
 
-struct MenuItem* inputPalleteItem(struct CursorMenuItem* menuItem, int buttonDown)
+struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDown)
 {
-    u16* palleteIndexPtr = (u16*)menuItem->data;
+    u16* paletteIndexPtr = (u16*)menuItem->data;
 
     if (buttonDown & R_JPAD)
     {
-        *palleteIndexPtr = (*palleteIndexPtr + 1) % getPalleteCount();
-        updatePalleteInfo(&gGameboy);
+        *paletteIndexPtr = (*paletteIndexPtr + 1) % getPaletteCount();
+        updatePaletteInfo(&gGameboy);
     }
 
     if (buttonDown & L_JPAD)
     {
-        if (*palleteIndexPtr == 0)
+        if (*paletteIndexPtr == 0)
         {
-            *palleteIndexPtr = getPalleteCount() - 1;
+            *paletteIndexPtr = getPaletteCount() - 1;
         }
         else
         {
-            *palleteIndexPtr = *palleteIndexPtr - 1;
+            *paletteIndexPtr = *paletteIndexPtr - 1;
         }
-        updatePalleteInfo(&gGameboy);
+        updatePaletteInfo(&gGameboy);
     }
 
     return NULL;
@@ -105,8 +105,8 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         32
     );
     menu->menuItems[GraphicsMenuItemGBP].data = &gGameboy.settings.bgpIndex;
-    menu->menuItems[GraphicsMenuItemGBP].render = renderPalleteItem;
-    menu->menuItems[GraphicsMenuItemGBP].input = inputPalleteItem;
+    menu->menuItems[GraphicsMenuItemGBP].render = renderPaletteItem;
+    menu->menuItems[GraphicsMenuItemGBP].input = inputPaletteItem;
     
     initCursorMenuItem(
         &menu->menuItems[GraphicsMenuItemOBP0],
@@ -115,8 +115,8 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         32
     );
     menu->menuItems[GraphicsMenuItemOBP0].data = &gGameboy.settings.obp0Index;
-    menu->menuItems[GraphicsMenuItemOBP0].render = renderPalleteItem;
-    menu->menuItems[GraphicsMenuItemOBP0].input = inputPalleteItem;
+    menu->menuItems[GraphicsMenuItemOBP0].render = renderPaletteItem;
+    menu->menuItems[GraphicsMenuItemOBP0].input = inputPaletteItem;
 
     initCursorMenuItem(
         &menu->menuItems[GraphicsMenuItemOBP1],
@@ -125,6 +125,6 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         32
     );
     menu->menuItems[GraphicsMenuItemOBP1].data = &gGameboy.settings.obp1Index;
-    menu->menuItems[GraphicsMenuItemOBP1].render = renderPalleteItem;
-    menu->menuItems[GraphicsMenuItemOBP1].input = inputPalleteItem;
+    menu->menuItems[GraphicsMenuItemOBP1].render = renderPaletteItem;
+    menu->menuItems[GraphicsMenuItemOBP1].input = inputPaletteItem;
 }

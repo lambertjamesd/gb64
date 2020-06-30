@@ -52,7 +52,7 @@ Bitmap gGUIItemTemplates[] = {
 static Gfx      gButtonIconsDL[NUM_DL(1) * BUTTON_ICON_DL_LENGTH];
 static Bitmap   gButtonIcons[BUTTON_ICON_COUNT];
 
-unsigned short gGUIPallete[] = {
+unsigned short gGUIPalette[] = {
 	0x0001,
 	0xEF2B,
 	0xEE87,
@@ -89,7 +89,7 @@ Sprite gButtonSprite = {
     SP_TRANSPARENT | SP_CUTOUT,
     0x1234,
     255, 255, 255, 255,
-    0, sizeof(gGUIPallete) / sizeof(*gGUIPallete), (int*)gGUIPallete,
+    0, sizeof(gGUIPalette) / sizeof(*gGUIPalette), (int*)gGUIPalette,
     0, 0,
     BUTTON_ICON_COUNT, NUM_DL(1) * BUTTON_ICON_DL_LENGTH,
     32, 32,

@@ -268,14 +268,14 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 
         int i;
 
-        for (i = 0; i < PALLETE_COUNT; ++i)
+        for (i = 0; i < PALETTE_COUNT; ++i)
         {
-            gGameboy.memory.vram.colorPalletes[i] = 0xFFFF;
+            gGameboy.memory.vram.colorPalettes[i] = 0xFFFF;
         }
     }
     else
     {
-        updatePalleteInfo(gameboy);
+        updatePaletteInfo(gameboy);
     }
 
     loadBIOS(gameboy->memory.rom, gameboy->cpu.gbc);
@@ -458,7 +458,7 @@ void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex b
     asInputArray[buttonIndex] = setting;
 }
 
-u16 gDMAPalletes[][4] = {
+u16 gDMAPalettes[][4] = {
     {
         COL24TO16(0xE0F8D0), 
         COL24TO16(0x88C070), 
@@ -477,7 +477,7 @@ u16 gDMAPalletes[][4] = {
         COL24TO16(0xD71A21), 
         COL24TO16(0x00324D),
     },
-    // SGB palletes
+    // SGB palettes
     {
         COL24TO16(0xf8e8c8), 
         COL24TO16(0xd89048), 
@@ -663,53 +663,53 @@ u16 gDMAPalletes[][4] = {
     },
 };
 
-int getPalleteCount()
+int getPaletteCount()
 {
-    return sizeof(gDMAPalletes) / sizeof(*gDMAPalletes);
+    return sizeof(gDMAPalettes) / sizeof(*gDMAPalettes);
 }
 
-u16* getPallete(int index)
+u16* getPalette(int index)
 {
-    if (index >= 0 && index < getPalleteCount())
+    if (index >= 0 && index < getPaletteCount())
     {
-        return gDMAPalletes[index];
+        return gDMAPalettes[index];
     }
     else
     {
-        return gDMAPalletes[0];
+        return gDMAPalettes[0];
     }
 }
 
-void updatePalleteInfo(struct GameBoy* gameboy)
+void updatePaletteInfo(struct GameBoy* gameboy)
 {
-    u16* src = getPallete(gameboy->settings.bgpIndex);
+    u16* src = getPalette(gameboy->settings.bgpIndex);
 
     (&gBGPColors)[0] = src[0]; (&gBGPColors)[1] = src[1];
     (&gBGPColors)[2] = src[2]; (&gBGPColors)[3] = src[3];
 
-    src = getPallete(gameboy->settings.obp0Index);
+    src = getPalette(gameboy->settings.obp0Index);
     (&gOBP0Colors)[0] = src[0]; (&gOBP0Colors)[1] = src[1];
     (&gOBP0Colors)[2] = src[2]; (&gOBP0Colors)[3] = src[3];
     
-    src = getPallete(gameboy->settings.obp1Index);
+    src = getPalette(gameboy->settings.obp1Index);
     (&gOBP1Colors)[0] = src[0]; (&gOBP1Colors)[1] = src[1];
     (&gOBP1Colors)[2] = src[2]; (&gOBP1Colors)[3] = src[3];
 
     u8 bgp = READ_REGISTER_DIRECT(&gameboy->memory, REG_BGP);
-    gameboy->memory.vram.colorPalletes[0] = (&gBGPColors)[bgp >> 0 & 0x3];
-    gameboy->memory.vram.colorPalletes[1] = (&gBGPColors)[bgp >> 2 & 0x3];
-    gameboy->memory.vram.colorPalletes[2] = (&gBGPColors)[bgp >> 4 & 0x3];
-    gameboy->memory.vram.colorPalletes[3] = (&gBGPColors)[bgp >> 6 & 0x3];
+    gameboy->memory.vram.colorPalettes[0] = (&gBGPColors)[bgp >> 0 & 0x3];
+    gameboy->memory.vram.colorPalettes[1] = (&gBGPColors)[bgp >> 2 & 0x3];
+    gameboy->memory.vram.colorPalettes[2] = (&gBGPColors)[bgp >> 4 & 0x3];
+    gameboy->memory.vram.colorPalettes[3] = (&gBGPColors)[bgp >> 6 & 0x3];
     
     u8 obp0 = READ_REGISTER_DIRECT(&gameboy->memory, REG_OBP0);
-    gameboy->memory.vram.colorPalletes[32] = (&gOBP0Colors)[obp0 >> 0 & 0x3];
-    gameboy->memory.vram.colorPalletes[33] = (&gOBP0Colors)[obp0 >> 2 & 0x3];
-    gameboy->memory.vram.colorPalletes[34] = (&gOBP0Colors)[obp0 >> 4 & 0x3];
-    gameboy->memory.vram.colorPalletes[35] = (&gOBP0Colors)[obp0 >> 6 & 0x3];
+    gameboy->memory.vram.colorPalettes[32] = (&gOBP0Colors)[obp0 >> 0 & 0x3];
+    gameboy->memory.vram.colorPalettes[33] = (&gOBP0Colors)[obp0 >> 2 & 0x3];
+    gameboy->memory.vram.colorPalettes[34] = (&gOBP0Colors)[obp0 >> 4 & 0x3];
+    gameboy->memory.vram.colorPalettes[35] = (&gOBP0Colors)[obp0 >> 6 & 0x3];
     
     u8 obp1 = READ_REGISTER_DIRECT(&gameboy->memory, REG_OBP1);
-    gameboy->memory.vram.colorPalletes[36] = (&gOBP1Colors)[obp1 >> 0 & 0x3];
-    gameboy->memory.vram.colorPalletes[37] = (&gOBP1Colors)[obp1 >> 2 & 0x3];
-    gameboy->memory.vram.colorPalletes[38] = (&gOBP1Colors)[obp1 >> 4 & 0x3];
-    gameboy->memory.vram.colorPalletes[39] = (&gOBP1Colors)[obp1 >> 6 & 0x3];
+    gameboy->memory.vram.colorPalettes[36] = (&gOBP1Colors)[obp1 >> 0 & 0x3];
+    gameboy->memory.vram.colorPalettes[37] = (&gOBP1Colors)[obp1 >> 2 & 0x3];
+    gameboy->memory.vram.colorPalettes[38] = (&gOBP1Colors)[obp1 >> 4 & 0x3];
+    gameboy->memory.vram.colorPalettes[39] = (&gOBP1Colors)[obp1 >> 6 & 0x3];
 }

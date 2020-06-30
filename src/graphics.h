@@ -17,7 +17,7 @@
 #define SPRITE_BASE_HEIGHT  8
 #define SPRITE_Y_OFFSET     16
 
-#define TILE_ATTR_PALLETE       0x07
+#define TILE_ATTR_PALETTE       0x07
 #define TILE_ATTR_VRAM_BANK     0x08
 #define TILE_ATTR_H_FLIP        0x20
 #define TILE_ATTR_V_FLIP        0x40
@@ -54,7 +54,7 @@
 #define GBC_TO_N64_COLOR(color) ((color) & 0x7C00 >> 9 | (color) & 0x3E0 << 1 | (color) & 0x1F << 11 | 0x1)
 
 extern u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
-extern u16 gScreenPalette[PALLETE_COUNT];
+extern u16 gScreenPalette[PALETTE_COUNT];
 extern Gfx gDrawScreen[];
 
 struct GraphicsState {
