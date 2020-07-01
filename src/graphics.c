@@ -30,6 +30,9 @@ u16 gScreenPalette[PALETTE_COUNT];
         (1 << 10), (1 << 10)                                                                     \
     )
 
+// GGGRRRRR 1BBBBBGG to RRRRRGGGGGBBBBB1
+#define GBC_TO_N64_COLOR(color) ((color) & 0x1F00 << 3 | (color) & 0xE000 >> 7 | (color) & 0x3 << 9 | (color) & 0x7C >> 1 | 0x1)
+
 Gfx gDrawScreen[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),

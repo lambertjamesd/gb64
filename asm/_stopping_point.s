@@ -258,19 +258,28 @@ DEQUEUE_STOPPING_POINT_J_TABLE_END:
 # 1140
 
 ENTER_MODE_0:
+    read_register_direct $at, REG_HDMA5
+    andi $at, $at, 0x80
+    bnez $at, _ENTER_MODE_0_SKIP_DMA
+    nop
+    jal GB_DMA_BLOCK
+    addi CYCLES_RUN, CYCLES_RUN, 1
+_ENTER_MODE_0_SKIP_DMA:
     read_register_direct TMP3, REG_LY
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
 
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_0_CYCLES
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
     beqz $at, _QUEUE_NEXT_MODE_0
-    sll TMP2, TMP2, 8
-    sll TMP2, TMP2, 1
+    li TMP2, REG_LCDC_STATUS_MODE_0_CYCLES
+    # in double speed mode screen events take double the number of cycles
+    sll TMP2, TMP2, 1 
 _QUEUE_NEXT_MODE_0:
+    add TMP2, TMP2, TMP4 # relative to the last event
+    sll TMP2, TMP2, 8
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
     slti $at, TMP3, GB_SCREEN_H
     bnez $at, _ENTER_MODE_0_NEXT_MODE
@@ -281,7 +290,6 @@ _ENTER_MODE_0_NEXT_MODE:
     add TMP2, TMP2, TMP4
     j CHECK_LSTAT_INTERRUPT
     nop
-
 ENTER_MODE_1:
     read_register_direct TMP3, REG_LY
     li $at, GB_SCREEN_H
@@ -298,13 +306,14 @@ _MODE_1_SKIP_V_BLANK:
     # request interrupt
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_1_CYCLES
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
     beqz $at, _QUEUE_NEXT_MODE_1
-    sll TMP2, TMP2, 8
+    li TMP2, REG_LCDC_STATUS_MODE_1_CYCLES
     sll TMP2, TMP2, 1
 _QUEUE_NEXT_MODE_1:
+    add TMP2, TMP2, TMP4
+    sll TMP2, TMP2, 8
     slti $at, TMP3, GB_SCREEN_LINES - 1
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
     bnez $at, _ENTER_MODE_1_NEXT_MODE
@@ -323,13 +332,14 @@ ENTER_MODE_2:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 2
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_2_CYCLES
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
     beqz $at, _QUEUE_NEXT_MODE_2
-    sll TMP2, TMP2, 8
+    li TMP2, REG_LCDC_STATUS_MODE_2_CYCLES
     sll TMP2, TMP2, 1
 _QUEUE_NEXT_MODE_2:
+    add TMP2, TMP2, TMP4
+    sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
     addi TMP3, TMP3, 1
@@ -361,13 +371,14 @@ ENTER_MODE_3:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 3
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_3_CYCLES
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
     beqz $at, _QUEUE_NEXT_MODE_3
-    sll TMP2, TMP2, 8
+    li TMP2, REG_LCDC_STATUS_MODE_3_CYCLES
     sll TMP2, TMP2, 1
 _QUEUE_NEXT_MODE_3:
+    add TMP2, TMP2, TMP4
+    sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_0
     j CHECK_LSTAT_INTERRUPT

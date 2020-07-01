@@ -74,6 +74,8 @@
 #define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D
 
+#define REG_HDMA5       0xFF55
+
 #define REG_KEY1_PREPARE_SWITCH  0x1
 #define REG_KEY1_CURRENT_SPEED  0x80
 

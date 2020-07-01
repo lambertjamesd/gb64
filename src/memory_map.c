@@ -243,4 +243,5 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
 
     WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
     WRITE_REGISTER_DIRECT(memory, REG_NR52, 0xF0);
+    WRITE_REGISTER_DIRECT(memory, REG_HDMA5, 0xFF);
 }

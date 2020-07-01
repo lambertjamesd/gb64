@@ -629,6 +629,26 @@ _GB_WRITE_DMA_PAL_SKIP:
 _GB_WRITE_REG_5X:
     li $at, REG_UNLOAD_BIOS
     beq $at, ADDR, _GB_WRITE_REG_UNLOAD_BIOS
+    
+    li $at, REG_HDMA1
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0xFF
+    
+    li $at, REG_HDMA2
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0xF0
+
+    li $at, REG_HDMA3
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0x1F
+
+    li $at, REG_HDMA4
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0xF0
+
+    li $at, REG_HDMA5
+    beq $at, ADDR, _GB_START_DMA
+
     nop
     jr $ra
     nop
@@ -690,32 +710,128 @@ _GB_WRITE_REG_UNLOAD_BIOS_CGB:
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
 
+_GB_WRITE_MASKED_HDMA:
+    j _GB_BASIC_REGISTER_WRITE
+    and VAL, VAL, Param0
+
+_GB_START_DMA:
+    lbu $at, CPU_STATE_GBC(CPUState)
+    beqz $at, _GB_SKIP_DMA
+    andi $at, VAL, 0x7F
+    write_register_direct $at, REG_HDMA5
+    andi $at, VAL, 0x80
+    bnez $at, _GB_SKIP_DMA
+    nop
+    addi CYCLES_RUN, CYCLES_RUN, 1
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+_GB_DMA_LOOP:
+    jal GB_DMA_BLOCK
+    nop
+    beqz $v0, _GB_DMA_LOOP
+    nop
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+_GB_SKIP_DMA:
+    jr $ra
+    nop
+
+GB_DMA_BLOCK:
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _GB_DMA_BLOCK_START
+    addi CYCLES_RUN, CYCLES_RUN, 8
+    addi CYCLES_RUN, CYCLES_RUN, 8
+_GB_DMA_BLOCK_START:
+    read_register_direct $at, REG_HDMA1
+    sll TMP2, $at, 8
+    read_register_direct $at, REG_HDMA2
+    or TMP2, TMP2, $at
+
+    addi TMP2, TMP2, 0x10
+    andi $at, TMP2, 0xFF
+    write_register_direct $at, REG_HDMA2
+    srl $at, TMP2, 8
+    write_register_direct $at, REG_HDMA1
+    addi TMP2, TMP2, -0x10
+    
+    read_register_direct $at, REG_HDMA3
+    sll TMP3, $at, 8
+    read_register_direct $at, REG_HDMA4
+    or TMP3, TMP3, $at
+
+    addi TMP3, TMP3, 0x10
+    andi $at, TMP3, 0xFF
+    write_register_direct $at, REG_HDMA4
+    srl $at, TMP3, 8
+    write_register_direct $at, REG_HDMA3
+    addi TMP3, TMP3, -0x10
+
+    andi $at, TMP2, 0xF000
+    srl $at, 10
+    add $at, $at, Memory
+    lw $at, MEMORY_ADDR_TABLE($at)
+    andi TMP2, TMP2, 0xFF0
+    add TMP2, TMP2, $at
+
+    andi $at, TMP3, 0xF000
+    srl $at, 10
+    add $at, $at, Memory
+    lw $at, MEMORY_ADDR_TABLE($at)
+    andi TMP3, TMP3, 0xFF0
+    add TMP3, TMP3, $at
+
+    lw $at, 0(TMP2)
+    sw $at, 0(TMP3)
+    lw $at, 4(TMP2)
+    sw $at, 4(TMP3)
+    lw $at, 8(TMP2)
+    sw $at, 8(TMP3)
+    lw $at, 12(TMP2)
+    sw $at, 12(TMP3)
+
+    read_register_direct TMP2, REG_HDMA5
+    andi $at, TMP2, 0x7F
+    beqz $at, _GB_DMA_BLOCK_DONE
+
+    addi TMP2, TMP2, -1
+    write_register_direct TMP2, REG_HDMA5
+
+    jr $ra
+    li $v0, 0
+_GB_DMA_BLOCK_DONE:
+    li $at, 0xFF # value when DMA is done
+    write_register_direct $at, REG_HDMA5
+    jr $ra
+    li $v0, 1
+
 ############################
 
 _GB_WRITE_REG_6X:
     li $at, REG_BCPS
-    beq $at, ADDR, _GB_BASIC_REGISTER_WRITE
+    beq $at, ADDR, _GB_WRITE_PALLETE_ADDR
+    li Param0, 0
 
     li $at, REG_BCPD
     beq $at, ADDR, _GB_WRITE_PALETTE
-    li TMP2, 0
 
     li $at, REG_OCPS
-    beq $at, ADDR, _GB_BASIC_REGISTER_WRITE
+    beq $at, ADDR, _GB_WRITE_PALLETE_ADDR
+    li Param0, 1
     
     li $at, REG_OCPD
     beq $at, ADDR, _GB_WRITE_PALETTE
-    li TMP2, 1
-
-    jr $ra
     nop
 
+    jr $ra
+    nop    
+
 _GB_WRITE_PALETTE:
-    sll TMP3, TMP2, 1
+    sll TMP3, Param0, 1
     add TMP3, TMP3, Memory # TMP3 used to point to memory register
 
     li $at, MEMORY_BG_PAL
-    sll TMP2, TMP2, 6
+    sll TMP2, Param0, 6
     add TMP2, TMP2, $at # TMP2 used to point to palette
     add TMP2, TMP2, Memory
 
@@ -726,15 +842,31 @@ _GB_WRITE_PALETTE:
     
     lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
     andi $at, $at, 0x80
-    beqz $at, _GB_WRITE_PALETTE_FINISH
+    beqz $at, _GB_BASIC_REGISTER_WRITE
     nop
-    lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
-    addi $at, $at, 1
-    andi $at, $at, 0xBF
-    sb $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
-_GB_WRITE_PALETTE_FINISH:
+    lbu VAL, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    addi ADDR, ADDR, -1
+    addi VAL, VAL, 1
+    andi VAL, VAL, 0xBF
+
+_GB_WRITE_PALLETE_ADDR:
+    sll TMP3, Param0, 1
+    add TMP3, TMP3, Memory # TMP3 used to point to memory register
+    
+    sb VAL, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    
+    li $at, MEMORY_BG_PAL
+    sll TMP2, Param0, 6
+    add TMP2, TMP2, $at # TMP2 used to point to palette
+    add TMP2, TMP2, Memory
+    andi $at, VAL, 0x3F
+    add TMP2, TMP2, $at
+
+    lbu $at, 0(TMP2)
+
     jr $ra
-    nop
+    sb $at, (MEMORY_MISC_START+REG_BCPD-MM_REGISTER_START)(TMP3)
+
     
 ############################
 
