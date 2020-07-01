@@ -155,8 +155,6 @@ game(void)
 		finishAudioFrame(&gGameboy.memory);
 		++frames;
 
-		DEBUG_PRINT_F("%X\n", gGameboy.memory.vram.colorPalettes[5]);
-
 		lastDrawTime += osGetCount();
 		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
 		// 	gGameboy.cpu.cyclesRun, 

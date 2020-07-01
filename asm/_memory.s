@@ -680,7 +680,7 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     lw $ra, 0x20($sp)
     lw $fp, 0x24($sp)
 
-    lw $at, CPU_STATE_GBC(CPUState)
+    lbu $at, CPU_STATE_GBC(CPUState)
     bnez $at, _GB_WRITE_REG_UNLOAD_BIOS_CGB
 
     li GB_A, 0x01
@@ -774,6 +774,7 @@ _GB_DMA_BLOCK_START:
     andi TMP2, TMP2, 0xFF0
     add TMP2, TMP2, $at
 
+    addi TMP3, TMP3, 0x8000
     andi $at, TMP3, 0xF000
     srl $at, 10
     add $at, $at, Memory
