@@ -245,6 +245,9 @@ _GB_WRITE_SOUND_REG:
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 1
     
+    li $at, REG_NR30
+    beq $at, ADDR, _GB_PCM_ENABLE
+
     li $at, REG_NR34
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 2
@@ -284,6 +287,19 @@ _GB_RESTART_SOUND:
 
     jr $ra
     nop
+
+_GB_PCM_ENABLE:
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+    sb VAL, 4($sp)
+    jal _GB_SYNC_AUDIO
+    nop
+    lbu VAL, 4($sp)
+    write_register_direct VAL, REG_NR30
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 8
+
 
 _GB_SOUND_ENABLED:
     addi $sp, $sp, -8
@@ -963,7 +979,6 @@ _GB_DO_READ_REGISTERS_DIRECT:
     add ADDR, Memory, ADDR # Relative to memory
     jr $ra
     lbu $v0, 0(ADDR)
-
 
 _GB_DO_READ_SOUND:
     addi $sp, $sp, -8

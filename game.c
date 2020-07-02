@@ -43,6 +43,7 @@
 
 #define RUN_TESTS 0
 
+
 /*
  * This is the main routine of the app.
  */
@@ -89,7 +90,7 @@ game(void)
 	int frames = 0;
 
 	// clearDebugOutput();
-	DEBUG_PRINT_F("\n%X\n%X\n", 0, 0);
+	DEBUG_PRINT_F("\n%X\n%X\n", GBC_TO_N64_COLOR(0x1E0F), updateOnOffRegister);
 
     /*
      * Main game loop

@@ -43,6 +43,8 @@
 #define REG_NR24        0xFF19
 
 #define REG_NR30        0xFF1A
+#define RER_NR30_ENABLED    0x80
+
 #define REG_NR31        0xFF1B
 #define REG_NR32        0xFF1C
 #define REG_NR33        0xFF1D

@@ -305,6 +305,11 @@ void tickNoise(struct NoiseSound* noiseSound)
 void tickAudio(struct Memory* memory, int untilCyles)
 {
 	struct AudioState* audio = &memory->audio;
+			
+	if (!(READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED))
+	{
+		audio->renderState.pcmSound.length = 0;
+	}
 
 	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
 	{
@@ -389,12 +394,15 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 			audio->renderState.sound2.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
 			break;
 		case SoundIndexPCM:
-			audio->renderState.pcmSound.cycle = 0;
-			audio->renderState.pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
-			audio->renderState.pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
-			audio->renderState.pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
-				READ_REGISTER_DIRECT(memory, REG_NR31) :
-				SOUND_LENGTH_INDEFINITE;
+			if (READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED)
+			{
+				audio->renderState.pcmSound.cycle = 0;
+				audio->renderState.pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
+				audio->renderState.pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
+				audio->renderState.pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
+					READ_REGISTER_DIRECT(memory, REG_NR31) :
+					SOUND_LENGTH_INDEFINITE;
+			}
 			break;
 		case SoundIndexNoise:
 			audio->renderState.noiseSound.lfsr = 0x7FFF;
@@ -468,11 +476,11 @@ void updateOnOffRegister(struct Memory* memory)
 		}
 		if (audio->renderState.pcmSound.length)
 		{
-			result |= 0x03;
+			result |= 0x04;
 		}
 		if (audio->renderState.noiseSound.length)
 		{
-			result |= 0x04;
+			result |= 0x08;
 		}
 	}
 

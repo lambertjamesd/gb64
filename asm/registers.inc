@@ -16,6 +16,7 @@
 .eqv REG_NR10, 0xFF10
 .eqv REG_NR14, 0xFF14
 .eqv REG_NR24, 0xFF19
+.eqv REG_NR30, 0xFF1A
 .eqv REG_NR34, 0xFF1E
 .eqv REG_NR44, 0xFF23
 
