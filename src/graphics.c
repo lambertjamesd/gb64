@@ -396,9 +396,9 @@ void renderPixelRow(
             offsetX = x - wX;
             bgY = state->winY;
             tilemapRow = (bgY >> 3) * TILEMAP_W;
-            tilemapRow += (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_WIN_TILE_MAP) ? 1024 : 0;
+            tilemapRow += (lcdcReg & LCDC_WIN_TILE_MAP) ? 1024 : 0;
             wX = GB_SCREEN_W;
-            ++state->winY;
+        ++state->winY;
         }
 
         bgX = (x + offsetX) & 0xFF;
@@ -424,7 +424,7 @@ void renderPixelRow(
         ];
 
         u8 pixelIndex;
-        u8 pixelIndexOffset = (tileInfo & 0x7) << 2;
+        u8 pixelIndexOffset = (tileInfo & TILE_ATTR_PALETTE) << 2;
         
         // A bit of a hack here
         // set the h flip flag to bit 3 and put the 

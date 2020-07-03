@@ -174,8 +174,7 @@ CHECK_LCDC_STAT_FLAG:
     andi $at, Param0, REG_LCDC_STATUS_MODE
     li $v0, REG_LCDC_H_BLANK_INT
     sllv $at, $v0, $at # flag to check by mode
-    move $v0, Param0
-    andi $at, $v0, (REG_LCDC_H_BLANK_INT | REG_LCDC_V_BLANK_INT | REG_LCDC_OAM_INT)
+    and $at, Param0, $at
     bnez $at, _CHECK_LCDC_STAT_FLAG_1
     andi $at, Param0, REG_LCDC_LYC_INT
     beqz $at, _CHECK_LCDC_STAT_FLAG_0

@@ -887,20 +887,22 @@ _GB_WRITE_PALLETE_ADDR:
     
 ############################
 
+.global _GB_WRITE_REG_7X
 _GB_WRITE_REG_7X:
-    ori $at, $zero, REG_SVBK
+    li $at, REG_SVBK
     bne ADDR, $at, _GB_WRITE_REG_7X_SKIP
     andi VAL, VAL, 0x7
     write_register_direct VAL, REG_SVBK
-    bne VAL, $zero, _GB_WRITE_REG_7X_CHANGE_BANK
+    bnez VAL, _GB_WRITE_REG_7X_CHANGE_BANK
     nop
     ori VAL, VAL, 0x1
 _GB_WRITE_REG_7X_CHANGE_BANK:
     sll $at, VAL, 12 # 
     add $at, $at, Memory
-    add $at, $at, MEMORY_RAM_START
-    jr $ra
+    addi $at, $at, MEMORY_RAM_START
     sw $at, (MEMORY_ADDR_TABLE + 4 * MEMORY_RAM_BANK_INDEX)(Memory)
+    jr $ra
+    sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_RAM_BANK_INDEX + 2))(Memory)
 _GB_WRITE_REG_7X_SKIP:
     jr $ra
     nop
