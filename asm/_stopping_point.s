@@ -324,6 +324,7 @@ _ENTER_MODE_1_NEXT_MODE:
     j CHECK_LSTAT_INTERRUPT
     write_register_direct TMP3, REG_LY
     
+.global ENTER_MODE_2
 ENTER_MODE_2:
     read_register_direct TMP3, REG_LY
     # load current LCDC status flag

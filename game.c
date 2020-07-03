@@ -43,7 +43,7 @@
 
 #define RUN_TESTS 0
 
-void _GB_WRITE_REG_7X();
+void ENTER_MODE_2();
 
 
 /*
@@ -92,7 +92,7 @@ game(void)
 	int frames = 0;
 
 	// clearDebugOutput();
-	DEBUG_PRINT_F("\n%X\n%X\n", _GB_WRITE_REG_7X, 0);
+	DEBUG_PRINT_F("\n%X\n%X\n", ENTER_MODE_2, 0);
 
     /*
      * Main game loop

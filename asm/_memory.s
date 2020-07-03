@@ -887,7 +887,6 @@ _GB_WRITE_PALLETE_ADDR:
     
 ############################
 
-.global _GB_WRITE_REG_7X
 _GB_WRITE_REG_7X:
     li $at, REG_SVBK
     bne ADDR, $at, _GB_WRITE_REG_7X_SKIP

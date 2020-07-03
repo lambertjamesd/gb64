@@ -398,7 +398,7 @@ void renderPixelRow(
             tilemapRow = (bgY >> 3) * TILEMAP_W;
             tilemapRow += (lcdcReg & LCDC_WIN_TILE_MAP) ? 1024 : 0;
             wX = GB_SCREEN_W;
-        ++state->winY;
+            ++state->winY;
         }
 
         bgX = (x + offsetX) & 0xFF;
