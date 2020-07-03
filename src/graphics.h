@@ -45,6 +45,8 @@
 #define WINDOW_X_OFFSET         0x7
 
 #define MODE_2_CYCLES           20
+#define MODE_3_CYCLES           43
+#define CYCLES_TIL_LINE_RENDER  (MODE_2_CYCLES + MODE_3_CYCLES / 2)
 #define CYCLES_PER_LINE         114
 #define V_BLANK_LINES           10
 #define CYCLES_PER_FRAME        (CYCLES_PER_LINE * (GB_SCREEN_H + V_BLANK_LINES))

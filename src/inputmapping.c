@@ -15,6 +15,7 @@ static char* gInputMappingNames[MAPPED_INPUT_COUNT] = {
     "SAVE",
     "LOAD",
     "MENU",
+    "FAST",
 };
 
 void renderInputMappingItem(struct CursorMenuItem* menuItem, int x, int y, int selected)

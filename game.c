@@ -92,7 +92,7 @@ game(void)
 	int frames = 0;
 
 	// clearDebugOutput();
-	DEBUG_PRINT_F("\n%X\n%X\n", ENTER_MODE_2, 0);
+	// DEBUG_PRINT_F("\n%X\n%X\n", ENTER_MODE_2, 0);
 
     /*
      * Main game loop
@@ -112,9 +112,6 @@ game(void)
 		u32 frameTime = currentTime - lastTime;
 		lastTime = currentTime;
 
-
-		accumulatedTime += frameTime;
-
 		// time s  1024*1024 cycles/s 60 frames/s
 
 		cstring=str;
@@ -129,34 +126,38 @@ game(void)
 		
 		// clearDebugOutput();
 
-		
-		loop = MAX_FRAME_SKIP;
-		while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
-		{
-			if (!isMainMenuOpen(&gMainMenu))
+		if (!isMainMenuOpen(&gMainMenu))
+		{		
+			accumulatedTime += frameTime;
+
+			if (lastButton & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.fastForward))
+			{
+				accumulatedTime += CPU_TICKS_PER_FRAME * 6;
+			}
+
+			loop = MAX_FRAME_SKIP;
+			frames = 0;
+			while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
 			{
 				handleGameboyInput(&gGameboy, pad[0]);
+				emulateFrame(&gGameboy, NULL);
+				pad = ReadController(0);
+				accumulatedTime -= CPU_TICKS_PER_FRAME;
+				--loop;
+				++frames;
 			}
-			emulateFrame(&gGameboy, NULL);
-			pad = ReadController(0);
+
+			while (accumulatedTime > CPU_TICKS_PER_FRAME)
+			{
+				accumulatedTime -= CPU_TICKS_PER_FRAME;
+			}
+
+			handleGameboyInput(&gGameboy, pad[0]);
+			emulateFrame(&gGameboy, getColorBuffer());
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
-			--loop;
+			finishAudioFrame(&gGameboy.memory);
 			++frames;
 		}
-
-		while (accumulatedTime > CPU_TICKS_PER_FRAME)
-		{
-			accumulatedTime -= CPU_TICKS_PER_FRAME;
-		}
-
-		if (!isMainMenuOpen(&gMainMenu))
-		{
-			handleGameboyInput(&gGameboy, pad[0]);
-		}
-		emulateFrame(&gGameboy, getColorBuffer());
-		accumulatedTime -= CPU_TICKS_PER_FRAME;
-		finishAudioFrame(&gGameboy.memory);
-		++frames;
 
 		lastDrawTime += osGetCount();
 		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 

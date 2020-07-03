@@ -64,6 +64,27 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         SHOWFONT(&glistp, "SAVED", 32, 16);
         gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.save];
     }
+    else if (saveState->showFastTimer > 0)
+    {
+        if (saveState->showFastTimer > SAVE_TIMER_FADE_TIME)
+        {
+            buttonAlpha = 255;
+            FONTCOL(40, 255, 0, 255);
+        }
+        else
+        {
+            buttonAlpha = 255 * saveState->showFastTimer / SAVE_TIMER_FADE_TIME;
+            FONTCOL(
+                40,
+                255,
+                0,
+                buttonAlpha
+            );
+        }
+
+        SHOWFONT(&glistp, "FAST FORWARD", 32, 16);
+        gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.fastForward];
+    }
 
     Gfx *gxp, *dl;
     gxp = glistp;
@@ -99,6 +120,12 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
         }
     }
 
+    if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.fastForward))
+    {
+        saveState->isFast = 1;
+        saveState->showFastTimer = SAVE_TIMER_FRAMES;
+    }
+
     if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.openMenu))
     {
         return saveState->mainMenu;
@@ -114,6 +141,12 @@ struct MenuItem* saveStateHandleUp(struct MenuItem* menuItem, int buttonsUp, int
     if (buttonsUp & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
     {
         saveState->isLoading = 0;
+    }
+
+    if (buttonsUp & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.fastForward))
+    {
+        saveState->isFast = 0;
+        saveState->showFastTimer = SAVE_TIMER_FADE_TIME;
     }
 
     return menuItem;
@@ -237,6 +270,11 @@ void updateMainMenu(struct MainMenu* mainMenu, OSContPad* pad)
     if (mainMenu->saveState.showSaveTimer)
     {
         --mainMenu->saveState.showSaveTimer;
+    }
+    
+    if (mainMenu->saveState.showFastTimer && !mainMenu->saveState.isFast)
+    {
+        mainMenu->saveState.showFastTimer -= 4;
     }
 }
 

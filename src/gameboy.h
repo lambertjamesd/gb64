@@ -19,7 +19,7 @@
 #define GB_BUTTON_START     0x80
 
 #define CPU_TICKS_PER_FRAME     781250
-#define MAX_FRAME_SKIP      6
+#define MAX_FRAME_SKIP      8
 
 enum InputButtonSetting
 {
@@ -74,8 +74,8 @@ struct InputMapping
     u8 save;
     u8 load;
     u8 openMenu;
+    u8 fastForward;
 
-    u8 reserved;
     u32 reserved2;
 };
 

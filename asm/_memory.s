@@ -514,7 +514,7 @@ _GB_WRITE_REG_LCY:
     write_register_direct VAL, REG_LYC
 
     # todo LYC flags
-    andi Param0, Param0, %lo(REG_LCDC_STATUS_LYC)
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_LYC)
     bne TMP3, VAL, _GB_WRITE_REG_LCY_SKIP_COMP_SET
     nop
     # write LCDC status back

@@ -10,8 +10,8 @@
 #define SAVE_TIMER_FRAMES       96
 #define SAVE_TIMER_FADE_TIME    64
 
-#define LOAD_TIMER_START_FRAMES 30
-#define LOAD_TIMER_FRAMES       96
+#define LOAD_TIMER_START_FRAMES 32
+#define LOAD_TIMER_FRAMES       64
 
 #define LEFT_PANEL_WIDTH    80
 
@@ -38,6 +38,8 @@ struct SaveState {
     u16 showSaveTimer;
     u8 isLoading;
     u8 showLoadTimer;
+    u16 isFast;
+    u16 showFastTimer;
     struct MenuItem* mainMenu;
 };
 

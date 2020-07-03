@@ -32,6 +32,7 @@ struct GameboySettings gDefaultSettings = {
         
         InputButtonSetting_DC,
         InputButtonSetting_UC,
+        InputButtonSetting_LC,
         InputButtonSetting_RC,
     }
 };
@@ -345,7 +346,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 
         initGraphicsState(&gameboy->memory, &graphicsState, gameboy->cpu.gbc);
 
-        runCPU(&gameboy->cpu, &gameboy->memory, MODE_2_CYCLES);
+        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_TIL_LINE_RENDER);
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
             graphicsState.row = line;
@@ -354,7 +355,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 
         }
 
-        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES - MODE_2_CYCLES);
+        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES - CYCLES_TIL_LINE_RENDER);
     }
     else
     {

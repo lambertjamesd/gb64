@@ -4,7 +4,7 @@
 
 #include "menu.h"
 
-#define MAPPED_INPUT_COUNT   11
+#define MAPPED_INPUT_COUNT   12
 
 struct InputMappingMenu {
     struct CursorMenu cursor;
