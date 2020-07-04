@@ -45,11 +45,7 @@ char gFlashTmpBuffer[FLASH_BLOCK_SIZE];
 
 int loadFromFlash(void* target, int sramOffset, int length)
 {
-    // TODO check for bank switching
-
     OSIoMesg dmaIoMesgBuf;
-    osInvalDCache(target, length);
-
 
     if (length / FLASH_BLOCK_SIZE > 0)
     {
@@ -65,11 +61,11 @@ int loadFromFlash(void* target, int sramOffset, int length)
             return -1;
         }
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osInvalDCache(target, (length & ~0x7F));
     }
 
     if (length % FLASH_BLOCK_SIZE != 0)
     {
-        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
         if (osFlashReadArray(
                 &dmaIoMesgBuf, 
                 OS_MESG_PRI_NORMAL, 
@@ -82,6 +78,7 @@ int loadFromFlash(void* target, int sramOffset, int length)
             return -1;
         }
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
         memCopy((char*)target + (length & ~0x7F), gFlashTmpBuffer, length % FLASH_BLOCK_SIZE);
     }
     return 0;
@@ -89,8 +86,6 @@ int loadFromFlash(void* target, int sramOffset, int length)
 
 int saveToFlash(void *from, int sramOffset, int length)
 {
-    // TODO check for bank switching
-    
     while (length > 0)
     {
         OSIoMesg dmaIoMesgBuf;
