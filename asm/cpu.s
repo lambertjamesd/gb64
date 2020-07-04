@@ -154,6 +154,7 @@ GB_BREAK_LOOP:
 
     jal GB_CALC_UNSCALED_CLOCKS
     sb GB_B, CPU_STATE_B(CPUState)
+    sw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     sb GB_C, CPU_STATE_C(CPUState)
 
     sb GB_D, CPU_STATE_D(CPUState)
@@ -164,7 +165,6 @@ GB_BREAK_LOOP:
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
 
-    sw CYCLES_RUN, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     # calculate the number of cycles run
     lw $v0, ST_STARTING_CLOCKS($fp)
     sub $v0, CYCLES_RUN, $v0
@@ -275,9 +275,8 @@ GB_CALC_UNSCALED_CLOCKS:
     srl $at, $at, 1
 _GB_CALC_UNSCALED_CLOCKS_NORMAL_SPEED:
     lw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
-    add $v0, $v0, $at
     jr $ra
-    sw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
+    add $v0, $v0, $at
 
 .include "asm/_stopping_point.s"
 .include "asm/_branch.s"

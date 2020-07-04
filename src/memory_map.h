@@ -75,8 +75,13 @@
 #define REG_WY          0xFF4A
 #define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D
+#define REG_VBK         0xFF4F
+#define REG_VBK_MASK    0x1
 
 #define REG_HDMA5       0xFF55
+
+#define REG_SVBK        0xFF70
+#define REG_SVBK_MASK   0x7
 
 #define REG_KEY1_PREPARE_SWITCH  0x1
 #define REG_KEY1_CURRENT_SPEED  0x80

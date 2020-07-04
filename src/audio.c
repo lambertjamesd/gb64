@@ -217,7 +217,10 @@ void renderAudio(struct Memory* memory, int untilSamples)
 
 void advanceWriteBuffer(struct AudioState* audio)
 {
-	audio->currentWriteBuffer = (audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT;
+	if ((audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT != audio->nextPlayBuffer)
+	{
+		audio->currentWriteBuffer = (audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT;
+	}
 	zeroMemory(audio->buffers[audio->currentWriteBuffer], audio->samplesPerBuffer * sizeof(struct AudioSample));
 	audio->currentSampleIndex = 0;
 }

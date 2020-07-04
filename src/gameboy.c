@@ -204,7 +204,18 @@ int loadGameboyState(struct GameBoy* gameboy)
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     gameboy->memory.bankSwitch(&gameboy->memory, -1, 0);
-    // TODO VRAM Bank/Internal GBC RAM Bank
+
+    if (gameboy->cpu.gbc)
+    {
+        int bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_VBK) & REG_VBK_MASK;
+        gameboy->memory.memoryMap[0x8] = gameboy->memory.vramBytes + bank * MEMORY_MAP_SEGMENT_SIZE * 2;
+        gameboy->memory.memoryMap[0x9] = gameboy->memory.memoryMap[0x8] + MEMORY_MAP_SEGMENT_SIZE;
+
+        bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_SVBK) & REG_SVBK_MASK;
+        gameboy->memory.memoryMap[0x8] = bank ?
+            gameboy->memory.internalRam + bank * MEMORY_MAP_SEGMENT_SIZE * 2 :
+            gameboy->memory.internalRam + MEMORY_MAP_SEGMENT_SIZE;
+    }
 
     return 0;
 }
