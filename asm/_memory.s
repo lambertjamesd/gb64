@@ -275,10 +275,11 @@ _GB_RESTART_SOUND:
     jal _GB_BASIC_REGISTER_WRITE
 
     lui Param0, %hi(restartSound)
+    jal GB_CALC_UNSCALED_CLOCKS
     addiu Param0, Param0, %lo(restartSound)
 
     move $a0, Memory
-    move $a1, CYCLES_RUN
+    move $a1, $v0
     jalr $ra, Param0
     # TODO use unscaledCyclesRun
     move $a2, TMP2
@@ -352,10 +353,12 @@ _GB_SOUND_ENABLED_END:
 _GB_SYNC_AUDIO:
     save_state_on_stack
 
+    jal GB_CALC_UNSCALED_CLOCKS
+    nop
+
     move $a0, Memory
     call_c_fn tickAudio
-    # TODO use unscaledCyclesRun
-    move $a1, CYCLES_RUN
+    move $a1, $v0
 
     restore_state_from_stack
 
@@ -562,7 +565,7 @@ _GB_WRITE_DMA:
 
 ############################
 
-_GB_SPEED_KEY1:    
+_GB_SPEED_KEY1:
     read_register_direct $at, REG_KEY1
     andi $at, $at, %lo(~REG_KEY1_PREPARE_SWITCH)
     andi VAL, VAL, REG_KEY1_PREPARE_SWITCH

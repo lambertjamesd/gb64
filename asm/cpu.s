@@ -54,6 +54,7 @@ runCPU:
 
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
+    sw CYCLES_RUN, ST_STARTING_CLOCKS($fp)
 
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
@@ -151,6 +152,7 @@ GB_BREAK_LOOP:
     jal CALCULATE_TIMA_VALUE
     sb GB_F, CPU_STATE_F(CPUState)
 
+    jal GB_CALC_UNSCALED_CLOCKS
     sb GB_B, CPU_STATE_B(CPUState)
     sb GB_C, CPU_STATE_C(CPUState)
 
@@ -162,7 +164,6 @@ GB_BREAK_LOOP:
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
 
-    # TODO speed switching
     sw CYCLES_RUN, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     # calculate the number of cycles run
     lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
@@ -258,6 +259,19 @@ GB_SIMULATE_HALTED:
     nop
     j GB_SIMULATE_HALTED # loop, DEQUEUE_STOPPING_POINT will break the loop once it has been simulated
     nop
+
+GB_CALC_UNSCALED_CLOCKS:
+    lw $at, ST_STARTING_CLOCKS($fp)
+    read_register_direct $v0, REG_KEY1
+    andi $v0, $v0, REG_KEY1_CURRENT_SPEED
+    beqz $v0, _GB_CALC_UNSCALED_CLOCKS_NORMAL_SPEED
+    sub $at, CYCLES_RUN, $at
+    srl $at, $at, 1
+_GB_CALC_UNSCALED_CLOCKS_NORMAL_SPEED:
+    lw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
+    add $v0, $v0, $at
+    jr $ra
+    sw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
 
 .include "asm/_stopping_point.s"
 .include "asm/_branch.s"

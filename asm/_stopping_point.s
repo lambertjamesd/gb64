@@ -197,7 +197,6 @@ _CHECK_LCDC_STAT_FLAG_0:
     jr $ra
     li $v0, 0
 
-.global _CHECK_LCDC_STAT_FLAG_1
 _CHECK_LCDC_STAT_FLAG_1:
     jr $ra
     li $v0, 1

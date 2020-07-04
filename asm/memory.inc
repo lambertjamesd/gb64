@@ -100,7 +100,7 @@
 .eqv ST_S6, 0x20
 .eqv ST_S7, 0x24
 .eqv ST_FP, 0x28
-.eqv ST_NEXT_V_INT, 0x30
+.eqv ST_STARTING_CLOCKS, 0x30
 
 .eqv CYCLES_PER_INSTR, 0x1
 
