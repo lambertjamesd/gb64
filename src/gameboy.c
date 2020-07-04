@@ -346,16 +346,22 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 
         initGraphicsState(&gameboy->memory, &graphicsState, gameboy->cpu.gbc);
 
-        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_TIL_LINE_RENDER);
+        int cyclesToRun = CYCLES_TIL_LINE_RENDER;
+
+        cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
             graphicsState.row = line;
-		    renderPixelRow(&gameboy->memory, &graphicsState, targetMemory);
-            runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE);
 
+		    renderPixelRow(&gameboy->memory, &graphicsState, targetMemory);
+            cyclesToRun += CYCLES_PER_LINE;
+            cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
         }
 
-        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_LINE * V_BLANK_LINES - CYCLES_TIL_LINE_RENDER);
+        // intentionally run short to make sure we don't leak into the next frame
+        cyclesToRun += CYCLES_PER_LINE * V_BLANK_LINES - CYCLES_TIL_LINE_RENDER - 2;
+        cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
     }
     else
     {

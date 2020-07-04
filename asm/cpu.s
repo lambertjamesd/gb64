@@ -166,7 +166,7 @@ GB_BREAK_LOOP:
 
     sw CYCLES_RUN, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     # calculate the number of cycles run
-    lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
+    lw $v0, ST_STARTING_CLOCKS($fp)
     sub $v0, CYCLES_RUN, $v0
 
 _GB_BREAK_LOOP_SAVE_CYCLES:
