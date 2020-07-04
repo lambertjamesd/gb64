@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>GB64</title>
+        <script src="gb.n64.js"></script>
+        <script src="crc.js"></script>
+        <style>
+            .file-input{
+                display: flex;
+                flex-direction: column;
+                line-height: 1.5em;
+            }
+
+            .file-input + .file-input {
+                margin-top: 1em;
+            }
+
+            .error-log {
+                color: red;
+            }
+        </style>
+        <script>
+            const gGB64 = atob(gGB64Base64);
+            const gGB64ArrayBuffer = new Uint8Array(new ArrayBuffer(gGB64.length));
+
+            for (let i = 0; i < gGB64.length; ++i)
+            {
+                gGB64ArrayBuffer[i] = gGB64.charCodeAt(i);
+            }
+
+            function findIndex(arrayBuffer, string)
+            {
+                let inputIndex = 0;
+                let searchIndex = 0;
+                
+                while (searchIndex < arrayBuffer.length)
+                {
+                    if (string.charCodeAt(inputIndex) == arrayBuffer[searchIndex])
+                    {
+                        ++inputIndex;
+                        ++searchIndex;
+
+                        if (inputIndex == string.length)
+                        {
+                            return searchIndex - string.length;
+                        }
+                    }
+                    else
+                    {
+                        inputIndex = 0;
+                        ++searchIndex;
+                    }
+                }
+
+                return -1;
+            }
+
+            function copyInto(target, targetOffset, source)
+            {
+                for (let i = 0; i < source.length; ++i)
+                {
+                    target[i + targetOffset] = source[i];
+                }
+            }
+            
+            function reportError(message)
+            {
+                const parent = document.querySelector('.error-log');
+
+                if (parent)
+                {
+                    const line = document.createElement('div');
+                    line.appendChild(document.createTextNode(message));
+                    parent.appendChild(line);
+                }
+            }
+
+            function triggerDownload(filename, data) {
+                var blob = new Blob([data.buffer], {type: 'application/octet-stream'});
+
+                var elem = document.createElement('a');
+                elem.href = URL.createObjectURL(blob);
+                elem.download = filename;        
+                document.body.appendChild(elem);
+                elem.click();        
+                document.body.removeChild(elem);
+            }
+
+            function convert(romName, rom, dmgBoot, cgbBios) {
+                try {
+                    const result = new Uint8Array(new ArrayBuffer(gGB64ArrayBuffer.length - 16 + rom.length));
+                    copyInto(result, 0, gGB64ArrayBuffer);
+                    
+                    const dmgIndex = findIndex(gGB64ArrayBuffer, 'DMG_BOOT');
+                    const cgbIndex = findIndex(gGB64ArrayBuffer, 'CGB_BIOS');
+
+                    if (dmgIndex == -1)
+                    {
+                        reportError("Could location DMG_BOOT location");
+                    }
+
+                    if (cgbIndex == -1)
+                    {
+                        reportError("Could location CGB_BIOS location");
+                    }
+    
+                    if (dmgBoot && dmgIndex != -1)
+                    {
+                        copyInto(result, dmgIndex - 4, dmgBoot);
+                    }
+    
+                    if (cgbBios && cgbIndex != -1)
+                    {
+                        copyInto(result, cgbIndex - 4, cgbBios);
+                    }
+    
+                    const romIndex = findIndex(gGB64ArrayBuffer, 'GB64_ROM');
+    
+                    if (romIndex == -1)
+                    {
+                        reportError("Fatal: could not find rom insertion location");
+                        return;
+                    }
+
+                    if (romIndex != gGB64ArrayBuffer.length - 16)
+                    {
+                        reportError("Fatal: rom insertion point not at end of the file");
+                        return;
+                    }
+
+                    copyInto(result, gGB64ArrayBuffer.length - 16, rom);
+
+                    // Copy the title of the game over
+                    let targetIndex = 0x20;
+                    let sourceIndex = 0x134;
+                    for (let i = 0; i < 0x10; ++i, ++targetIndex, ++sourceIndex)
+                    {
+                        result[targetIndex] = rom[sourceIndex];
+                    }
+
+                    recalcCRC(result);
+
+                    triggerDownload(`${romName}.n64`, result);
+                } 
+                catch (error)
+                {
+                    reportError(error.toString());
+                }
+            }
+
+            function readAsArrayBuffer(file)
+            {
+                return new Promise((resolve, reject) => {
+                    const fileReader = new FileReader();
+                    fileReader.readAsArrayBuffer(file);
+                    fileReader.onload = () => {
+                        resolve(new Uint8Array(fileReader.result));
+                    };
+                    fileReader.onerror = (error) => {
+                        reject(error);
+                    };
+                });
+            }
+
+            async function convertROM() {
+                const dmgBoot = document.querySelector('#dmgBoot').files[0];
+                const cgbBios = document.querySelector('#cgbBios').files[0];
+                const rom = document.querySelector('#rom').files[0];
+
+                if (!rom)
+                {
+                    reportError('Fatal: no rom selected');
+                }
+                else
+                {
+                    const filename = rom.name;
+                    const extensionIndex = filename.lastIndexOf('.');
+
+                    convert(
+                        extensionIndex == -1 ? filename : filename.slice(0, extensionIndex),
+                        await readAsArrayBuffer(rom), 
+                        dmgBoot && await readAsArrayBuffer(dmgBoot), 
+                        cgbBios && await readAsArrayBuffer(cgbBios)
+                    );
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <h2>Rom</h2>
+        <div class="file-input">
+            <label for="rom">.gb or .gbc rom to convert to an .n64 rom</label>
+            <input id="rom" type="file" accept=".gb, .gbc">
+        </div>
+        <h2>Bios</h2>
+        <p>
+            Use a bios to get the gameboy startup animation with
+            the nintendo or gameboy logo. Don't include them to
+            skip the animation and boot directly into the game.
+        </p>
+        <div class="file-input">
+            <label for="dmgBoot">dmg_boot.bin (optional) used for original gameboy</label>
+            <input id="dmgBoot" type="file" accept=".bin">
+        </div>
+        <div class="file-input">
+            <label for="cgbBios">cgb_bios.bin (optional) used for gameboy color</label>
+            <input id="cgbBios" type="file" accept=".bin">
+        </div>
+        <h2>Convert</h2>
+        <div>
+            <input value="Convert and Download" type="submit" onclick="convertROM()">
+        </div>
+        <div class="error-log">
+
+        </div>
+        <h1>Getting save files to work</h1>
+        The emulator uses flashram to save. To get this to work with everdrive you need to specify that in save_gb.txt using the rom's CRC code
+    </body>
+</html>

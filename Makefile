@@ -124,3 +124,8 @@ cleanall: clean
 rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
 
+
+romwrapper/gb.n64.js: $(TARGETS)
+	echo "const gGB64Base64 = \`" > romwrapper/gb.n64.js
+	base64 $(TARGETS) >> romwrapper/gb.n64.js
+	echo "\`.trim()" >> romwrapper/gb.n64.js

@@ -37,28 +37,28 @@ endseg
 beginseg
 	name "dmg_boot"
 	flags RAW
-	include "data/dmg_boot.bin"
+	include "data/dmg_boot_placeholder.bin"
 endseg
 
 beginseg
 	name "cgb_bios"
 	flags RAW
-	include "data/cgb_bios.bin"
+	include "data/cgb_bios_placeholder.bin"
 endseg
 
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/OracleOfAges.gbc"
+	include "data/rom_placeholder.gb"
 endseg
 
 beginwave
 	name "game"
 	include "code"
 	include "static"
-	include "gbrom"
 	include "dmg_boot"
 	include "cgb_bios"
 	include "cfb"
 	include "rsp_cfb"
+	include "gbrom"
 endwave
