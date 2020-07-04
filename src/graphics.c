@@ -57,8 +57,8 @@ Gfx gDrawScreen[] = {
     gsSPEndDisplayList(),
 };
 
-#define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX)    \
-    if (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)) \
+#define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX, priority)    \
+    if (priority <= 0 && (priority < 0 || spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex))) \
         *targetMemory = (spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY) + OBJ_PALETTE_INDEX_START;                \
     else                                                                                        \
         *targetMemory = pixelIndex;                            \
@@ -347,6 +347,7 @@ void renderPixelRow(
     int bgY;
     int wX;
     int wY;
+    int usingWindow;
     int tilemapRow;
     int tileInfo;
     u32 tileIndex;
@@ -357,6 +358,7 @@ void renderPixelRow(
     int dataSelect;
     int lcdcReg;
     int maxX = GB_SCREEN_W;
+    int priority;
 
     lcdcReg = READ_REGISTER_DIRECT(memory, REG_LCDC);
 
@@ -393,6 +395,8 @@ void renderPixelRow(
         maxX = wX;
     }
 
+    usingWindow = 0;
+
     for (x = 0; x < GB_SCREEN_W;)
     {
         if (x >= wX)
@@ -402,6 +406,7 @@ void renderPixelRow(
             tilemapRow = (bgY >> 3) * TILEMAP_W;
             tilemapRow += (lcdcReg & LCDC_WIN_TILE_MAP) ? 1024 : 0;
             wX = GB_SCREEN_W;
+            usingWindow = 1;
             ++state->winY;
         }
 
@@ -412,6 +417,19 @@ void renderPixelRow(
         {
             tileInfo = memory->vram.tilemap0Atts[tilemapIndex];
             tileSource = (tileInfo & TILE_ATTR_VRAM_BANK) ? memory->vram.gbcTiles : memory->vram.tiles;
+
+            if (lcdcReg & LCDC_BG_ENABLE)
+            {
+                priority = (tileInfo & TILE_ATTR_PRIORITY) ? 1 : 0;
+            }
+            else
+            {
+                priority = -1;
+            }
+        }
+        else
+        {
+            priority = 0;
         }
 
         tileIndex = memory->vram.tilemap0[tilemapIndex];
@@ -420,12 +438,19 @@ void renderPixelRow(
         {
             tileIndex = ((tileIndex + 0x80) & 0xFF) + 0x80;
         }
-
-        spriteRow = tileSource[tileIndex].rows[
-            (tileInfo & TILE_ATTR_V_FLIP) ?
-                (7 - (bgY & 0x7)) :
-                (bgY & 0x7)
-        ];
+        
+        if (state->gbc || usingWindow || (lcdcReg & LCDC_BG_ENABLE))
+        {
+            spriteRow = tileSource[tileIndex].rows[
+                (tileInfo & TILE_ATTR_V_FLIP) ?
+                    (7 - (bgY & 0x7)) :
+                    (bgY & 0x7)
+            ];
+        }
+        else
+        {
+            spriteRow = 0;
+        }
 
         u8 pixelIndex;
         u8 pixelIndexOffset = (tileInfo & TILE_ATTR_PALETTE) << 2;
@@ -437,53 +462,53 @@ void renderPixelRow(
         {
             case 0:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 0) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 1:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 1) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 2:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 2) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 3:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 3) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 4:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 4) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 5:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 5) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 6:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 6) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 7:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 7) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
                 break;
             case 8:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 7) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 9:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 6) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 10:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 5) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 11:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 4) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 12:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 3) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 13:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 2) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 14:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 1) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
             case 15:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 0) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
                 break;
         }
     }

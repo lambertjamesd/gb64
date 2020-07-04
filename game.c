@@ -89,7 +89,7 @@ game(void)
 	int frames = 0;
 
 	// clearDebugOutput();
-	DEBUG_PRINT_F("\n%X\n%X\n", 0, 0);
+	// DEBUG_PRINT_F("\n%X\n%X\n", 0, 0);
 
     /*
      * Main game loop
