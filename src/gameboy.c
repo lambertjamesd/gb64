@@ -349,6 +349,8 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
         int cyclesToRun = CYCLES_TIL_LINE_RENDER;
 
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+        
+        // DEBUG_PRINT_F("%d \n", READ_REGISTER_DIRECT(&gameboy->memory, REG_LY));
 
         for (line = 0; line < GB_SCREEN_H; ++line)
         {

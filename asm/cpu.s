@@ -61,7 +61,7 @@ runCPU:
     beqz $at, _CALC_CYCLE_TO
     nop
     # double speed mode
-    sll $at, $at, 1
+    sll CycleTo, CycleTo, 1
 _CALC_CYCLE_TO:
     add TMP2, CycleTo, CYCLES_RUN    # calculate upper bound of execution
     sll TMP2, TMP2, 8
@@ -168,7 +168,13 @@ GB_BREAK_LOOP:
     # calculate the number of cycles run
     lw $v0, ST_STARTING_CLOCKS($fp)
     sub $v0, CYCLES_RUN, $v0
-
+    
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _GB_BREAK_LOOP_SAVE_CYCLES
+    nop
+    # double speed mode
+    srl $v0, $v0, 1
 _GB_BREAK_LOOP_SAVE_CYCLES:
     sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
     

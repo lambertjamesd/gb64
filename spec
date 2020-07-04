@@ -49,7 +49,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/PokemonBlue.gb"
+	include "data/OracleOfAges.gbc"
 endseg
 
 beginwave
