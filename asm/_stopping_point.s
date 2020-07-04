@@ -175,6 +175,7 @@ CHECK_LCDC_STAT_FLAG:
     li $v0, REG_LCDC_H_BLANK_INT
     sllv $at, $v0, $at # flag to check by mode
     and $at, Param0, $at
+    andi $at, $at, REG_LCDC_H_BLANK_INT | REG_LCDC_V_BLANK_INT | REG_LCDC_OAM_INT
     bnez $at, _CHECK_LCDC_STAT_FLAG_1
     andi $at, Param0, REG_LCDC_LYC_INT
     beqz $at, _CHECK_LCDC_STAT_FLAG_0
@@ -196,6 +197,7 @@ _CHECK_LCDC_STAT_FLAG_0:
     jr $ra
     li $v0, 0
 
+.global _CHECK_LCDC_STAT_FLAG_1
 _CHECK_LCDC_STAT_FLAG_1:
     jr $ra
     li $v0, 1
@@ -324,7 +326,6 @@ _ENTER_MODE_1_NEXT_MODE:
     j CHECK_LSTAT_INTERRUPT
     write_register_direct TMP3, REG_LY
     
-.global ENTER_MODE_2
 ENTER_MODE_2:
     read_register_direct TMP3, REG_LY
     # load current LCDC status flag
@@ -385,10 +386,16 @@ _QUEUE_NEXT_MODE_3:
     nop
 
 CHECK_LSTAT_INTERRUPT:
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_LYC)
+    read_register_direct $at, REG_LYC
+    bne TMP3, $at, _CHECK_LSTAT_INTERRUPT_CHECK_RISING
+    nop
+    ori Param0, Param0, REG_LCDC_STATUS_LYC
+_CHECK_LSTAT_INTERRUPT_CHECK_RISING:
     write_register_direct Param0, REG_LCDC_STATUS
     jal CHECK_LCDC_STAT_FLAG
-    move TMP2, $v0
-    slt $at, TMP2, $v0 # if previous stat < current state then trigger interrupt
+    move $v1, $v0
+    slt $at, $v1, $v0 # if previous stat < current state then trigger interrupt
     beqz $at, CHECK_LSTAT_INTERRUPT_SKIP_INTERRUPT
     nop
     # request interrupt

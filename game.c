@@ -43,7 +43,7 @@
 
 #define RUN_TESTS 0
 
-void ENTER_MODE_2();
+void _CHECK_LCDC_STAT_FLAG_1();
 
 
 /*
@@ -92,7 +92,7 @@ game(void)
 	int frames = 0;
 
 	// clearDebugOutput();
-	// DEBUG_PRINT_F("\n%X\n%X\n", ENTER_MODE_2, 0);
+	DEBUG_PRINT_F("\n%X\n%X\n", _CHECK_LCDC_STAT_FLAG_1, 0);
 
     /*
      * Main game loop

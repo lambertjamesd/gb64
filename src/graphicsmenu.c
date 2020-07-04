@@ -37,6 +37,7 @@ struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDow
     {
         *paletteIndexPtr = (*paletteIndexPtr + 1) % getPaletteCount();
         updatePaletteInfo(&gGameboy);
+        applyGrayscalePallete();
     }
 
     if (buttonDown & L_JPAD)
@@ -50,6 +51,7 @@ struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDow
             *paletteIndexPtr = *paletteIndexPtr - 1;
         }
         updatePaletteInfo(&gGameboy);
+        applyGrayscalePallete();
     }
 
     return NULL;
