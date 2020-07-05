@@ -315,7 +315,6 @@ font_set_transparent( int flag )
 void font_show_string( Gfx **glistp, char *val_str )
 {
     Sprite *sp;
-    static Gfx gx[10000];
     Gfx *gxp, *dl;
 
     gxp = *glistp;

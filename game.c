@@ -50,7 +50,6 @@ void
 game(void)
 {
     OSContPad	**pad;
-    char 	*cstring;
     char	str[200];
 	int loop;
 	int lastButton;
@@ -82,8 +81,6 @@ game(void)
 	debugWrite = (void*)(0x80700000 - 8);
 	*((u32*)debugWrite) = (int)&gGameboy.cpu;
 
-	OSTime startTime = osGetCount();
-
 	initMainMenu(&gMainMenu);
 
 	int frames = 0;
@@ -107,8 +104,6 @@ game(void)
 		lastTime = currentTime;
 
 		// time s  1024*1024 cycles/s 60 frames/s
-
-		cstring=str;
 
 		
 #if !RUN_TESTS

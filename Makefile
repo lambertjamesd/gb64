@@ -13,14 +13,16 @@
 
 include $(ROOT)/usr/include/make/PRdefs
 
+WARNING_FLAGS = -Werror=implicit-function-declaration
+
 FINAL = YES
 ifeq ($(FINAL), YES)
-OPTIMIZER       = -O2 -std=gnu90 -Werror
+OPTIMIZER       = -O2 -std=gnu90 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_rom
 else
-OPTIMIZER       = -g -std=gnu90 -Werror
+OPTIMIZER       = -g -std=gnu90 -Werror $(WARNING_FLAGS)
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_d

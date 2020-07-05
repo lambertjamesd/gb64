@@ -2,6 +2,7 @@
 #include "graphicsmenu.h"
 #include "../render.h"
 #include "gameboy.h"
+#include "graphics.h"
 
 void renderPaletteItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
 {

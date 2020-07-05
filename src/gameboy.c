@@ -4,6 +4,7 @@
 #include "debugger.h"
 #include "debug_out.h"
 #include "../render.h"
+#include "../memory.h"
 
 struct GameBoy gGameboy;
 

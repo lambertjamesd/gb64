@@ -54,7 +54,7 @@
 #define READ_PIXEL_INDEX(pixel, x) ((x == 7) ? ((((pixel) >> 8) & 0x1) | (((pixel) << 1) & 0x2)) : ((((pixel) >> (15 - x)) & 0x1) | (((pixel) >> (6 - x)) & 0x2)))
 
 // GGGRRRRR 1BBBBBGG to RRRRRGGGGGBBBBB1
-#define GBC_TO_N64_COLOR(color) ((color) << 3 & 0xF100 | (color) >> 7 & 0x01C0 >> 7 | (color) << 9 & 0x0600 | (color) >> 1 & 0x003E | 0x1)
+#define GBC_TO_N64_COLOR(color) (((color) << 3 & 0xF100) | ((color) >> 7 & 0x01C0 >> 7) | ((color) << 9 & 0x0600) | ((color) >> 1 & 0x003E) | 0x1)
 
 extern u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
 extern u16 gScreenPalette[PALETTE_COUNT];

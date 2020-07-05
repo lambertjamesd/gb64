@@ -4,6 +4,7 @@
 
 #include <ultra64.h> 
 #include "boot.h"
+#include "font_ext.h"
 
 /*
  * Message queues

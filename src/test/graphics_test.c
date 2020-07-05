@@ -32,7 +32,7 @@ int testSpriteSorting(char* testOutput)
         }
 
         int preparedCount = 0;
-        prepareSprites(unsorted, sorted, &preparedCount);
+        prepareSprites(unsorted, sorted, &preparedCount, 1);
 
         if (!assertSpritesOrdered(testOutput, sorted, preparedCount))
         {

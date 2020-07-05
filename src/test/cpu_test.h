@@ -1,6 +1,7 @@
 
 #include "../cpu.h"
 #include "../instructions.h"
+#include "../../memory.h"
 
 #define LOAD_PROGRAM(dest, src) memCopy(dest, src, sizeof(src));
 

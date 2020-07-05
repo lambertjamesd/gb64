@@ -32,6 +32,7 @@
 #include "controller.h"
 #include "memory.h"
 #include "src/rom.h"
+#include "src/debug_out.h"
 
 /*
  * Symbol genererated by "makerom" (RAM)

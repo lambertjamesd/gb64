@@ -50,5 +50,6 @@ int getRAMBankCount(struct ROMLayout* romLayout);
 int getCartType(struct ROMLayout* romLayout);
 
 void loadBIOS(struct ROMLayout* romLayout, int gbc);
+void loadRomSegment(void* target, void *romLocation, int bankNumber);
 
 #endif

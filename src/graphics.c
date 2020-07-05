@@ -10,19 +10,21 @@
 u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
 u16 gScreenPalette[PALETTE_COUNT];
 
-#define COPY_SCREEN_STRIP(blockY)                                        \
-    gsDPLoadTextureTile(                                            \
-        (int)gScreenBuffer + blockY * GB_SCREEN_W * GB_RENDER_STRIP_HEIGHT,                                         \
-        G_IM_FMT_CI, G_IM_SIZ_8b,                                   \
-        GB_SCREEN_W, GB_RENDER_STRIP_HEIGHT,                        \
-        0, 0,                                  \
-        GB_SCREEN_W - 1, GB_RENDER_STRIP_HEIGHT - 1,                \
-        0,                                                          \
-        G_TX_CLAMP, G_TX_CLAMP,                                       \
-        G_TX_NOMASK, G_TX_NOMASK,                                   \
-        G_TX_NOLOD, G_TX_NOLOD                                      \
-    ),                                                              \
-    gsSPTextureRectangle(                                           \
+#define COPY_SCREEN_STRIP(dl, blockY)                                       \
+    gDPLoadTextureTile(                                                     \
+        dl,                                                                 \
+        (int)gScreenBuffer + blockY * GB_SCREEN_W * GB_RENDER_STRIP_HEIGHT, \
+        G_IM_FMT_CI, G_IM_SIZ_8b,                                           \
+        GB_SCREEN_W, GB_RENDER_STRIP_HEIGHT,                                \
+        0, 0,                                                               \
+        GB_SCREEN_W - 1, GB_RENDER_STRIP_HEIGHT - 1,                        \
+        0,                                                                  \
+        G_TX_CLAMP, G_TX_CLAMP,                                             \
+        G_TX_NOMASK, G_TX_NOMASK,                                           \
+        G_TX_NOLOD, G_TX_NOLOD                                              \
+    );                                                                      \
+    gSPTextureRectangle(                                                   \
+        dl,                                                                 \
         RENDER_TO_X << 2, (RENDER_TO_Y + GB_RENDER_STRIP_HEIGHT * blockY) << 2,                       \
         (RENDER_TO_X + GB_SCREEN_W) << 2, (RENDER_TO_Y + GB_RENDER_STRIP_HEIGHT * (blockY + 1)) << 2, \
         G_TX_RENDERTILE,                                                                         \
@@ -30,35 +32,10 @@ u16 gScreenPalette[PALETTE_COUNT];
         (1 << 10), (1 << 10)                                                                     \
     )
 
-Gfx gDrawScreen[] = {
-    gsDPPipeSync(),
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsDPSetRenderMode(G_RM_OPA_SURF, G_RM_OPA_SURF2),
-    gsDPSetTextureFilter(G_TF_POINT),
-    gsDPSetTexturePersp(G_TP_NONE),
-    gsDPSetCombineMode(G_CC_BLENDRGBA, G_CC_BLENDRGBA),
-    gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
-    gsDPLoadTLUT_pal256(gScreenPalette),
-    gsDPSetTextureLUT(G_TT_RGBA16),
-
-    COPY_SCREEN_STRIP(0),
-    COPY_SCREEN_STRIP(1),
-    COPY_SCREEN_STRIP(2),
-    COPY_SCREEN_STRIP(3),
-    COPY_SCREEN_STRIP(4),
-    COPY_SCREEN_STRIP(5),
-    COPY_SCREEN_STRIP(6),
-    COPY_SCREEN_STRIP(7),
-    COPY_SCREEN_STRIP(8),
-    COPY_SCREEN_STRIP(9),
-    COPY_SCREEN_STRIP(10),
-    COPY_SCREEN_STRIP(11),
-
-    gsSPEndDisplayList(),
-};
+Gfx gDrawScreen[0xC0];
 
 #define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX, priority)    \
-    if (priority <= 0 && (priority < 0 || spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex))) \
+    if (priority <= 0 && (priority < 0 || (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)))) \
         *targetMemory = (spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY) + OBJ_PALETTE_INDEX_START;                \
     else                                                                                        \
         *targetMemory = pixelIndex;                            \
@@ -166,6 +143,34 @@ void applyGrayscalePallete() {
     memCopy(gScreenPalette, gGameboy.memory.vram.colorPalettes, sizeof(gScreenPalette));
 }
 
+void generateDisplayList(struct GraphicsState* state, Gfx* dl)
+{
+    gDPPipeSync(dl++);
+    gDPSetCycleType(dl++, G_CYC_1CYCLE);
+    gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
+    gDPSetTextureFilter(dl++, G_TF_POINT);
+    gDPSetTexturePersp(dl++, G_TP_NONE);
+    gDPSetCombineMode(dl++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
+    gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
+    gDPLoadTLUT_pal256(dl++, gScreenPalette);
+    gDPSetTextureLUT(dl++, G_TT_RGBA16);
+
+    COPY_SCREEN_STRIP(dl++, 0);
+    COPY_SCREEN_STRIP(dl++, 1);
+    COPY_SCREEN_STRIP(dl++, 2);
+    COPY_SCREEN_STRIP(dl++, 3);
+    COPY_SCREEN_STRIP(dl++, 4);
+    COPY_SCREEN_STRIP(dl++, 5);
+    COPY_SCREEN_STRIP(dl++, 6);
+    COPY_SCREEN_STRIP(dl++, 7);
+    COPY_SCREEN_STRIP(dl++, 8);
+    COPY_SCREEN_STRIP(dl++, 9);
+    COPY_SCREEN_STRIP(dl++, 10);
+    COPY_SCREEN_STRIP(dl++, 11);
+
+    gSPEndDisplayList(dl++);
+}
+
 void initGraphicsState(
     struct Memory* memory,
     struct GraphicsState* state,
@@ -198,11 +203,12 @@ void initGraphicsState(
     state->gbc = gbc;
     state->row = 0;
     state->winY = 0;
+
+    generateDisplayList(state, gDrawScreen);
 }
 
 void renderSprites(struct Memory* memory, struct GraphicsState* state)
 {
-    int x;
     int currentSpriteIndex;
     int renderedSprites = 0;
     int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT * 2 : SPRITE_BASE_HEIGHT;
@@ -210,7 +216,6 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     u8* targetMemory = state->spriteIndexBuffer;
     zeroMemory(targetMemory, GB_SCREEN_W);
 
-    x = 0;
     currentSpriteIndex = 0;
     renderedSprites = 0;
 
@@ -358,12 +363,8 @@ void renderPixelRow(
 
     tilemapRow += (lcdcReg & LCDC_BG_TILE_MAP) ? 1024 : 0;
     dataSelect = lcdcReg & LCDC_BG_TILE_DATA;
-
-    if (!state->gbc)
-    {
-        tileSource = memory->vram.tiles;
-        tileInfo = 0;
-    }
+    tileSource = memory->vram.tiles;
+    tileInfo = 0;
     
     wX = READ_REGISTER_DIRECT(memory, REG_WX) - WINDOW_X_OFFSET;
     wY = READ_REGISTER_DIRECT(memory, REG_WY);
