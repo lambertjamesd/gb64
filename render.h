@@ -23,7 +23,7 @@ extern Gfx	*glistp;
 /*
  * frame buffer symbols
  */
-extern u16	cfb[][SCREEN_WD*SCREEN_HT];	/* RAM address */
+extern u16*	cfb;	/* RAM address */
 extern u16	rsp_cfb[];			/* segment address */
 /*
  * buffers for RSP tasks:
@@ -78,5 +78,6 @@ void preRenderFrame();
 void renderDebugLog();
 void finishRenderFrame();
 u16* getColorBuffer();
+void initColorBuffers();
 
 #endif

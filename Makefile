@@ -77,8 +77,7 @@ S_FILES = asm/cpu.s
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
 DATAFILES   =	gfxinit.c \
-		rsp_cfb.c \
-		cfb.c
+		rsp_cfb.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 
@@ -110,7 +109,7 @@ $(CODESEGMENT):	$(CODEOBJECTS)
 		$(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LDFLAGS)
 
 ifeq ($(FINAL), YES)
-$(TARGETS) $(APP):      spec spec_common spec_wave $(OBJECTS)
+$(TARGETS) $(APP):      spec $(OBJECTS)
 	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec 
 	makemask $(TARGETS)
 else
@@ -126,11 +125,7 @@ cleanall: clean
 rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
 
-
-bin/template.n64: spec_template spec_common spec_wave $(OBJECTS)
-	$(MAKEROM) -r bin/template.n64 -e bin/template.o spec_template
-
-romwrapper/gb.n64.js: bin/template.n64
+romwrapper/gb.n64.js: bin/gb.n64
 	echo "const gGB64Base64 = \`" > romwrapper/gb.n64.js
-	base64 bin/template.n64 >> romwrapper/gb.n64.js
+	base64 bin/gb.n64 >> romwrapper/gb.n64.js
 	echo "\`.trim()" >> romwrapper/gb.n64.js

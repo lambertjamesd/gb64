@@ -33,6 +33,7 @@
 #include "memory.h"
 #include "src/rom.h"
 #include "src/debug_out.h"
+#include "render.h"
 
 /*
  * Symbol genererated by "makerom" (RAM)
@@ -247,6 +248,8 @@ mainproc(void *arg)
 	clearDebugOutput();
 
 	initHeap();
+
+	initColorBuffers();
 
 	initRomLayout(&gGBRom, _gbromSegmentRomStart);
 

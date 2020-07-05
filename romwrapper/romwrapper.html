@@ -18,6 +18,13 @@
             .error-log {
                 color: red;
             }
+
+            .save-db {
+                font-family: Lucida Console,Lucida Sans Typewriter,monaco,Bitstream Vera Sans Mono,monospace;
+                background: #f0f0f0;
+                border: solid 1px #404040;
+                padding: 12px;
+            }
         </style>
         <script>
             const gGB64 = atob(gGB64Base64);
@@ -86,9 +93,30 @@
                 document.body.removeChild(elem);
             }
 
+            function outputCRC(filename, crc) {
+                const parent = document.querySelector('.save-db');
+
+                if (parent)
+                {
+                    const line = document.createElement('div');
+                    line.appendChild(document.createTextNode(
+                        `0x${crc.toString(16)}=5 (${filename})`
+                    ));
+                    parent.appendChild(line);
+                }
+            }
+
             function convert(romName, rom, dmgBoot, cgbBios) {
                 try {
-                    const result = new Uint8Array(new ArrayBuffer(gGB64ArrayBuffer.length - 16 + rom.length));
+                    const romIndex = findIndex(gGB64ArrayBuffer, 'GB64_ROM');
+
+                    if (romIndex == -1)
+                    {
+                        reportError("Fatal: could not find rom insertion location");
+                        return;
+                    }
+
+                    const result = new Uint8Array(new ArrayBuffer(Math.max(romIndex + rom.length, 0x101000)));
                     copyInto(result, 0, gGB64ArrayBuffer);
                     
                     const dmgIndex = findIndex(gGB64ArrayBuffer, 'DMG_BOOT');
@@ -113,22 +141,8 @@
                     {
                         copyInto(result, cgbIndex - 4, cgbBios);
                     }
-    
-                    const romIndex = findIndex(gGB64ArrayBuffer, 'GB64_ROM');
-    
-                    if (romIndex == -1)
-                    {
-                        reportError("Fatal: could not find rom insertion location");
-                        return;
-                    }
 
-                    if (romIndex != gGB64ArrayBuffer.length - 16)
-                    {
-                        reportError("Fatal: rom insertion point not at end of the file");
-                        return;
-                    }
-
-                    copyInto(result, gGB64ArrayBuffer.length - 16, rom);
+                    copyInto(result, romIndex, rom);
 
                     // Copy the title of the game over
                     let targetIndex = 0x20;
@@ -138,7 +152,8 @@
                         result[targetIndex] = rom[sourceIndex];
                     }
 
-                    recalcCRC(result);
+                    const crc = recalcCRC(result);
+                    outputCRC(romName, crc[0]);
 
                     triggerDownload(`${romName}.n64`, result);
                 } 
@@ -214,6 +229,12 @@
 
         </div>
         <h1>Getting save files to work</h1>
-        The emulator uses flashram to save. To get this to work with everdrive you need to specify that in save_gb.txt using the rom's CRC code
+        <p>
+            The emulator uses flashram to save. To get this to work with everdrive you need to specify that in 
+            save_db.txt using the rom's CRC code. By adding the codes generated below.
+        </p>
+        <div class="save-db">
+            
+        </div>
     </body>
 </html>
