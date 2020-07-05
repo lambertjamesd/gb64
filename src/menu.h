@@ -4,8 +4,8 @@
 
 #include <ultra64.h>
 
-#define INITIAL_TIME_DELAY 16
-#define REPEAT_TIME_DELAY 2
+#define INITIAL_TIME_DELAY 500
+#define REPEAT_TIME_DELAY 200
 
 struct MenuItem;
 
@@ -33,7 +33,7 @@ struct MenuState {
     struct MenuItem* allItems;
     int menuItemCount;
     int lastButtons;
-    int holdTimer;
+    u32 holdTimer;
 };
 
 
@@ -70,6 +70,7 @@ enum GUIItemIcon
     GUIItemIconBottomRight,
     GUIItemIconWhite,
     GUIItemIconBorder,
+    GUIItemIconBlack,
 };
 
 struct CursorMenu {

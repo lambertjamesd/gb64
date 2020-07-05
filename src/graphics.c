@@ -10,7 +10,7 @@
 u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
 u16 gScreenPalette[PALETTE_COUNT];
 
-#define COPY_SCREEN_STRIP(dl, blockY)                                       \
+#define COPY_SCREEN_STRIP(dl, blockY, scale, scaleInv)                      \
     gDPLoadTextureTile(                                                     \
         dl,                                                                 \
         (int)gScreenBuffer + blockY * GB_SCREEN_W * GB_RENDER_STRIP_HEIGHT, \
@@ -23,13 +23,15 @@ u16 gScreenPalette[PALETTE_COUNT];
         G_TX_NOMASK, G_TX_NOMASK,                                           \
         G_TX_NOLOD, G_TX_NOLOD                                              \
     );                                                                      \
-    gSPTextureRectangle(                                                   \
+    gSPTextureRectangle(                                                    \
         dl,                                                                 \
-        RENDER_TO_X << 2, (RENDER_TO_Y + GB_RENDER_STRIP_HEIGHT * blockY) << 2,                       \
-        (RENDER_TO_X + GB_SCREEN_W) << 2, (RENDER_TO_Y + GB_RENDER_STRIP_HEIGHT * (blockY + 1)) << 2, \
-        G_TX_RENDERTILE,                                                                         \
-        0, 0,                                                                                    \
-        (1 << 10), (1 << 10)                                                                     \
+        (SCREEN_WD << 1) - (((scale) * GB_SCREEN_W) >> 15),                 \
+        (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - GB_RENDER_STRIP_HEIGHT * blockY)) >> 14), \
+        (SCREEN_WD << 1) + (((scale) * GB_SCREEN_W) >> 15),                 \
+        (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - GB_RENDER_STRIP_HEIGHT * (blockY + 1))) >> 14), \
+        G_TX_RENDERTILE,                                                    \
+        0, 0,                                                               \
+        (scaleInv >> 6), (scaleInv >> 6)                                    \
     )
 
 Gfx gDrawScreen[0xC0];
@@ -145,6 +147,9 @@ void applyGrayscalePallete() {
 
 void generateDisplayList(struct GraphicsState* state, Gfx* dl)
 {
+    long scale = 0x18000;
+    long invScale = (long)(0x100000000L / scale);
+    
     gDPPipeSync(dl++);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
     gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
@@ -155,18 +160,18 @@ void generateDisplayList(struct GraphicsState* state, Gfx* dl)
     gDPLoadTLUT_pal256(dl++, gScreenPalette);
     gDPSetTextureLUT(dl++, G_TT_RGBA16);
 
-    COPY_SCREEN_STRIP(dl++, 0);
-    COPY_SCREEN_STRIP(dl++, 1);
-    COPY_SCREEN_STRIP(dl++, 2);
-    COPY_SCREEN_STRIP(dl++, 3);
-    COPY_SCREEN_STRIP(dl++, 4);
-    COPY_SCREEN_STRIP(dl++, 5);
-    COPY_SCREEN_STRIP(dl++, 6);
-    COPY_SCREEN_STRIP(dl++, 7);
-    COPY_SCREEN_STRIP(dl++, 8);
-    COPY_SCREEN_STRIP(dl++, 9);
-    COPY_SCREEN_STRIP(dl++, 10);
-    COPY_SCREEN_STRIP(dl++, 11);
+    COPY_SCREEN_STRIP(dl++, 0, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 1, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 2, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 3, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 4, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 5, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 6, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 7, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 8, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 9, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 10, scale, invScale);
+    COPY_SCREEN_STRIP(dl++, 11, scale, invScale);
 
     gSPEndDisplayList(dl++);
 }

@@ -47,6 +47,7 @@ Bitmap gGUIItemTemplates[] = {
     {8, 32, 16, 8, tex_guiitems, 8, 0},
     {8, 32, 0, 16, tex_guiitems, 8, 0},
     {8, 32, 8, 16, tex_guiitems, 8, 0},
+    {8, 32, 24, 24, tex_guiitems, 8, 0},
 };
 
 static Gfx      gButtonIconsDL[NUM_DL(1) * BUTTON_ICON_DL_LENGTH];
@@ -127,6 +128,7 @@ void initMenuState(struct MenuState* menu, struct MenuItem* items, int itemCount
     menu->currentMenuItem = items;
     menu->allItems = items;
     menu->menuItemCount = itemCount;
+    menu->holdTimer = ~0;
 
     if (menu->currentMenuItem->setActive)
     {
@@ -168,9 +170,16 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad)
 
         int buttonDown = (menu->lastButtons ^ buttons) & buttons;
 
-        if (buttonDown)
+        u32 timeMS = (u32)(OS_CYCLES_TO_USEC(osGetTime()) / 1024);
+
+        if (buttonDown || (menu->holdTimer <= timeMS && buttons))
         {
-            menu->holdTimer = INITIAL_TIME_DELAY;
+            if (!buttonDown) {
+                buttonDown = buttons;
+                menu->holdTimer = timeMS + REPEAT_TIME_DELAY;
+            } else {
+                menu->holdTimer = timeMS + INITIAL_TIME_DELAY;
+            }
 
             struct MenuItem* nextItem;
             
@@ -204,19 +213,12 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad)
                 }
             }
         }
-        else if (menu->lastButtons)
-        {
-            if (--menu->holdTimer == 0)
-            {
-                menu->holdTimer = REPEAT_TIME_DELAY;
-                buttons = 0;
-            }
-        }
 
         int buttonUp = (menu->lastButtons ^ buttons) & ~buttons;
 
         if (buttonUp && menu->currentMenuItem->handleButtonUp)
         {
+            menu->holdTimer = ~0;
             menu->currentMenuItem->handleButtonUp(menu->currentMenuItem, buttonUp, buttons);
         }
 
@@ -431,4 +433,5 @@ void renderMenuBorder()
     renderSprite(&gGUIItemTemplates[GUIItemIconVert], 80, 48, 1, 18);
     renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 80, 192, 1, 1);
     renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 10, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconBlack], 0, 48, 10, 18);
 }
