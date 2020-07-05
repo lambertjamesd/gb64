@@ -88,8 +88,6 @@ game(void)
 
 	int frames = 0;
 
-	clearDebugOutput();
-
     /*
      * Main game loop
      */

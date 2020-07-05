@@ -111,7 +111,10 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
 
     if (!gGameboy.memory.misc.biosLoaded && (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save)))
     {
-        saveGameboyState(&gGameboy);
+        if (saveGameboyState(&gGameboy))
+        {
+            DEBUG_PRINT_F("Failed to save");
+        }
         saveState->showSaveTimer = SAVE_TIMER_FRAMES;
         
         if (!saveState->isLoading)

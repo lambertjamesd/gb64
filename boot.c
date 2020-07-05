@@ -243,6 +243,8 @@ mainproc(void *arg)
 		
   	osFlashInit();
 
+	clearDebugOutput();
+
 	initHeap();
 
 	initRomLayout(&gGBRom, _gbromSegmentRomStart);

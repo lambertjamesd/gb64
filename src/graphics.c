@@ -140,7 +140,7 @@ void sortSprites(struct Sprite* array, int arrayLength)
     sortSpritesRecursive(array, workingMemory, arrayLength);
 }
 
-void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount)
+void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount, int sort)
 {
     int currentOutput;
     int currentInput;
@@ -155,8 +155,10 @@ void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, i
             sortedSprites[currentOutput++] = inputSprites[currentInput];
         }
     }
-
-    sortSprites(sortedSprites, currentOutput);
+    if (sort)
+    {
+        sortSprites(sortedSprites, currentOutput);
+    }
     *spriteCount = currentOutput;
 }
 
@@ -172,7 +174,7 @@ void initGraphicsState(
 {
     if (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_ENABLE)
     {
-        prepareSprites(memory->misc.sprites, state->sortedSprites, &state->spriteCount);
+        prepareSprites(memory->misc.sprites, state->sortedSprites, &state->spriteCount, !gbc);
     }
     else
     {
@@ -204,6 +206,7 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     int currentSpriteIndex;
     int renderedSprites = 0;
     int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT * 2 : SPRITE_BASE_HEIGHT;
+    int maxSprites = state->gbc ? state->spriteCount : 10;
     u8* targetMemory = state->spriteIndexBuffer;
     zeroMemory(targetMemory, GB_SCREEN_W);
 
@@ -211,7 +214,7 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     currentSpriteIndex = 0;
     renderedSprites = 0;
 
-    for (currentSpriteIndex = 0; currentSpriteIndex < state->spriteCount && renderedSprites < 10; ++currentSpriteIndex)
+    for (currentSpriteIndex = 0; currentSpriteIndex < state->spriteCount && renderedSprites < maxSprites; ++currentSpriteIndex)
     {
         struct Sprite currentSprite = state->sortedSprites[currentSpriteIndex];
         int sourceX = 0;
@@ -225,37 +228,25 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
             // sprite not on this row
             continue;
         }
-        else
+        
+        int x = ((int)currentSprite.x - SPRITE_WIDTH);
+        ++renderedSprites;
+
+
+        if (x < 0)
         {
-            sourceX = x - ((int)currentSprite.x - SPRITE_WIDTH);
-            ++renderedSprites;
+            sourceX = -x;
+            targetMemory = state->spriteIndexBuffer;
         }
-
-        if (sourceX > 0)
+        else 
         {
-            targetMemory -= sourceX;
-            x -= sourceX;
             sourceX = 0;
-
-            if (x < 0)
-            {
-                targetMemory -= x;
-                sourceX -= x;
-                x = 0;
-            }
+            targetMemory = state->spriteIndexBuffer + x;
         }
         
         if (sourceX >= SPRITE_WIDTH)
         {
             continue;
-        }
-        
-        while (x < GB_SCREEN_W && sourceX < 0)
-        {
-            *targetMemory = 0;
-            ++targetMemory;
-            ++sourceX;
-            ++x;
         }
 
         u16 paletteIndex = state->gbc ? 
@@ -325,13 +316,6 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
                 WRITE_SPRITE_PIXEL(spriteRow, paletteIndex, x, targetMemory, 0);
                 break;
         }
-    }
-
-    while (x < GB_SCREEN_W)
-    {
-        *targetMemory = 0;
-        ++targetMemory;
-        ++x;
     }
 }
 

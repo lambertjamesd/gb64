@@ -180,6 +180,10 @@ int getRAMBankCount(struct ROMLayout* romLayout)
 {
     switch (romLayout->mainBank[GB_ROM_H_RAM_SIZE])
     { 
+        case 0x0:
+        case 0x1:
+        case 0x2:
+            return 1;
         case 0x3:
             return 4;
         case 0x4:
@@ -187,6 +191,7 @@ int getRAMBankCount(struct ROMLayout* romLayout)
         case 0x5:
             return 8;
         default:
+            DEBUG_PRINT_F("Invalid ram size");
             return 1;
     }
 }

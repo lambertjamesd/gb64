@@ -108,8 +108,8 @@ $(CODESEGMENT):	$(CODEOBJECTS)
 		$(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LDFLAGS)
 
 ifeq ($(FINAL), YES)
-$(TARGETS) $(APP):      spec $(OBJECTS)
-	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec
+$(TARGETS) $(APP):      spec spec_common spec_wave $(OBJECTS)
+	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec 
 	makemask $(TARGETS)
 else
 $(TARGETS) $(APP):      spec $(OBJECTS)
@@ -125,7 +125,10 @@ rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
 
 
-romwrapper/gb.n64.js: $(TARGETS)
+bin/template.n64: spec_template spec_common spec_wave $(OBJECTS)
+	$(MAKEROM) -r bin/template.n64 -e bin/template.o spec_template
+
+romwrapper/gb.n64.js: bin/template.n64
 	echo "const gGB64Base64 = \`" > romwrapper/gb.n64.js
-	base64 $(TARGETS) >> romwrapper/gb.n64.js
+	base64 bin/template.n64 >> romwrapper/gb.n64.js
 	echo "\`.trim()" >> romwrapper/gb.n64.js

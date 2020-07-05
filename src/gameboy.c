@@ -207,7 +207,7 @@ int loadGameboyState(struct GameBoy* gameboy)
         gameboy->memory.memoryMap[0x9] = gameboy->memory.memoryMap[0x8] + MEMORY_MAP_SEGMENT_SIZE;
 
         bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_SVBK) & REG_SVBK_MASK;
-        gameboy->memory.memoryMap[0x8] = bank ?
+        gameboy->memory.memoryMap[0xD] = bank ?
             gameboy->memory.internalRam + bank * MEMORY_MAP_SEGMENT_SIZE * 2 :
             gameboy->memory.internalRam + MEMORY_MAP_SEGMENT_SIZE;
     }
@@ -222,30 +222,42 @@ int saveGameboyState(struct GameBoy* gameboy)
     }
     int offset = 0;
     int sectionSize = sizeof(struct GameboySettings);
-    saveToFlash(&gameboy->settings, offset, sectionSize);
+    if (saveToFlash(&gameboy->settings, offset, sectionSize)) {
+        return -1;
+    }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-    saveToFlash(gameboy->memory.cartRam, offset, sectionSize);
+    if (saveToFlash(gameboy->memory.cartRam, offset, sectionSize)) {
+        return -1;
+    }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = sizeof(struct GraphicsMemory);
-    saveToFlash(&gameboy->memory.vram, offset, sectionSize);
+    if (saveToFlash(&gameboy->memory.vram, offset, sectionSize)) {
+        return -1;
+    }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = MAX_RAM_SIZE;
-    saveToFlash(gameboy->memory.internalRam, offset, sectionSize);
+    if (saveToFlash(gameboy->memory.internalRam, offset, sectionSize)) {
+        return -1;
+    }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = sizeof(struct MiscMemory);
-    saveToFlash(&gameboy->memory.misc, offset, sectionSize);
+    if (saveToFlash(&gameboy->memory.misc, offset, sectionSize)) {
+        return -1;
+    }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     struct MiscSaveStateData miscData;
     miscData.cpu = gameboy->cpu;
     miscData.audioState = gameboy->memory.audio.renderState;
     sectionSize = sizeof(struct MiscSaveStateData);
-    saveToFlash(&miscData, offset, sectionSize);
+    if (saveToFlash(&miscData, offset, sectionSize)) {
+        return -1;
+    }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     return 0;

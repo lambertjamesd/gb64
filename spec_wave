@@ -1,0 +1,11 @@
+
+beginwave
+	name "game"
+	include "code"
+	include "static"
+	include "dmg_boot"
+	include "cgb_bios"
+	include "cfb"
+	include "rsp_cfb"
+	include "gbrom"
+endwave

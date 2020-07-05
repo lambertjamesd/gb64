@@ -62,6 +62,35 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     memory->memoryMap[0xB] = ramBank + MEMORY_MAP_SEGMENT_SIZE * 1;
 }
 
+void handleMBC2Write(struct Memory* memory, int addr, int value)
+{
+    int writeRange = addr >> 13;
+    if (writeRange == 0)
+    {
+        // RAM Enable, do nothing for now
+    }
+    else if (writeRange == 1)
+    {  
+        memory->misc.romBankLower = value;
+    }
+
+    char* romBank;
+    int bankIndex = memory->misc.romBankLower & 0xF;
+
+    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
+
+    memory->memoryMap[0x4] = romBank + MEMORY_MAP_SEGMENT_SIZE * 0;
+    memory->memoryMap[0x5] = romBank + MEMORY_MAP_SEGMENT_SIZE * 1;
+    memory->memoryMap[0x6] = romBank + MEMORY_MAP_SEGMENT_SIZE * 2;
+    memory->memoryMap[0x7] = romBank + MEMORY_MAP_SEGMENT_SIZE * 3;
+}
+
+
+void handleMMM0Write(struct Memory* memory, int addr, int value)
+{
+    // TODO
+}
+
 void handleMBC3Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
@@ -104,22 +133,19 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
 
 void handleMBC5Write(struct Memory* memory, int addr, int value)
 {
-    int writeRange = addr >> 13;
-    if (writeRange == 0)
-    {
-        // Do nothing
-    }
-    else if (writeRange == 1)
-    {  
-        memory->misc.romBankLower = value;
-    }
-    else if (writeRange == 2)
-    {
-        memory->misc.romBankUpper = value;
-    }
-    else if (writeRange == 3)
-    {  
-        memory->misc.ramRomSelect = value;
+    int writeRange = addr >> 12;
+    switch (addr >> 12) {
+        case 0: case 1:
+            break;
+        case 2:
+            memory->misc.romBankLower = value;
+            break;
+        case 3:
+            memory->misc.romBankUpper = value;
+            break;
+        case 4: case 5:
+            memory->misc.ramRomSelect = value;
+            break;
     }
 
     char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0xF) * MEMORY_MAP_SEGMENT_SIZE * 2;
@@ -144,8 +170,8 @@ struct MBCData mbcTypes[] = {
     {handleMBC1Write, 0x01, 0},
     {handleMBC1Write, 0x02, MBC_FLAGS_RAM},
     {handleMBC1Write, 0x03, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
-    {NULL, 0x05, 0},
-    {NULL, 0x06, MBC_FLAGS_BATTERY},
+    {handleMBC2Write, 0x05, 0},
+    {handleMBC2Write, 0x06, MBC_FLAGS_BATTERY},
     {nopBankSwitch, 0x08, MBC_FLAGS_RAM},
     {nopBankSwitch, 0x09, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
     {NULL, 0x0B, 0},
