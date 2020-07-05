@@ -3,6 +3,18 @@
 #include "../render.h"
 #include "gameboy.h"
 #include "graphics.h"
+#include "debug_out.h"
+
+static char* gScaleLabels[ScreenScaleSettingCount] = {
+    "1",
+    "1.25",
+    "1.5",
+};
+
+static char* gPixelLabels[ScreenScaleSettingCount] = {
+    "Sharp",
+    "Smooth",
+};
 
 void renderPaletteItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
 {
@@ -92,14 +104,62 @@ struct MenuItem* graphicsMenuHandleInput(struct MenuItem* menuItem, int buttonsD
     }
 }
 
+void setScaleSetting(struct CursorMenuItem* item, int id, int value)
+{
+    gGameboy.settings.graphics.scaleSetting = value;
+    generateDisplayList(&gGameboy.settings.graphics, gDrawScreen);
+}
+
+void setPixelSetting(struct CursorMenuItem* item, int id, int value)
+{
+    gGameboy.settings.graphics.smooth = value;
+    generateDisplayList(&gGameboy.settings.graphics, gDrawScreen);
+}
+
 void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
 {
     initCursorMenu(
         &menu->cursor,
         menu->menuItems,
-        GraphicsMenuItemCount
+        gGameboy.cpu.gbc ? GraphicsMenuItemGBP : GraphicsMenuItemCount
     );
     menu->cursor.parentMenu = parentMenu;
+
+    initCursorMenuItem(
+        &menu->menuItems[GraphicsMenuItemScale],
+        NULL,
+        "Scale",
+        32
+    );
+    initSelectCursorMenuItem(
+        &menu->scale, 
+        GraphicsMenuItemScale, 
+        gGameboy.settings.graphics.scaleSetting, 
+        0, ScreenScaleSettingCount, 
+        gScaleLabels
+    );
+    menu->menuItems[GraphicsMenuItemScale].data = &menu->scale;
+    menu->menuItems[GraphicsMenuItemScale].render = renderSelectCursorMenuItem;
+    menu->menuItems[GraphicsMenuItemScale].input = inputSelectCursorMenuItem;
+    menu->scale.changeCallback = setScaleSetting;
+    
+    initCursorMenuItem(
+        &menu->menuItems[GraphicsMenuItemPixel],
+        NULL,
+        "Pixel",
+        32
+    );
+    initSelectCursorMenuItem(
+        &menu->pixel, 
+        GraphicsMenuItemPixel, 
+        gGameboy.settings.graphics.smooth, 
+        0, 2,
+        gPixelLabels
+    );
+    menu->menuItems[GraphicsMenuItemPixel].data = &menu->pixel;
+    menu->menuItems[GraphicsMenuItemPixel].render = renderSelectCursorMenuItem;
+    menu->menuItems[GraphicsMenuItemPixel].input = inputSelectCursorMenuItem;
+    menu->pixel.changeCallback = setPixelSetting;
 
     initCursorMenuItem(
         &menu->menuItems[GraphicsMenuItemGBP],

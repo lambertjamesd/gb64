@@ -50,7 +50,6 @@ void
 game(void)
 {
     OSContPad	**pad;
-    char	str[200];
 	int loop;
 	int lastButton;
 	int accumulatedTime = 0;
@@ -65,10 +64,10 @@ game(void)
 	lastTime = osGetCount();
 	gGameboy.cpu.cyclesRun = 0;
 #if RUN_TESTS
+    char	str[200];
 	runTests(str);
-#endif
-
 	debugInfo(str);
+#endif
 
 	initGameboy(&gGameboy, &gGBRom);
 
@@ -138,7 +137,6 @@ game(void)
 
 			while (accumulatedTime > CPU_TICKS_PER_FRAME)
 			{
-				// DEBUG_PRINT_F("Dropped Frame\n");
 				accumulatedTime -= CPU_TICKS_PER_FRAME;
 			}
 

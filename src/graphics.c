@@ -34,7 +34,7 @@ u16 gScreenPalette[PALETTE_COUNT];
         (scaleInv >> 6), (scaleInv >> 6)                                    \
     )
 
-Gfx gDrawScreen[0xC0];
+Gfx gDrawScreen[0xC0] = {gsSPEndDisplayList()};
 
 #define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX, priority)    \
     if (priority <= 0 && (priority < 0 || (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)))) \
@@ -145,15 +145,27 @@ void applyGrayscalePallete() {
     memCopy(gScreenPalette, gGameboy.memory.vram.colorPalettes, sizeof(gScreenPalette));
 }
 
-void generateDisplayList(struct GraphicsState* state, Gfx* dl)
+static long gScreenScales[ScreenScaleSettingCount] = {
+    0x10000,
+    0x14000,
+    0x18000,
+};
+
+static long gInvScreenScales[ScreenScaleSettingCount] = {
+    0x10000,
+    0x0CCCC,
+    0x0AAAA,
+};
+
+void generateDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl)
 {
-    long scale = 0x18000;
-    long invScale = (long)(0x100000000L / scale);
+    long scale = gScreenScales[settings->scaleSetting];
+    long invScale = gInvScreenScales[settings->scaleSetting];
     
     gDPPipeSync(dl++);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
     gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-    gDPSetTextureFilter(dl++, G_TF_POINT);
+    gDPSetTextureFilter(dl++, settings->smooth ? G_TF_BILERP : G_TF_POINT);
     gDPSetTexturePersp(dl++, G_TP_NONE);
     gDPSetCombineMode(dl++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
@@ -179,6 +191,7 @@ void generateDisplayList(struct GraphicsState* state, Gfx* dl)
 void initGraphicsState(
     struct Memory* memory,
     struct GraphicsState* state,
+    struct GameboyGraphicsSettings* settings,
     int gbc
 )
 {
@@ -205,11 +218,12 @@ void initGraphicsState(
         applyGrayscalePallete();
     }
 
+    state->settings = *settings;
     state->gbc = gbc;
     state->row = 0;
     state->winY = 0;
 
-    generateDisplayList(state, gDrawScreen);
+    generateDisplayList(&state->settings, gDrawScreen);
 }
 
 void renderSprites(struct Memory* memory, struct GraphicsState* state)

@@ -5,6 +5,8 @@
 #include "menu.h"
 
 enum GraphicsMenuItem {
+    GraphicsMenuItemScale,
+    GraphicsMenuItemPixel,
     GraphicsMenuItemGBP,
     GraphicsMenuItemOBP0,
     GraphicsMenuItemOBP1,
@@ -14,6 +16,8 @@ enum GraphicsMenuItem {
 struct GraphicsMenu {
     struct CursorMenu cursor;
     struct CursorMenuItem menuItems[GraphicsMenuItemCount];
+    struct SelectCursorMenuItem scale;
+    struct SelectCursorMenuItem pixel;
 };
 
 void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu);

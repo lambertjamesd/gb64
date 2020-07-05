@@ -79,6 +79,21 @@ struct InputMapping
     u32 reserved2;
 };
 
+enum ScreenScaleSetting
+{
+    ScreenScale1,
+    ScreenScale1_25,
+    ScreenScale1_5,
+    ScreenScaleSettingCount,    
+};
+
+struct GameboyGraphicsSettings
+{
+    u32 unused:27;
+    u32 smooth:1;
+    u32 scaleSetting:4;
+};
+
 #define GB_SETTINGS_FLAGS_DISABLE_GBC   0x1
 
 #define GB_SETTINGS_HEADER              0x47423634
@@ -96,6 +111,7 @@ struct GameboySettings
     u16 obp0Index;
     u16 obp1Index;
     struct InputMapping inputMapping;
+    struct GameboyGraphicsSettings graphics;
 };
 
 struct GameBoy

@@ -35,7 +35,12 @@ struct GameboySettings gDefaultSettings = {
         InputButtonSetting_UC,
         InputButtonSetting_LC,
         InputButtonSetting_RC,
-    }
+    },
+    {
+        0,
+        0,
+        0,
+    },
 };
 
 #define FLASH_BLOCK_SIZE    0x80
@@ -363,13 +368,11 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             gameboy->cpu.runUntilNextFrame = 0;
         }
 
-        initGraphicsState(&gameboy->memory, &graphicsState, gameboy->cpu.gbc);
+        initGraphicsState(&gameboy->memory, &graphicsState, &gameboy->settings.graphics, gameboy->cpu.gbc);
 
         int cyclesToRun = CYCLES_TIL_LINE_RENDER;
 
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
-        
-        // DEBUG_PRINT_F("%d \n", READ_REGISTER_DIRECT(&gameboy->memory, REG_LY));
 
         for (line = 0; line < GB_SCREEN_H; ++line)
         {

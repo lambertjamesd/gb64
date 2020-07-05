@@ -10,7 +10,7 @@
 #include "../tex/triggers.h"
 
 #define BUTTON_ICON_COUNT   10
-#define BUTTON_ICON_DL_LENGTH   40
+#define BUTTON_ICON_DL_LENGTH   60
 
 Bitmap gButtonIconTemplates[] = {
     {16, 32, 0, 0, tex_cbuttons, 16, 0},
@@ -305,11 +305,6 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
     {
         struct CursorMenuItem* menuItem = &menu->menuItems[menuItemIndex];
 
-        if (menuItem->flags & CURSOR_MENU_ITEM_FLAGS_HIDDEN)
-        {
-            continue;
-        }
-
         if (y + menuItem->height >= maxY)
         {
             break;
@@ -381,10 +376,7 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
             {
                 struct CursorMenuItem* cursorMenuItem = &menu->menuItems[lastItemIndex];
 
-                if (!(cursorMenuItem->flags & CURSOR_MENU_ITEM_FLAGS_HIDDEN))
-                {
-                    y += cursorMenuItem->height;
-                }
+                y += cursorMenuItem->height;
 
                 if (y >= height)
                 {
@@ -434,4 +426,71 @@ void renderMenuBorder()
     renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 80, 192, 1, 1);
     renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 10, 1);
     renderSprite(&gGUIItemTemplates[GUIItemIconBlack], 0, 48, 10, 18);
+}
+
+///////////////////////////////////
+
+void initSelectCursorMenuItem(struct SelectCursorMenuItem* item, int id, int value, int minValue, int maxValue, char** labels)
+{
+    item->changeCallback = NULL;
+    item->id = id;
+    item->value = value;
+    item->minValue = minValue;
+    item->maxValue = maxValue;
+    item->labels = labels;
+}
+
+void renderSelectCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
+{
+    struct SelectCursorMenuItem* select = (struct SelectCursorMenuItem*)menuItem->data;
+
+    FONTCOL(255, 255, 255, 255);
+    SHOWFONT(&glistp, menuItem->label, x, y);
+    
+    if (selected)
+    {
+        renderSprite(&gGUIItemTemplates[GUIItemIconLeft], x, y + 12, 1, 1);
+        renderSprite(&gGUIItemTemplates[GUIItemIconRight], x + 60, y + 12, 1, 1);
+    }
+
+    int currentValue = (select->value - select->minValue) % (select->maxValue - select->minValue);
+    
+    SHOWFONT(&glistp, select->labels[currentValue], x + 12, y + 12);
+}
+
+struct MenuItem* inputSelectCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown)
+{
+    struct SelectCursorMenuItem* select = (struct SelectCursorMenuItem*)menuItem->data;
+
+    if (buttonDown & R_JPAD)
+    {
+        ++select->value;
+        
+        if (select->value >= select->maxValue)
+        {
+            select->value = select->minValue;
+        }
+
+        if (select->changeCallback)
+        {
+            select->changeCallback(menuItem, select->id, select->value);
+        }
+    }
+
+    if (buttonDown & L_JPAD)
+    {
+        --select->value;
+        
+        if (select->value < select->minValue)
+        {
+            select->value = select->maxValue - 1;
+        }
+
+        if (select->changeCallback)
+        {
+            select->changeCallback(menuItem, select->id, select->value);
+        }
+    }
+
+    return NULL;
 }

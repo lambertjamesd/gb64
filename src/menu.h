@@ -42,7 +42,6 @@ struct CursorMenuItem;
 typedef struct MenuItem* (*InputCursorMenuItem)(struct CursorMenuItem* menuItem, int buttonDown);
 typedef void (*RenderCursorMenuItem)(struct CursorMenuItem* menuItem, int x, int y, int selected);
 
-#define CURSOR_MENU_ITEM_FLAGS_HIDDEN 0x1
 extern Sprite gButtonSprite;
 
 struct CursorMenuItem {
@@ -81,6 +80,18 @@ struct CursorMenu {
     u16 scrollOffset;
 };
 
+
+typedef void (*SetItemValue)(struct CursorMenuItem* item, int id, int value);
+
+struct SelectCursorMenuItem {
+    SetItemValue changeCallback;
+    int id;
+    int value;
+    int maxValue;
+    int minValue;
+    char** labels;
+};
+
 void initMenuState(struct MenuState* menu, struct MenuItem* items, int itemCount);
 
 void menuStateHandleInput(struct MenuState* menu, OSContPad* pad);
@@ -94,6 +105,10 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
 void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height);
 void initCursorMenu(struct CursorMenu* menu, struct CursorMenuItem* menuItems, u16 menuItemCount);
 void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, char* label, u16 height);
+
+void initSelectCursorMenuItem(struct SelectCursorMenuItem* item, int id, int value, int minValue, int maxValue, char** labels);
+void renderSelectCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, int selected);
+struct MenuItem* inputSelectCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown);
 
 void renderSprite(Bitmap* bitmap, s32 x, s32 y, s32 w, s32 h);
 void setSpriteColor(u8 r, u8 g, u8 b);

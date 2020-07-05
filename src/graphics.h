@@ -3,6 +3,7 @@
 #define _GRAPHICS_H
 
 #include "memory_map.h"
+#include "gameboy.h"
 
 #define GB_SCREEN_W         160
 #define GB_SCREEN_H         144
@@ -63,8 +64,9 @@ extern Gfx gDrawScreen[];
 struct GraphicsState {
     struct Sprite sortedSprites[SPRITE_COUNT];
     u8 spriteIndexBuffer[GB_SCREEN_W];
-    int spriteCount;
+    struct GameboyGraphicsSettings settings;
     int gbc;
+    int spriteCount;
     int row;
     int winY;
 };
@@ -73,10 +75,12 @@ int compareSprites(struct Sprite a, struct Sprite b);
 void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount, int sort);
 void renderSprites(struct Memory* memory, struct GraphicsState* state);
 void applyGrayscalePallete();
+void generateDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl);
 
 void initGraphicsState(
     struct Memory* memory,
     struct GraphicsState* state,
+    struct GameboyGraphicsSettings* settings,
     int gbc
 );
 
