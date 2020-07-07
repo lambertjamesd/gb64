@@ -5,7 +5,7 @@
 ########################
 
 CALCULATE_NEXT_TIMER_INTERRUPT:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
@@ -42,14 +42,14 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     nop
 _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
     la $at, 0xFFFFFFFF
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 ########################
 # Update DIV register to the correct value
@@ -208,7 +208,7 @@ _CHECK_LCDC_STAT_FLAG_1:
 ########################
 
 DEQUEUE_STOPPING_POINT:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
 
     lw $at, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
@@ -476,7 +476,7 @@ _HANDLE_DEQUEUE_INTERRUPT_SAVE:
     
 HANDLE_DEQUEUE_EXIT:
     j GB_BREAK_LOOP
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 HANDLE_DMA_DEQUEUE:
     read_register16_direct TMP3, _REG_DMA_LAST_CYCLE
@@ -520,7 +520,7 @@ HANDLE_DEBUGGER_DEQUEUE:
 _FINISH_DEQUEUE_INTERRUPT:
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 
 ########################
@@ -530,7 +530,7 @@ _FINISH_DEQUEUE_INTERRUPT:
 ########################
 
 QUEUE_STOPPING_POINT:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw TMP3, 0($sp)
     lw $a2, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
     add $a2, $a2, CPUState
@@ -559,7 +559,7 @@ _QUEUE_STOPPING_POINT_SET:
 
     lw TMP3, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 READ_NEXT_STOPPING_POINT:
     lw CycleTo, CPU_STATE_NEXT_STOPPING_POINT(CPUState)

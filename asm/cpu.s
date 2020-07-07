@@ -198,7 +198,7 @@ _GB_BREAK_LOOP_SAVE_CYCLES:
 #######################
 
 READ_NEXT_INSTRUCTION_16:
-    addi $sp, $sp, -0x4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal READ_NEXT_INSTRUCTION
     nop
@@ -208,7 +208,7 @@ READ_NEXT_INSTRUCTION_16:
     or $v0, $v0, $v1
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 0x4
+    addi $sp, $sp, 8
 
 READ_NEXT_INSTRUCTION:
     # read at PC, increment PC, return value

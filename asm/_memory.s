@@ -131,13 +131,13 @@ _GB_BASIC_REGISTER_WRITE:
     sb VAL, 0(ADDR)
 
 _GB_WRITE_INTERRUPTS_ENABLED:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_ENABLED # set requested interrupts
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 ########################
 
@@ -181,21 +181,21 @@ _GB_WRITE_REG_DIV:
     sll $at, CYCLES_RUN, 2
     sub $at, $zero, $at
     write_register16_direct $at, _REG_DIV_OFFSET
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     j CALCULATE_NEXT_TIMER_INTERRUPT
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     
 _GB_WRITE_REG_TIMA:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TIMA
     
@@ -204,26 +204,26 @@ _GB_WRITE_REG_TMA:
     write_register_direct VAL, REG_TMA
 
 _GB_WRITE_REG_TAC:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal CALCULATE_TIMA_VALUE
     nop
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TAC
     
 _GB_WRITE_REG_INT_REQ:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     ori VAL, VAL, 0xE0 # upper 3 bits are always 1
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 
 ############################
@@ -437,7 +437,7 @@ _GB_WRITE_REG_LCDC:
     andi $at, $at, REG_LCDC_LCD_ENABLE
     beqz $at, _GB_WRITE_REG_LCDC_WRITE # if the LCD status didn't change do nothing
     andi $at, VAL, REG_LCDC_LCD_ENABLE
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     beqz $at, _GB_WRITE_REG_LCDC_OFF
     sw $ra, 0($sp)
 
@@ -460,7 +460,7 @@ _GB_WRITE_REG_LCDC_ON:
       
     lw $ra, 0($sp)
     j _GB_WRITE_REG_LCDC_WRITE
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
 
 _GB_WRITE_REG_LCDC_OFF:
     
@@ -479,7 +479,7 @@ _GB_WRITE_REG_LCDC_OFF:
     jal REMOVE_STOPPING_POINT # update stopping point
     li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_3
     lw $ra, 0($sp)
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
 _GB_WRITE_REG_LCDC_WRITE:
     jr $ra
     write_register_direct VAL, REG_LCDC
@@ -487,7 +487,7 @@ _GB_WRITE_REG_LCDC_WRITE:
 ############################
 
 _GB_WRITE_REG_LCDC_STATUS:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
 
     read_register_direct Param0, REG_LCDC_STATUS
@@ -506,7 +506,7 @@ _GB_WRITE_REG_LCDC_STATUS:
 ############################
 
 _GB_WRITE_REG_LCY:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     
     read_register_direct Param0, REG_LCDC_STATUS
@@ -540,12 +540,12 @@ _GB_CHECK_RISING_STAT:
 _GB_CHECK_RISING_STAT_FINISH:
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
     
 ############################
 
 _GB_WRITE_DMA:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     # cancel any existing DMA
     jal REMOVE_STOPPING_POINT
@@ -561,7 +561,7 @@ _GB_WRITE_DMA:
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_DMA # first byte finsihes 2 cycles from now
     lw $ra, 0($sp)
     j QUEUE_STOPPING_POINT
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
 
 ############################
 
@@ -742,7 +742,7 @@ _GB_START_DMA:
     bnez $at, _GB_SKIP_DMA
     nop
     addi CYCLES_RUN, CYCLES_RUN, 1
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
 _GB_DMA_LOOP:
     jal GB_DMA_BLOCK
@@ -750,7 +750,7 @@ _GB_DMA_LOOP:
     beqz $v0, _GB_DMA_LOOP
     nop
     lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 _GB_SKIP_DMA:
     jr $ra
     nop

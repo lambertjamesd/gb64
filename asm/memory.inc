@@ -88,7 +88,7 @@
 .eqv H_FLAG, 0x20
 .eqv C_FLAG, 0x10
 
-.eqv STACK_SIZE, 0x34
+.eqv STACK_SIZE, 0x38
 .eqv ST_RA, 0x0
 # hole here
 .eqv ST_S0, 0x8
@@ -117,7 +117,7 @@
 .eqv INTERRUPTS_INPUT, 0x10;
 .eqv INTERRUPTS_ENABLED, 0x80;
 
-.eqv _C_CALLBACK_FRAME_SIZE, 0x14
+.eqv _C_CALLBACK_FRAME_SIZE, 0x18
 
 .macro save_state_on_stack
     addi $sp, $sp, -_C_CALLBACK_FRAME_SIZE
