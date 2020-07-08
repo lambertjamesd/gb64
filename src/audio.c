@@ -44,6 +44,24 @@ void initAudio(struct AudioState* audioState, int sampleRate, int frameRate)
 	audioState->renderState.noiseSound.lfsr = 0x7FFF;
 }
 
+/*
+steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
+freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
+sampleRate = samples/second - the number of samples per second the output is expecting
+? steps/sample = steps_cycle * freq / sampleRate
+*/
+int squareCycleStep(int frequency, int sampleRate)
+{
+	if (frequency < 0x800)
+	{
+		return (int)(0x200000000L / ((0x800L - (frequency)) * (sampleRate)));
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 void renderSquareWave(
     struct AudioState* state, 
     int untilSamples, 
@@ -54,7 +72,7 @@ void renderSquareWave(
 {
     int sampleIndex;
 	
-	int cycleStep = CYCLE_STEP(sound->frequency, state->sampleRate);
+	int cycleStep = squareCycleStep(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -68,6 +86,24 @@ void renderSquareWave(
     }
 }
 
+
+/*
+steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
+freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
+sampleRate = samples/second - the number of samples per second the output is expecting
+? steps/sample = steps_cycle * freq / sampleRate
+*/
+int pcmCycleStep(int frequency, int sampleRate) {
+	if (frequency < 0x800)
+	{
+		return (int)(0x100000000L / ((0x800L - (frequency)) * (sampleRate)));
+	}
+	else
+	{
+		return 0;
+	}
+} 
+
 void renderPatternWave(
 	struct Memory* memory,
 	struct AudioState* state,
@@ -77,7 +113,7 @@ void renderPatternWave(
 	int leftVolume
 ) {
     int sampleIndex;
-	int cycleStep = PCM_CYCLE_STEP(sound->frequency, state->sampleRate);
+	int cycleStep = pcmCycleStep(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -323,16 +359,16 @@ void tickAudio(struct Memory* memory, int untilCyles)
 			// not sure why
 			int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2) - 1;
 
-			if (tickTo > audio->samplesPerBuffer)
+			if (tickTo >= audio->samplesPerBuffer)
 			{
 				renderAudio(memory, audio->samplesPerBuffer);
 				advanceWriteBuffer(audio);
 				tickTo -= audio->samplesPerBuffer;
 			}
-			renderAudio(memory, tickTo);
-			if (tickTo == audio->samplesPerBuffer)
+
+			if (tickTo != audio->currentSampleIndex)
 			{
-				advanceWriteBuffer(audio);
+				renderAudio(memory, tickTo);
 			}
 
 			tickSquareWave(&audio->renderState.sound1);

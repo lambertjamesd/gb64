@@ -31,15 +31,6 @@ struct Memory;
 
 #define NOISE_MAX_CLOCK_SHIFT 13
 
-/*
-steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
-freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
-sampleRate = samples/second - the number of samples per second the output is expecting
-? steps/sample = steps_cycle * freq / sampleRate
-*/
-#define CYCLE_STEP(frequency, sampleRate) (int)(0x200000000L / ((0x800L - (frequency)) * (sampleRate)))
-#define PCM_CYCLE_STEP(frequency, sampleRate) (int)(0x100000000L / ((0x800L - (frequency)) * (sampleRate)))
-
 struct AudioSample
 {
     short l;
