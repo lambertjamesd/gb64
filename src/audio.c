@@ -354,10 +354,7 @@ void tickAudio(struct Memory* memory, int untilCyles)
 	{
 		while (audio->cyclesEmulated < untilCyles)
 		{
-			// subtract 1 to prevent writing audio to outpace playing it back
-			// if the frequency gets changed to 445000 then it should be -2
-			// not sure why
-			int tickTo = gAudioState.currentSampleIndex + (gAudioState.sampleRate >> APU_TICKS_PER_SEC_L2) - 1;
+			int tickTo = gAudioState.currentSampleIndex + (gAudioState.sampleRate >> APU_TICKS_PER_SEC_L2) + gAudioState.tickAdjustment;
 
 			if (tickTo >= gAudioState.samplesPerBuffer)
 			{
@@ -461,6 +458,32 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 #endif
 }
 
+void recalcTickAdjustment(struct AudioState* state)
+{
+	u32 lead = getAudioWriteHeadLead(state);
+
+	if (lead < state->samplesPerBuffer / 2)
+	{
+		state->tickAdjustment = 1;
+	}
+	else if (lead > state->samplesPerBuffer + state->samplesPerBuffer / 2)
+	{
+		state->tickAdjustment = -(state->sampleRate >> APU_TICKS_PER_SEC_L2);
+	}
+	else if (lead > state->samplesPerBuffer)
+	{
+		state->tickAdjustment = -2;
+	}
+	else if (lead > state->samplesPerBuffer / 2)
+	{
+		state->tickAdjustment = -1;
+	}
+	else
+	{
+		state->tickAdjustment = 0;
+	}
+}
+
 void finishAudioFrame(struct Memory* memory)
 {
 #if ENABLE_AUDIO
@@ -493,7 +516,7 @@ void finishAudioFrame(struct Memory* memory)
 		++pendingBufferCount;
 	}
 
-	DEBUG_PRINT_F("Lead %d\n", getAudioWriteHeadLead(&gAudioState));
+	recalcTickAdjustment(&gAudioState);
 #endif
 }
 

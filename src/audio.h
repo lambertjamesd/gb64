@@ -106,6 +106,7 @@ struct AudioState
     u16 currentWriteBuffer;
     u16 currentSampleIndex;
     u16 nextPlayBuffer;
+    int tickAdjustment;
 };
 
 extern struct AudioState gAudioState;

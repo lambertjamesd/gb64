@@ -7,13 +7,17 @@
 #include "../memory.h"
 #include "gameboy.h"
 
-u8 gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
+union {
+    u8 buffer[GB_SCREEN_W * GB_SCREEN_H];
+    long long unusedAlign;
+} gScreenBuffer;
+
 u16 gScreenPalette[PALETTE_COUNT];
 
 #define COPY_SCREEN_STRIP(dl, blockY, scale, scaleInv)                      \
     gDPLoadTextureTile(                                                     \
         dl,                                                                 \
-        (int)gScreenBuffer + blockY * GB_SCREEN_W * GB_RENDER_STRIP_HEIGHT, \
+        (int)gScreenBuffer.buffer + blockY * GB_SCREEN_W * GB_RENDER_STRIP_HEIGHT, \
         G_IM_FMT_CI, G_IM_SIZ_8b,                                           \
         GB_SCREEN_W, GB_RENDER_STRIP_HEIGHT,                                \
         0, 0,                                                               \
@@ -374,7 +378,7 @@ void renderPixelRow(
     // sprite index memory
     renderSprites(memory, state);
 
-    targetMemory = gScreenBuffer + state->row * GB_SCREEN_W;
+    targetMemory = gScreenBuffer.buffer + state->row * GB_SCREEN_W;
     offsetX = READ_REGISTER_DIRECT(memory, REG_SCX);
     bgY = (state->row + READ_REGISTER_DIRECT(memory, REG_SCY)) & 0xFF;
 
