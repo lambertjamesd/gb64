@@ -34,6 +34,7 @@
 #include "src/rom.h"
 #include "src/debug_out.h"
 #include "render.h"
+#include "src/faulthandler.h"
 
 /*
  * Symbol genererated by "makerom" (RAM)
@@ -159,6 +160,8 @@ idle(void *arg)
 		   mainThreadStack + STACKSIZE / sizeof(u64), 10);
 
 	osStartThread(&mainThread);
+
+	installFaultHandler();
 
 	/*
 	 * Become the idle thread
