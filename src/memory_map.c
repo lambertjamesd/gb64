@@ -234,7 +234,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
         memory->timerMemoryBank = malloc(RAM_BANK_SIZE);
     }
 
-    initAudio(&memory->audio, 22500, 30);
+	memory->audio.noiseSound.lfsr = 0x7FFF;
     
     finishRomLoad(rom);
 

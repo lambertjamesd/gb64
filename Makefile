@@ -130,3 +130,6 @@ romwrapper/gb.n64.js: bin/gb.n64
 	echo "const gGB64Base64 = \`" > romwrapper/gb.n64.js
 	base64 bin/gb.n64 >> romwrapper/gb.n64.js
 	echo "\`.trim()" >> romwrapper/gb.n64.js
+
+bin/objdump.txt: bin/gb.n64
+	mips64-elf-objdump -S game.out > bin/objdump.txt

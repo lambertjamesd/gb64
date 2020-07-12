@@ -101,13 +101,14 @@ struct AudioRenderState
 struct AudioState
 {
     struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
-    struct AudioRenderState renderState;
     u16 sampleRate;
     u16 samplesPerBuffer;
     u16 currentWriteBuffer;
     u16 currentSampleIndex;
     u16 nextPlayBuffer;
 };
+
+extern struct AudioState gAudioState;
 
 void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
 void tickAudio(struct Memory* memoryMap, int untilCyles);

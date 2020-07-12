@@ -2,6 +2,9 @@
 #ifndef _FAULT_HANDLER_H
 #define _FAULT_HANDLER_H
 
-void installFaultHandler();
+#include <ultra64.h>
+
+void installFaultHandler(OSThread *targetThread);
+void faultHandlerHeartbeat();
 
 #endif

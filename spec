@@ -63,7 +63,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/PokemonBlue.gb"
+	include "data/PokemonSilver.gbc"
 endseg
 // */
 

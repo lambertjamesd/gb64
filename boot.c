@@ -161,7 +161,7 @@ idle(void *arg)
 
 	osStartThread(&mainThread);
 
-	installFaultHandler();
+	installFaultHandler(&mainThread);
 
 	/*
 	 * Become the idle thread

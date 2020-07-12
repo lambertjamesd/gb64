@@ -201,7 +201,7 @@ int loadGameboyState(struct GameBoy* gameboy)
         return -1;
     }
     gameboy->cpu = miscData.cpu;
-    gameboy->memory.audio.renderState = miscData.audioState;
+    gameboy->memory.audio = miscData.audioState;
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     gameboy->memory.bankSwitch(&gameboy->memory, -1, 0);
@@ -259,7 +259,7 @@ int saveGameboyState(struct GameBoy* gameboy)
 
     struct MiscSaveStateData miscData;
     miscData.cpu = gameboy->cpu;
-    miscData.audioState = gameboy->memory.audio.renderState;
+    miscData.audioState = gameboy->memory.audio;
     sectionSize = sizeof(struct MiscSaveStateData);
     if (saveToFlash(&miscData, offset, sectionSize)) {
         return -1;
@@ -398,7 +398,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
     if (gameboy->cpu.unscaledCyclesRun >= MAX_CYCLE_TIME)
     {
         gameboy->cpu.unscaledCyclesRun -= MAX_CYCLE_TIME;
-        gameboy->memory.audio.renderState.cyclesEmulated -= MAX_CYCLE_TIME;
+        gameboy->memory.audio.cyclesEmulated -= MAX_CYCLE_TIME;
     }
 }
 

@@ -202,7 +202,7 @@ struct Memory {
         unsigned char vramBytes[sizeof(struct GraphicsMemory)];
     };
     struct ROMLayout* rom;
-    struct AudioState audio;
+    struct AudioRenderState audio;
     struct Breakpoint breakpoints[BREAK_POINT_COUNT];
     u8* timerMemoryBank;
     struct MBCData* mbc;

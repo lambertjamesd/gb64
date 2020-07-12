@@ -1,54 +1,83 @@
 
-#include <ultra64.h>
 #include <os_internal.h>
 #include "faulthandler.h"
 #include "render.h"
 #include "debug_out.h"
+#include "../controller.h"
 
 #define FAULT_STACK_SIZE     0x200
+#define HANG_DELAY           OS_USEC_TO_CYCLES(3 * 1000000)   
 
 static OSThread faultThread;
 static u64      faultThreadStack[FAULT_STACK_SIZE / sizeof(u64)];
+static OSTime   lastHeartbeatTime;
 
 static void     faultHandlerProc(void *);
 
-void installFaultHandler()
+void installFaultHandler(OSThread *targetThread)
 {
 	/*
 	 * Create main thread
 	 */
-	osCreateThread(&faultThread, 4, faultHandlerProc, NULL,
+	osCreateThread(&faultThread, 4, faultHandlerProc, targetThread,
 		   faultThreadStack + FAULT_STACK_SIZE / sizeof(u64), 10);
 
 	osStartThread(&faultThread);
 }
 
+void dumpThreadInfo(OSThread *targetThread)
+{
+    DEBUG_PRINT_F("  pc=0x%08x\n", targetThread->context.pc);
+    DEBUG_PRINT_F("  badvaddr=0x%08x\n", targetThread->context.badvaddr);
+    DEBUG_PRINT_F("  ra=0x%x\n", (u32)targetThread->context.ra);
+    DEBUG_PRINT_F("  cause=0x%x\n", targetThread->context.cause);
+}
+
 static void faultHandlerProc(void* arg)
 {
+    OSThread *targetThread = (OSThread*)arg;
+
+    faultHandlerHeartbeat();
+
     while (1) {
-        /* 
-         * This routine returns the next faulted thread from the active
-         * thread list. It uses the thread argument as the starting point of
-         * the search: if NULL, starts from the beginning of the list.
-         * The routine returns NULL if it can't find any faulted thread.
-         */
+        if (osGetTime() - lastHeartbeatTime >= HANG_DELAY) {
+            DEBUG_PRINT_F("Main thread frozen:\n");
+            dumpThreadInfo(targetThread);
+            break;
+        }
+
         OSThread *curr = __osGetNextFaultedThread(NULL);
+
         if (curr) {
             DEBUG_PRINT_F("Main thread faulted:\n");
-            DEBUG_PRINT_F("  pc=0x%08x\n", curr->context.pc);
-            DEBUG_PRINT_F("  badvaddr=0x%08x\n", curr->context.badvaddr);
-            DEBUG_PRINT_F("  ra=0x%x\n", curr->context.ra);
-            DEBUG_PRINT_F("  cause=0x%x\n", curr->context.cause);
+            dumpThreadInfo(curr);
             break;
         } else {
             osYieldThread();
         }
     }
 
+    osSetThreadPri(NULL, 11);
+    
+    OSContPad	**pad;
+
     while (1)
     {
+		pad = ReadController(0);
+
+        if (pad[0]->button & START_BUTTON)
+        {
+            DEBUG_PRINT_F("Main thread:\n");
+            dumpThreadInfo(targetThread);
+        }
+
 		preRenderFrame();
 		renderDebugLog();
 		finishRenderFrame();
     }
+}
+
+void faultHandlerHeartbeat()
+{
+    lastHeartbeatTime = osGetTime();
 }

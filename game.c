@@ -40,6 +40,7 @@
 #include "render.h"
 #include "src/debugger.h"
 #include "src/mainmenu.h"
+#include "src/faulthandler.h"
 
 #define RUN_TESTS 0
 
@@ -70,6 +71,8 @@ game(void)
 #endif
 
 	initGameboy(&gGameboy, &gGBRom);
+	
+    initAudio(&gAudioState, 22500, 30);
 
 	initDebugMenu(&gDebugMenu, &gGameboy.cpu, &gGameboy.memory);
 
@@ -168,5 +171,6 @@ game(void)
 		renderMainMenu(&gMainMenu);
 
 		finishRenderFrame();
+		faultHandlerHeartbeat();
     }
 }

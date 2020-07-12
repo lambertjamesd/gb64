@@ -5,6 +5,7 @@
 #include "../render.h"
 #include "decoder.h"
 #include "bool.h"
+#include "faulthandler.h"
 
 u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
@@ -772,6 +773,8 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
         menuStateRender(&gDebugMenu.menu);
 
 		finishRenderFrame();
+        
+		faultHandlerHeartbeat();
 
         int buttonDown = pad[0]->button & ~lastButton;
 

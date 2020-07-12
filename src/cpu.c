@@ -30,6 +30,7 @@ void addStoppingPoint(struct CPUState* state, struct CPUStoppingPoint stoppingPo
         else
         {
             state->stoppingPoints[(index >> 2) - 1] = state->stoppingPoints[index >> 2];
+            index += sizeof(struct CPUStoppingPoint);
         }
     }
 
