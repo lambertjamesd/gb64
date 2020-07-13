@@ -257,23 +257,26 @@
             async function convertROM() {
                 const dmgBoot = document.querySelector('#dmgBoot').files[0];
                 const cgbBios = document.querySelector('#cgbBios').files[0];
-                const rom = document.querySelector('#rom').files[0];
+                const roms = document.querySelector('#rom').files;
 
-                if (!rom)
+                if (!roms || roms.length == 0)
                 {
                     reportError('Fatal: no rom selected');
                 }
                 else
                 {
-                    const filename = rom.name;
-                    const extensionIndex = filename.lastIndexOf('.');
-
-                    convert(
-                        extensionIndex == -1 ? filename : filename.slice(0, extensionIndex),
-                        await readAsArrayBuffer(rom), 
-                        dmgBoot && await readAsArrayBuffer(dmgBoot), 
-                        cgbBios && await readAsArrayBuffer(cgbBios)
-                    );
+                    for (let rom of roms)
+                    {
+                        const filename = rom.name;
+                        const extensionIndex = filename.lastIndexOf('.');
+    
+                        convert(
+                            extensionIndex == -1 ? filename : filename.slice(0, extensionIndex),
+                            await readAsArrayBuffer(rom), 
+                            dmgBoot && await readAsArrayBuffer(dmgBoot), 
+                            cgbBios && await readAsArrayBuffer(cgbBios)
+                        );
+                    }
                 }
             }
         </script>
@@ -290,7 +293,7 @@
                             <h2>Rom</h2>
                             <div class="file-input">
                                 <label for="rom">.gb or .gbc rom to convert to an .n64 rom</label>
-                                <input id="rom" type="file" accept=".gb, .gbc">
+                                <input id="rom" type="file" accept=".gb, .gbc" multiple>
                             </div>
                         </div>
                         <div class="form-section">
