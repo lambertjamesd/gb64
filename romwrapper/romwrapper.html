@@ -25,6 +25,76 @@
                 border: solid 1px #404040;
                 padding: 12px;
             }
+
+            body {
+                padding: 0px;
+                margin: 0px;
+            }
+
+            .body-wrapper {
+                display: flex;
+                justify-content: center;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                background: #090698;
+            }
+            
+            .center-section {
+                display: flex;
+                flex-direction: column;
+                max-width: 800px;
+                background: white;
+                padding: 20px;
+                overflow: auto;
+            }
+
+            .center-section > * + * {
+                margin-top: 20px;
+            }
+
+            .content {
+                display: flex;
+                border: solid 2px black;
+            }
+
+            .form-section {
+                padding: 20px;
+            }
+
+            .required-section {
+                flex: 1 1 0;
+            }
+
+            .bios-section {
+                flex: 1 1 0;
+            }
+
+            h2 {
+                margin: 0px;
+            }
+
+            .download-button {
+                padding: 8px;
+                cursor: pointer;
+                margin-top: 20px;
+            }
+
+            thead {
+                background: #f0f0f0;
+            }
+
+            td {
+                padding: 4px;
+                border: 1px solid black;
+            }
+
+            .placeholder {
+                font-style: italic;
+                opacity: 0.5;
+            }
         </style>
         <script>
             const gGB64 = atob(gGB64Base64);
@@ -98,6 +168,13 @@
 
                 if (parent)
                 {
+                    const placeholder = parent.querySelector('.placeholder');
+
+                    if (placeholder)
+                    {
+                        parent.removeChild(placeholder);
+                    }
+
                     const line = document.createElement('div');
                     line.appendChild(document.createTextNode(
                         `0x${crc.toString(16)}=5 (${filename})`
@@ -202,39 +279,119 @@
         </script>
     </head>
     <body>
-        <h2>Rom</h2>
-        <div class="file-input">
-            <label for="rom">.gb or .gbc rom to convert to an .n64 rom</label>
-            <input id="rom" type="file" accept=".gb, .gbc">
-        </div>
-        <h2>Bios</h2>
-        <p>
-            Use a bios to get the gameboy startup animation with
-            the nintendo or gameboy logo. Don't include them to
-            skip the animation and boot directly into the game.
-        </p>
-        <div class="file-input">
-            <label for="dmgBoot">dmg_boot.bin (optional) used for original gameboy</label>
-            <input id="dmgBoot" type="file" accept=".bin">
-        </div>
-        <div class="file-input">
-            <label for="cgbBios">cgb_bios.bin (optional) used for gameboy color</label>
-            <input id="cgbBios" type="file" accept=".bin">
-        </div>
-        <h2>Convert</h2>
-        <div>
-            <input value="Convert and Download" type="submit" onclick="convertROM()">
-        </div>
-        <div class="error-log">
-
-        </div>
-        <h1>Getting save files to work</h1>
-        <p>
-            The emulator uses flashram to save. To get this to work with everdrive you need to specify that in 
-            save_db.txt using the rom's CRC code. By adding the codes generated below.
-        </p>
-        <div class="save-db">
-            
+        <div class="body-wrapper">
+            <div class="center-section">
+                <div class="header">
+                    <img src="GB64Logo.png">
+                </div>
+                <div class="content">
+                    <div class="required-section">
+                        <div class="form-section">
+                            <h2>Rom</h2>
+                            <div class="file-input">
+                                <label for="rom">.gb or .gbc rom to convert to an .n64 rom</label>
+                                <input id="rom" type="file" accept=".gb, .gbc">
+                            </div>
+                        </div>
+                        <div class="form-section">
+                            <h2>Convert</h2>
+                            <div>
+                                <input 
+                                    class="download-button"
+                                    value="Convert and Download" 
+                                    type="submit" 
+                                    onclick="convertROM()"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bios-section">
+                        <div class="form-section">
+                            <h2>Bios</h2>
+                            <p>
+                                Use a bios to get the gameboy startup animation with
+                                the nintendo or gameboy logo. Don't include them to
+                                skip the animation and boot directly into the game.
+                            </p>
+                            <div class="file-input">
+                                <label for="dmgBoot">dmg_boot.bin (optional) used for original gameboy</label>
+                                <input id="dmgBoot" type="file" accept=".bin">
+                            </div>
+                            <div class="file-input">
+                                <label for="cgbBios">cgb_bios.bin (optional) used for gameboy color</label>
+                                <input id="cgbBios" type="file" accept=".bin">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="error-log">
+        
+                </div>
+                <div>
+                    <h2>Getting save files to work</h2>
+                    <p>
+                        The emulator uses flashram to save. To get this to work with everdrive you need to specify that in 
+                        save_db.txt using the rom's CRC code. By adding the codes generated below when you convert a rom.
+                    </p>
+                    <div class="save-db">
+                        <div class="placeholder">
+                            (CRC code will appear here when you convert a rom)
+                        </div>
+                    </div>
+                    <p>
+                        This emulator supports save states. Press down C to save. Hold up C to load a save state.
+                        When staring a ROM it will not load the entire save state by default. It will only load the
+                        GameBoy cartridge ram emulating the behavior of the GameBoy. If you want a save file to load
+                        from a fresh boot you first need to save the game inside the emulator then create the save state
+                        with down C. 
+                    </p>
+                </div>
+                <div>
+                    <h2>Default Controls</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>Action</td>
+                                <td>Button</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>A</td>
+                                <td>A</td>
+                            </tr>
+                            <tr>
+                                <td>B</td>
+                                <td>B</td>
+                            </tr>
+                            <tr>
+                                <td>Start</td>
+                                <td>Start</td>
+                            </tr>
+                            <tr>
+                                <td>Select</td>
+                                <td>Z</td>
+                            </tr>
+                            <tr>
+                                <td>Save</td>
+                                <td>C Down</td>
+                            </tr>
+                            <tr>
+                                <td>Load Save State</td>
+                                <td>C Up</td>
+                            </tr>
+                            <tr>
+                                <td>Fast Forward</td>
+                                <td>C Right</td>
+                            </tr>
+                            <tr>
+                                <td>Menu</td>
+                                <td>C Left</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </body>
 </html>
