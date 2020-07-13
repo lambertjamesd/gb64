@@ -8,6 +8,7 @@
 #include "../tex/facebuttons.h"
 #include "../tex/guiitems.h"
 #include "../tex/triggers.h"
+#include "gameboy.h"
 
 #define BUTTON_ICON_COUNT   10
 #define BUTTON_ICON_DL_LENGTH   60
@@ -25,8 +26,8 @@ Bitmap gButtonIconTemplates[] = {
     {16, 32, 16, 16, tex_triggers, 16, 0},
     {16, 32, 16, 16, tex_triggers, 16, 0},
     
-    {16, 32, 0, 0, tex_dpad, 16, 0},
     {16, 32, 16, 0, tex_dpad, 16, 0},
+    {16, 32, 0, 0, tex_dpad, 16, 0},
     {16, 32, 0, 16, tex_dpad, 16, 0},
     {16, 32, 16, 16, tex_dpad, 16, 0},
     
@@ -159,13 +160,13 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad)
         int buttons = pad->button;
 
         if (pad->stick_y > 0x40)
-            buttons |= U_JPAD;
+            buttons |= INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.up);
         if (pad->stick_y < -0x40)
-            buttons |= D_JPAD;
+            buttons |= INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.down);
         if (pad->stick_x > 0x40)
-            buttons |= R_JPAD;
+            buttons |= INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.right);
         if (pad->stick_x < -0x40)
-            buttons |= L_JPAD;
+            buttons |= INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.left);
             
 
         int buttonDown = (menu->lastButtons ^ buttons) & buttons;
@@ -195,19 +196,19 @@ void menuStateHandleInput(struct MenuState* menu, OSContPad* pad)
             }
             else
             {
-                if ((buttonDown & U_JPAD) && menu->currentMenuItem->toUp)
+                if ((buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.up)) && menu->currentMenuItem->toUp)
                 {
                     menuStateSetActive(menu, menu->currentMenuItem->toUp);
                 }
-                else if ((buttonDown & D_JPAD) && menu->currentMenuItem->toDown)
+                else if ((buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.down)) && menu->currentMenuItem->toDown)
                 {
                     menuStateSetActive(menu, menu->currentMenuItem->toDown);
                 }
-                else if ((buttonDown & R_JPAD) && menu->currentMenuItem->toRight)
+                else if ((buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.right)) && menu->currentMenuItem->toRight)
                 {
                     menuStateSetActive(menu, menu->currentMenuItem->toRight);
                 }
-                else if ((buttonDown & L_JPAD) && menu->currentMenuItem->toLeft)
+                else if ((buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.left)) && menu->currentMenuItem->toLeft)
                 {
                     menuStateSetActive(menu, menu->currentMenuItem->toLeft);
                 }
@@ -279,7 +280,7 @@ void defaultRenderCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, 
 
 struct MenuItem* defaultInputCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown)
 {
-    if (buttonDown & (A_BUTTON | START_BUTTON))
+    if (buttonDown & (INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.a) | INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.start)))
     {
         return menuItem->toMenu;
     }
@@ -352,7 +353,7 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
         return nextItem;
     }
 
-    if (buttons & U_JPAD)
+    if (buttons & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.up))
     {
         if (menu->cursorLocation > 0)
         {
@@ -365,7 +366,7 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
         }
     }
 
-    if (buttons & D_JPAD)
+    if (buttons & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.down))
     {
         if (menu->cursorLocation < menu->menuItemCount - 1)
         {
@@ -395,7 +396,7 @@ struct MenuItem* inputCursorMenu(struct CursorMenu* menu, int buttons, int heigh
         }
     }
 
-    if (buttons & B_BUTTON)
+    if (buttons & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.b))
     {
         return menu->parentMenu;
     }
@@ -462,7 +463,7 @@ struct MenuItem* inputSelectCursorMenuItem(struct CursorMenuItem* menuItem, int 
 {
     struct SelectCursorMenuItem* select = (struct SelectCursorMenuItem*)menuItem->data;
 
-    if (buttonDown & R_JPAD)
+    if (buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.right))
     {
         ++select->value;
         
@@ -477,7 +478,7 @@ struct MenuItem* inputSelectCursorMenuItem(struct CursorMenuItem* menuItem, int 
         }
     }
 
-    if (buttonDown & L_JPAD)
+    if (buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.left))
     {
         --select->value;
         

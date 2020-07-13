@@ -46,14 +46,14 @@ struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDow
 {
     u16* paletteIndexPtr = (u16*)menuItem->data;
 
-    if (buttonDown & R_JPAD)
+    if (buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.right))
     {
         *paletteIndexPtr = (*paletteIndexPtr + 1) % getPaletteCount();
         updatePaletteInfo(&gGameboy);
         applyGrayscalePallete();
     }
 
-    if (buttonDown & L_JPAD)
+    if (buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.left))
     {
         if (*paletteIndexPtr == 0)
         {
