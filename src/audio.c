@@ -26,6 +26,8 @@ short pcmTranslate[16] = {
 	0x0222, 0x0666, 0x0AAA, 0x0EEE, 0x1333, 0x1777, 0x1BBB, 0x2000,
 };
 
+struct AudioState gAudioState;
+
 void initAudio(struct AudioState* audioState, int sampleRate, int frameRate)
 {
 	zeroMemory(audioState, sizeof(struct AudioState));
@@ -40,8 +42,24 @@ void initAudio(struct AudioState* audioState, int sampleRate, int frameRate)
 		audioState->buffers[index] = malloc(sizeof(struct AudioSample) * audioState->samplesPerBuffer);
 		zeroMemory(audioState->buffers[index], sizeof(struct AudioSample) * audioState->samplesPerBuffer);
 	}
+}
 
-	audioState->noiseSound.lfsr = 0x7FFF;
+/*
+steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
+freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
+sampleRate = samples/second - the number of samples per second the output is expecting
+? steps/sample = steps_cycle * freq / sampleRate
+*/
+int squareCycleStep(int frequency, int sampleRate)
+{
+	if (frequency < 0x800)
+	{
+		return (int)(0x200000000L / ((0x800L - (frequency)) * (sampleRate)));
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 void renderSquareWave(
@@ -54,7 +72,7 @@ void renderSquareWave(
 {
     int sampleIndex;
 	
-	int cycleStep = CYCLE_STEP(sound->frequency, state->sampleRate);
+	int cycleStep = squareCycleStep(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -68,6 +86,24 @@ void renderSquareWave(
     }
 }
 
+
+/*
+steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
+freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
+sampleRate = samples/second - the number of samples per second the output is expecting
+? steps/sample = steps_cycle * freq / sampleRate
+*/
+int pcmCycleStep(int frequency, int sampleRate) {
+	if (frequency < 0x800)
+	{
+		return (int)(0x100000000L / ((0x800L - (frequency)) * (sampleRate)));
+	}
+	else
+	{
+		return 0;
+	}
+} 
+
 void renderPatternWave(
 	struct Memory* memory,
 	struct AudioState* state,
@@ -77,7 +113,7 @@ void renderPatternWave(
 	int leftVolume
 ) {
     int sampleIndex;
-	int cycleStep = PCM_CYCLE_STEP(sound->frequency, state->sampleRate);
+	int cycleStep = pcmCycleStep(sound->frequency, state->sampleRate);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -166,7 +202,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		if (memory->audio.sound1.envelope.volume && (stereoSelect & 0x11))
 		{
 			renderSquareWave(
-				&memory->audio, 
+				&gAudioState,
 				untilSamples, 
 				&memory->audio.sound1, 
 				(stereoSelect & 0x01) ? rightVolume : 0,
@@ -177,7 +213,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		if (memory->audio.sound2.envelope.volume && (stereoSelect & 0x22))
 		{
 			renderSquareWave(
-				&memory->audio, 
+				&gAudioState,
 				untilSamples, 
 				&memory->audio.sound2,
 				(stereoSelect & 0x02) ? rightVolume : 0,
@@ -189,7 +225,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		{
 			renderPatternWave(
 				memory,
-				&memory->audio,
+				&gAudioState,
 				untilSamples,
 				&memory->audio.pcmSound,
 				(stereoSelect & 0x03) ? rightVolume : 0,
@@ -203,7 +239,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		)
 		{
 			renderNoise(
-				&memory->audio,
+				&gAudioState,
 				untilSamples,
 				&memory->audio.noiseSound,
 				(stereoSelect & 0x04) ? rightVolume : 0,
@@ -212,12 +248,15 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		}
 	}
 	
-	memory->audio.currentSampleIndex = untilSamples;
+	gAudioState.currentSampleIndex = untilSamples;
 }
 
 void advanceWriteBuffer(struct AudioState* audio)
 {
-	audio->currentWriteBuffer = (audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT;
+	if ((audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT != audio->nextPlayBuffer)
+	{
+		audio->currentWriteBuffer = (audio->currentWriteBuffer + 1) % AUDIO_BUFFER_COUNT;
+	}
 	zeroMemory(audio->buffers[audio->currentWriteBuffer], audio->samplesPerBuffer * sizeof(struct AudioSample));
 	audio->currentSampleIndex = 0;
 }
@@ -304,27 +343,29 @@ void tickNoise(struct NoiseSound* noiseSound)
 
 void tickAudio(struct Memory* memory, int untilCyles)
 {
-	struct AudioState* audio = &memory->audio;
+	struct AudioRenderState* audio = &memory->audio;
+			
+	if (!(READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED))
+	{
+		audio->pcmSound.length = 0;
+	}
 
 	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
 	{
 		while (audio->cyclesEmulated < untilCyles)
 		{
-			// subtract 1 to prevent writing audio to outpace playing it back
-			// if the frequency gets changed to 445000 then it should be -2
-			// not sure why
-			int tickTo = audio->currentSampleIndex + (audio->sampleRate >> APU_TICKS_PER_SEC_L2) - 1;
+			int tickTo = gAudioState.currentSampleIndex + (gAudioState.sampleRate >> APU_TICKS_PER_SEC_L2) + gAudioState.tickAdjustment;
 
-			if (tickTo > audio->samplesPerBuffer)
+			if (tickTo >= gAudioState.samplesPerBuffer)
 			{
-				renderAudio(memory, audio->samplesPerBuffer);
-				advanceWriteBuffer(audio);
-				tickTo -= audio->samplesPerBuffer;
+				renderAudio(memory, gAudioState.samplesPerBuffer);
+				advanceWriteBuffer(&gAudioState);
+				tickTo -= gAudioState.samplesPerBuffer;
 			}
-			renderAudio(memory, tickTo);
-			if (tickTo == audio->samplesPerBuffer)
+
+			if (tickTo != gAudioState.currentSampleIndex)
 			{
-				advanceWriteBuffer(audio);
+				renderAudio(memory, tickTo);
 			}
 
 			tickSquareWave(&audio->sound1);
@@ -366,7 +407,7 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 {
 #if ENABLE_AUDIO
 	tickAudio(memory, currentCycle);
-	struct AudioState* audio = &memory->audio;
+	struct AudioRenderState* audio = &memory->audio;
 
 	switch (soundNumber)
 	{
@@ -389,12 +430,15 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 			audio->sound2.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
 			break;
 		case SoundIndexPCM:
-			audio->pcmSound.cycle = 0;
-			audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
-			audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
-			audio->pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
-				READ_REGISTER_DIRECT(memory, REG_NR31) :
-				SOUND_LENGTH_INDEFINITE;
+			if (READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED)
+			{
+				audio->pcmSound.cycle = 0;
+				audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
+				audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
+				audio->pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
+					READ_REGISTER_DIRECT(memory, REG_NR31) :
+					SOUND_LENGTH_INDEFINITE;
+			}
 			break;
 		case SoundIndexNoise:
 			audio->noiseSound.lfsr = 0x7FFF;
@@ -402,7 +446,7 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 			audio->noiseSound.sampleStep = noiseSampleStep(
 				READ_REGISTER_DIRECT(memory, READ_REGISTER_DIRECT(memory, REG_NR43) & 0x3), 
 				READ_REGISTER_DIRECT(memory, REG_NR43) >> 4,
-				audio->sampleRate
+				gAudioState.sampleRate
 			);
 			initEnvelope(&audio->noiseSound.envelope, READ_REGISTER_DIRECT(memory, REG_NR42));
 			audio->noiseSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR44)) ? 
@@ -414,11 +458,35 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 #endif
 }
 
+void recalcTickAdjustment(struct AudioState* state)
+{
+	u32 lead = getAudioWriteHeadLead(state);
+
+	if (lead < state->samplesPerBuffer / 2)
+	{
+		state->tickAdjustment = 1;
+	}
+	else if (lead > state->samplesPerBuffer + state->samplesPerBuffer / 2)
+	{
+		state->tickAdjustment = -(state->sampleRate >> APU_TICKS_PER_SEC_L2);
+	}
+	else if (lead > state->samplesPerBuffer)
+	{
+		state->tickAdjustment = -2;
+	}
+	else if (lead > state->samplesPerBuffer / 2)
+	{
+		state->tickAdjustment = -1;
+	}
+	else
+	{
+		state->tickAdjustment = 0;
+	}
+}
+
 void finishAudioFrame(struct Memory* memory)
 {
 #if ENABLE_AUDIO
-	struct AudioState* audio = &memory->audio;
-
 	u32 playbackState = osAiGetStatus();
 	u32 pendingBufferCount = 0;
 
@@ -437,16 +505,18 @@ void finishAudioFrame(struct Memory* memory)
 
 	while (pendingBufferCount < 2)
 	{
-		if (audio->currentWriteBuffer == audio->nextPlayBuffer)
+		if (gAudioState.currentWriteBuffer == gAudioState.nextPlayBuffer)
 		{
-			renderAudio(memory, audio->samplesPerBuffer);
-			advanceWriteBuffer(audio);
+			renderAudio(memory, gAudioState.samplesPerBuffer);
+			advanceWriteBuffer(&gAudioState);
 		}
 
-		osAiSetNextBuffer(audio->buffers[audio->nextPlayBuffer], audio->samplesPerBuffer * sizeof(struct AudioSample));
-		audio->nextPlayBuffer = (audio->nextPlayBuffer + 1) % AUDIO_BUFFER_COUNT;
+		osAiSetNextBuffer(gAudioState.buffers[gAudioState.nextPlayBuffer], gAudioState.samplesPerBuffer * sizeof(struct AudioSample));
+		gAudioState.nextPlayBuffer = (gAudioState.nextPlayBuffer + 1) % AUDIO_BUFFER_COUNT;
 		++pendingBufferCount;
 	}
+
+	recalcTickAdjustment(&gAudioState);
 #endif
 }
 
@@ -454,7 +524,7 @@ void updateOnOffRegister(struct Memory* memory)
 {
 	u8 existingValue = READ_REGISTER_DIRECT(memory, REG_NR52);
 	u8 result = existingValue & REG_NR52_ENABLED | 0x70;
-	struct AudioState* audio = &memory->audio;
+	struct AudioRenderState* audio = &memory->audio;
 
 	if (existingValue & REG_NR52_ENABLED)
 	{
@@ -468,11 +538,11 @@ void updateOnOffRegister(struct Memory* memory)
 		}
 		if (audio->pcmSound.length)
 		{
-			result |= 0x03;
+			result |= 0x04;
 		}
 		if (audio->noiseSound.length)
 		{
-			result |= 0x04;
+			result |= 0x08;
 		}
 	}
 
@@ -481,7 +551,7 @@ void updateOnOffRegister(struct Memory* memory)
 
 u32 getAudioWriteHeadLead(struct AudioState* audioState)
 {
-	return (audioState->currentWriteBuffer - audioState->nextPlayBuffer) 
+	return ((audioState->currentWriteBuffer - audioState->nextPlayBuffer) & (AUDIO_BUFFER_COUNT - 1))
 		* audioState->samplesPerBuffer 
 		+ audioState->currentSampleIndex;
 }

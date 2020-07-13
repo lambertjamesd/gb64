@@ -13,14 +13,16 @@
 
 include $(ROOT)/usr/include/make/PRdefs
 
+WARNING_FLAGS = -Werror=implicit-function-declaration
+
 FINAL = YES
 ifeq ($(FINAL), YES)
-OPTIMIZER       = -O2 -std=gnu90 -Werror
+OPTIMIZER       = -O2 -std=gnu90 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_rom
 else
-OPTIMIZER       = -g -std=gnu90 -Werror
+OPTIMIZER       = -g -std=gnu90 -Werror $(WARNING_FLAGS)
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32 --warn --fatal-warnings
 N64LIB          = -lultra_d
@@ -65,15 +67,18 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/debugger.c                        \
        render.c                              \
        src/menu.c                            \
-       src/decoder.c 
+       src/decoder.c                         \
+       src/mainmenu.c                        \
+       src/inputmapping.c                    \
+       src/graphicsmenu.c                    \
+       src/faulthandler.c 
 
 S_FILES = asm/cpu.s
 
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
 DATAFILES   =	gfxinit.c \
-		rsp_cfb.c \
-		cfb.c
+		rsp_cfb.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 
@@ -106,7 +111,7 @@ $(CODESEGMENT):	$(CODEOBJECTS)
 
 ifeq ($(FINAL), YES)
 $(TARGETS) $(APP):      spec $(OBJECTS)
-	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec
+	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec 
 	makemask $(TARGETS)
 else
 $(TARGETS) $(APP):      spec $(OBJECTS)
@@ -121,3 +126,10 @@ cleanall: clean
 rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
 
+romwrapper/gb.n64.js: bin/gb.n64
+	echo "const gGB64Base64 = \`" > romwrapper/gb.n64.js
+	base64 bin/gb.n64 >> romwrapper/gb.n64.js
+	echo "\`.trim()" >> romwrapper/gb.n64.js
+
+bin/objdump.txt: bin/gb.n64
+	mips64-elf-objdump -S game.out > bin/objdump.txt

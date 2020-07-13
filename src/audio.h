@@ -31,15 +31,6 @@ struct Memory;
 
 #define NOISE_MAX_CLOCK_SHIFT 13
 
-/*
-steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
-freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
-sampleRate = samples/second - the number of samples per second the output is expecting
-? steps/sample = steps_cycle * freq / sampleRate
-*/
-#define CYCLE_STEP(frequency, sampleRate) (int)(0x200000000L / ((0x800L - (frequency)) * (sampleRate)))
-#define PCM_CYCLE_STEP(frequency, sampleRate) (int)(0x100000000L / ((0x800L - (frequency)) * (sampleRate)))
-
 struct AudioSample
 {
     short l;
@@ -98,20 +89,27 @@ enum SoundIndex {
     SoundIndexNoise,
 };
 
-struct AudioState
+struct AudioRenderState
 {
-    struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
     struct SquareWaveSound sound1;
     struct SquareWaveSound sound2;
     struct PCMSound pcmSound;
     struct NoiseSound noiseSound;
     u32 cyclesEmulated;
+};
+
+struct AudioState
+{
+    struct AudioSample* buffers[AUDIO_BUFFER_COUNT];
     u16 sampleRate;
     u16 samplesPerBuffer;
     u16 currentWriteBuffer;
     u16 currentSampleIndex;
     u16 nextPlayBuffer;
+    int tickAdjustment;
 };
+
+extern struct AudioState gAudioState;
 
 void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
 void tickAudio(struct Memory* memoryMap, int untilCyles);

@@ -3,7 +3,7 @@
 #include "../memory.h"
 #include "debug_out.h"
 
-u16 palleteColors[] = {
+u16 paletteColors[] = {
     0x09C2,
     0x330C,
     0x8D42,
@@ -39,17 +39,19 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
 
     char* ramBank;
     char* romBank;
+    int bankIndex;
     
     if (memory->misc.ramRomSelect)
     {
+        bankIndex = memory->misc.romBankLower & 0x1F;
         ramBank = memory->cartRam + (memory->misc.romBankUpper & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
-        romBank = getROMBank(memory->rom, memory->misc.romBankLower & 0x1F);
     }
     else
     {
+        bankIndex = (memory->misc.romBankLower & 0x1F) | ((memory->misc.romBankUpper & 0x3) << 5);
         ramBank = memory->cartRam;
-        romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x1F) | ((memory->misc.romBankUpper & 0x3) << 5));
     }
+    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
 
     memory->memoryMap[0x4] = romBank + MEMORY_MAP_SEGMENT_SIZE * 0;
     memory->memoryMap[0x5] = romBank + MEMORY_MAP_SEGMENT_SIZE * 1;
@@ -60,12 +62,41 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     memory->memoryMap[0xB] = ramBank + MEMORY_MAP_SEGMENT_SIZE * 1;
 }
 
-void handleMBC3Write(struct Memory* memory, int addr, int value)
+void handleMBC2Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
     if (writeRange == 0)
     {
         // RAM Enable, do nothing for now
+    }
+    else if (writeRange == 1)
+    {  
+        memory->misc.romBankLower = value;
+    }
+
+    char* romBank;
+    int bankIndex = memory->misc.romBankLower & 0xF;
+
+    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
+
+    memory->memoryMap[0x4] = romBank + MEMORY_MAP_SEGMENT_SIZE * 0;
+    memory->memoryMap[0x5] = romBank + MEMORY_MAP_SEGMENT_SIZE * 1;
+    memory->memoryMap[0x6] = romBank + MEMORY_MAP_SEGMENT_SIZE * 2;
+    memory->memoryMap[0x7] = romBank + MEMORY_MAP_SEGMENT_SIZE * 3;
+}
+
+
+void handleMMM0Write(struct Memory* memory, int addr, int value)
+{
+    // TODO
+}
+
+void handleMBC3Write(struct Memory* memory, int addr, int value)
+{
+    int writeRange = addr >> 13;
+    if (writeRange == 0)
+    {
+        // Do nothing
     }
     else if (writeRange == 1)
     {  
@@ -87,7 +118,38 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         // TODO actually implement timer
         ramBank = memory->timerMemoryBank;
     }
-    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower & 0x7F);
+
+    char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1);
+
+    memory->memoryMap[0x4] = romBank + MEMORY_MAP_SEGMENT_SIZE * 0;
+    memory->memoryMap[0x5] = romBank + MEMORY_MAP_SEGMENT_SIZE * 1;
+    memory->memoryMap[0x6] = romBank + MEMORY_MAP_SEGMENT_SIZE * 2;
+    memory->memoryMap[0x7] = romBank + MEMORY_MAP_SEGMENT_SIZE * 3;
+    
+    memory->memoryMap[0xA] = ramBank + MEMORY_MAP_SEGMENT_SIZE * 0;
+    memory->memoryMap[0xB] = ramBank + MEMORY_MAP_SEGMENT_SIZE * 1;
+}
+
+
+void handleMBC5Write(struct Memory* memory, int addr, int value)
+{
+    int writeRange = addr >> 12;
+    switch (addr >> 12) {
+        case 0: case 1:
+            break;
+        case 2:
+            memory->misc.romBankLower = value;
+            break;
+        case 3:
+            memory->misc.romBankUpper = value;
+            break;
+        case 4: case 5:
+            memory->misc.ramRomSelect = value;
+            break;
+    }
+
+    char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0xF) * MEMORY_MAP_SEGMENT_SIZE * 2;
+    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | (memory->misc.romBankUpper << 8 & 0x100));
 
     memory->memoryMap[0x4] = romBank + MEMORY_MAP_SEGMENT_SIZE * 0;
     memory->memoryMap[0x5] = romBank + MEMORY_MAP_SEGMENT_SIZE * 1;
@@ -108,8 +170,8 @@ struct MBCData mbcTypes[] = {
     {handleMBC1Write, 0x01, 0},
     {handleMBC1Write, 0x02, MBC_FLAGS_RAM},
     {handleMBC1Write, 0x03, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
-    {NULL, 0x05, 0},
-    {NULL, 0x06, MBC_FLAGS_BATTERY},
+    {handleMBC2Write, 0x05, 0},
+    {handleMBC2Write, 0x06, MBC_FLAGS_BATTERY},
     {nopBankSwitch, 0x08, MBC_FLAGS_RAM},
     {nopBankSwitch, 0x09, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
     {NULL, 0x0B, 0},
@@ -123,12 +185,12 @@ struct MBCData mbcTypes[] = {
     {NULL, 0x15, 0},
     {NULL, 0x16, MBC_FLAGS_RAM},
     {NULL, 0x17, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
-    {NULL, 0x19, 0},
-    {NULL, 0x1A, MBC_FLAGS_RAM},
-    {NULL, 0x1B, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
-    {NULL, 0x1C, MBC_FLAGS_RUMBLE},
-    {NULL, 0x1D, MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM},
-    {NULL, 0x1E, MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
+    {handleMBC5Write, 0x19, 0},
+    {handleMBC5Write, 0x1A, MBC_FLAGS_RAM},
+    {handleMBC5Write, 0x1B, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
+    {handleMBC5Write, 0x1C, MBC_FLAGS_RUMBLE},
+    {handleMBC5Write, 0x1D, MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM},
+    {handleMBC5Write, 0x1E, MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
     {NULL, 0xFC, 0},
     {NULL, 0xFD, 0},
     {NULL, 0xFE, 0},
@@ -152,6 +214,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     }
 
     zeroMemory(memory, sizeof(struct Memory));
+    memory->mbc = mbc;
     memory->rom = rom;
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
     
@@ -171,7 +234,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
         memory->timerMemoryBank = malloc(RAM_BANK_SIZE);
     }
 
-    initAudio(&memory->audio, 22500, 30);
+	memory->audio.noiseSound.lfsr = 0x7FFF;
     
     finishRomLoad(rom);
 
@@ -206,4 +269,5 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
 
     WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
     WRITE_REGISTER_DIRECT(memory, REG_NR52, 0xF0);
+    WRITE_REGISTER_DIRECT(memory, REG_HDMA5, 0xFF);
 }

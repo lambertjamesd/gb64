@@ -18,7 +18,7 @@
 #define SPRITE_F_PRIORITY 0x80
 #define SPRITE_F_FLIPX    0x40
 #define SPRITE_F_FLIPY    0x20
-#define SPRITE_F_PALLETE  0x10
+#define SPRITE_F_PALETTE  0x10
 
 #define MISC_START              0xFE00
 #define REGISTERS_START         0xFF00
@@ -43,6 +43,8 @@
 #define REG_NR24        0xFF19
 
 #define REG_NR30        0xFF1A
+#define RER_NR30_ENABLED    0x80
+
 #define REG_NR31        0xFF1B
 #define REG_NR32        0xFF1C
 #define REG_NR33        0xFF1D
@@ -67,12 +69,22 @@
 #define REG_SCX         0xFF43
 #define REG_LY          0xFF44
 #define REG_LCY         0xFF45
+#define REG_BGP         0xFF47
+#define REG_OBP0        0xFF48
+#define REG_OBP1        0xFF49
 #define REG_WY          0xFF4A
 #define REG_WX          0xFF4B
 #define REG_KEY1        0xFF4D
+#define REG_VBK         0xFF4F
+#define REG_VBK_MASK    0x1
 
-#define REG_KEY1_SPEED_REQUEST  0x1
-#define REG_KEY1_SPEED          0x80
+#define REG_HDMA5       0xFF55
+
+#define REG_SVBK        0xFF70
+#define REG_SVBK_MASK   0x7
+
+#define REG_KEY1_PREPARE_SWITCH  0x1
+#define REG_KEY1_CURRENT_SPEED  0x80
 
 #define REG_INT_REQUESTED   0xFF0F
 #define REG_INT_ENABLED     0xFFFF
@@ -101,9 +113,9 @@
 #define SPRITE_FLAGS_PRIORITY       0x80
 #define SPRITE_FLAGS_Y_FLIP         0x40
 #define SPRITE_FLAGS_X_FLIP         0x20
-#define SPRITE_FLAGS_DMA_PALLETE    0x10
+#define SPRITE_FLAGS_DMA_PALETTE    0x10
 #define SPRITE_FLAGS_VRAM_BANK      0x08
-#define SPRITE_FLAGS_GBC_PALLETE    0x07
+#define SPRITE_FLAGS_GBC_PALETTE    0x07
 
 #define DEBUG_INSTRUCTION  0xD3
 
@@ -138,7 +150,8 @@ struct MiscMemory {
     int romBankLower;
     int romBankUpper;
     int ramRomSelect;
-    unsigned char unused[0x54];
+    int biosLoaded;
+    unsigned char unused[0x50];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };
@@ -147,7 +160,8 @@ struct Tile {
     unsigned short rows[8];
 };
 
-#define OBJ_PALLETE_INDEX_START 32
+#define PALETTE_COUNT   64
+#define OBJ_PALETTE_INDEX_START 32
 
 struct GraphicsMemory {
     struct Tile tiles[384];
@@ -159,13 +173,19 @@ struct GraphicsMemory {
     unsigned char tilemap1Atts[1024];
     
     // first 32 colors are background pallettes
-    // last 32 colors are obj palletes
-    u16 colorPalletes[64];
+    // last 32 colors are obj palettes
+    u16 colorPalettes[PALETTE_COUNT];
 };
 
 struct Memory;
 
 typedef void (*RegisterWriter)(struct Memory*, int addr, int value);
+
+struct MBCData {
+    RegisterWriter bankSwitch;
+    u16 id;
+    u16 flags;
+};
 
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
@@ -182,9 +202,10 @@ struct Memory {
         unsigned char vramBytes[sizeof(struct GraphicsMemory)];
     };
     struct ROMLayout* rom;
-    struct AudioState audio;
+    struct AudioRenderState audio;
     struct Breakpoint breakpoints[BREAK_POINT_COUNT];
     u8* timerMemoryBank;
+    struct MBCData* mbc;
 };
 
 #define MBC_FLAGS_RAM       0x1
@@ -192,11 +213,6 @@ struct Memory {
 #define MBC_FLAGS_TIMER     0x4
 #define MBC_FLAGS_RUMBLE    0x8
 
-struct MBCData {
-    RegisterWriter bankSwitch;
-    u16 id;
-    u16 flags;
-};
 
 void initMemory(struct Memory* memory, struct ROMLayout* rom);
 

@@ -114,7 +114,7 @@ _GB_WRITE_JUMP_TABLE:
     nop
     j _GB_WRITE_REG_5X
     nop
-    jr $ra # TODO
+    j _GB_WRITE_REG_6X
     nop
     j _GB_WRITE_REG_7X
     nop
@@ -131,13 +131,13 @@ _GB_BASIC_REGISTER_WRITE:
     sb VAL, 0(ADDR)
 
 _GB_WRITE_INTERRUPTS_ENABLED:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_ENABLED # set requested interrupts
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 ########################
 
@@ -181,21 +181,21 @@ _GB_WRITE_REG_DIV:
     sll $at, CYCLES_RUN, 2
     sub $at, $zero, $at
     write_register16_direct $at, _REG_DIV_OFFSET
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     j CALCULATE_NEXT_TIMER_INTERRUPT
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     
 _GB_WRITE_REG_TIMA:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TIMA
     
@@ -204,26 +204,26 @@ _GB_WRITE_REG_TMA:
     write_register_direct VAL, REG_TMA
 
 _GB_WRITE_REG_TAC:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal CALCULATE_TIMA_VALUE
     nop
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     j CALCULATE_NEXT_TIMER_INTERRUPT
     write_register_direct VAL, REG_TAC
     
 _GB_WRITE_REG_INT_REQ:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     ori VAL, VAL, 0xE0 # upper 3 bits are always 1
     jal CHECK_FOR_INTERRUPT # check if an interrupt should be called
     write_register_direct VAL, REG_INTERRUPTS_REQUESTED # set requested interrupts
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 
 ############################
@@ -245,6 +245,9 @@ _GB_WRITE_SOUND_REG:
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 1
     
+    li $at, REG_NR30
+    beq $at, ADDR, _GB_PCM_ENABLE
+
     li $at, REG_NR34
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 2
@@ -272,10 +275,11 @@ _GB_RESTART_SOUND:
     jal _GB_BASIC_REGISTER_WRITE
 
     lui Param0, %hi(restartSound)
+    jal GB_CALC_UNSCALED_CLOCKS
     addiu Param0, Param0, %lo(restartSound)
 
     move $a0, Memory
-    move $a1, CYCLES_RUN
+    move $a1, $v0
     jalr $ra, Param0
     # TODO use unscaledCyclesRun
     move $a2, TMP2
@@ -284,6 +288,19 @@ _GB_RESTART_SOUND:
 
     jr $ra
     nop
+
+_GB_PCM_ENABLE:
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+    sb VAL, 4($sp)
+    jal _GB_SYNC_AUDIO
+    nop
+    lbu VAL, 4($sp)
+    write_register_direct VAL, REG_NR30
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 8
+
 
 _GB_SOUND_ENABLED:
     addi $sp, $sp, -8
@@ -336,10 +353,12 @@ _GB_SOUND_ENABLED_END:
 _GB_SYNC_AUDIO:
     save_state_on_stack
 
+    jal GB_CALC_UNSCALED_CLOCKS
+    nop
+
     move $a0, Memory
     call_c_fn tickAudio
-    # TODO use unscaledCyclesRun
-    move $a1, CYCLES_RUN
+    move $a1, $v0
 
     restore_state_from_stack
 
@@ -402,7 +421,8 @@ _GB_WRITE_REG_4X_TABLE:
     nop
     # VBK
     andi VAL, VAL, 0x1
-    sll VAL, VAL, 13 # mulitply by 0x8000 (VRAM bank size)
+    write_register_direct VAL, REG_VBK
+    sll VAL, VAL, 13 # mulitply by 0x2000 (VRAM bank size)
     li $at, MEMORY_VRAM
     add $at, $at, Memory
     add $at, $at, VAL
@@ -417,7 +437,7 @@ _GB_WRITE_REG_LCDC:
     andi $at, $at, REG_LCDC_LCD_ENABLE
     beqz $at, _GB_WRITE_REG_LCDC_WRITE # if the LCD status didn't change do nothing
     andi $at, VAL, REG_LCDC_LCD_ENABLE
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     beqz $at, _GB_WRITE_REG_LCDC_OFF
     sw $ra, 0($sp)
 
@@ -440,7 +460,7 @@ _GB_WRITE_REG_LCDC_ON:
       
     lw $ra, 0($sp)
     j _GB_WRITE_REG_LCDC_WRITE
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
 
 _GB_WRITE_REG_LCDC_OFF:
     
@@ -459,7 +479,7 @@ _GB_WRITE_REG_LCDC_OFF:
     jal REMOVE_STOPPING_POINT # update stopping point
     li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_3
     lw $ra, 0($sp)
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
 _GB_WRITE_REG_LCDC_WRITE:
     jr $ra
     write_register_direct VAL, REG_LCDC
@@ -467,7 +487,7 @@ _GB_WRITE_REG_LCDC_WRITE:
 ############################
 
 _GB_WRITE_REG_LCDC_STATUS:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
 
     read_register_direct Param0, REG_LCDC_STATUS
@@ -486,7 +506,7 @@ _GB_WRITE_REG_LCDC_STATUS:
 ############################
 
 _GB_WRITE_REG_LCY:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     
     read_register_direct Param0, REG_LCDC_STATUS
@@ -497,7 +517,7 @@ _GB_WRITE_REG_LCY:
     write_register_direct VAL, REG_LYC
 
     # todo LYC flags
-    andi Param0, Param0, %lo(REG_LCDC_STATUS_LYC)
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_LYC)
     bne TMP3, VAL, _GB_WRITE_REG_LCY_SKIP_COMP_SET
     nop
     # write LCDC status back
@@ -520,12 +540,12 @@ _GB_CHECK_RISING_STAT:
 _GB_CHECK_RISING_STAT_FINISH:
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
     
 ############################
 
 _GB_WRITE_DMA:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     # cancel any existing DMA
     jal REMOVE_STOPPING_POINT
@@ -541,14 +561,14 @@ _GB_WRITE_DMA:
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_DMA # first byte finsihes 2 cycles from now
     lw $ra, 0($sp)
     j QUEUE_STOPPING_POINT
-    addi $sp, $sp, 4 
+    addi $sp, $sp, 8 
 
 ############################
 
 _GB_SPEED_KEY1:
     read_register_direct $at, REG_KEY1
-    addi $at, $at, 0xFE
-    andi VAL, VAL, 0x01
+    andi $at, $at, %lo(~REG_KEY1_PREPARE_SWITCH)
+    andi VAL, VAL, REG_KEY1_PREPARE_SWITCH
     or VAL, VAL, $at
     jr $ra
     write_register_direct VAL, REG_KEY1
@@ -556,31 +576,42 @@ _GB_SPEED_KEY1:
 ############################
 
     .data
-_GB_PALLETE_COLORS:
+.global gBGPColors
+gBGPColors:
     .align 2
+    .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+.global gOBP0Colors
+gOBP0Colors:
+    .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+.global gOBP1Colors
+gOBP1Colors:
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
     .text
 
 _GB_WRITE_BGP:
     write_register_direct VAL, REG_BGP
     la $at, MEMORY_BG_PAL
+    la TMP2, gBGPColors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_OBP0:
     write_register_direct VAL, REG_OBP0
     la $at, MEMORY_OBJ_PAL
+    la TMP2, gOBP0Colors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_OBP1:
     write_register_direct VAL, REG_OBP1
-    la $at, MEMORY_OBJ_PAL + 8 # second pallete index
+    la $at, MEMORY_OBJ_PAL + 8 # second palette index
+    la TMP2, gOBP1Colors
     j _GB_WRITE_DMA_PAL
     add ADDR, Memory, $at
 
 _GB_WRITE_DMA_PAL:
-    la TMP2, _GB_PALLETE_COLORS
+    lbu $at, CPU_STATE_GBC(CPUState)
+    bnez $at, _GB_WRITE_DMA_PAL_SKIP
 
     andi $at, VAL, 0x03
     sll $at, $at, 1
@@ -607,6 +638,9 @@ _GB_WRITE_DMA_PAL:
     jr $ra
     sh $at, 6(ADDR)
 
+_GB_WRITE_DMA_PAL_SKIP:
+    jr $ra
+    nop
 
 
 ############################
@@ -614,6 +648,26 @@ _GB_WRITE_DMA_PAL:
 _GB_WRITE_REG_5X:
     li $at, REG_UNLOAD_BIOS
     beq $at, ADDR, _GB_WRITE_REG_UNLOAD_BIOS
+    
+    li $at, REG_HDMA1
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0xFF
+    
+    li $at, REG_HDMA2
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0xF0
+
+    li $at, REG_HDMA3
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0x1F
+
+    li $at, REG_HDMA4
+    beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+    li Param0, 0xF0
+
+    li $at, REG_HDMA5
+    beq $at, ADDR, _GB_START_DMA
+
     nop
     jr $ra
     nop
@@ -645,7 +699,9 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     lw $ra, 0x20($sp)
     lw $fp, 0x24($sp)
 
-    # TODO different initial values in GBC mode
+    lbu $at, CPU_STATE_GBC(CPUState)
+    bnez $at, _GB_WRITE_REG_UNLOAD_BIOS_CGB
+
     li GB_A, 0x01
     li GB_F, 0xB0
     li GB_B, 0x00
@@ -654,27 +710,201 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     li GB_E, 0xD8
     li GB_H, 0x01
     li GB_L, 0x4D
+    li GB_SP, 0xFFFE
 
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+
+_GB_WRITE_REG_UNLOAD_BIOS_CGB:
+    li GB_A, 0x11
+    li GB_F, 0x80
+    li GB_B, 0x00
+    li GB_C, 0x00
+    li GB_D, 0xFF
+    li GB_E, 0x56
+    li GB_H, 0x00
+    li GB_L, 0x0D
+    li GB_SP, 0xFFFE
+
+    jr $ra
+    addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
+
+_GB_WRITE_MASKED_HDMA:
+    j _GB_BASIC_REGISTER_WRITE
+    and VAL, VAL, Param0
+
+_GB_START_DMA:
+    lbu $at, CPU_STATE_GBC(CPUState)
+    beqz $at, _GB_SKIP_DMA
+    andi $at, VAL, 0x7F
+    write_register_direct $at, REG_HDMA5
+    andi $at, VAL, 0x80
+    bnez $at, _GB_SKIP_DMA
+    nop
+    addi CYCLES_RUN, CYCLES_RUN, 1
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+_GB_DMA_LOOP:
+    jal GB_DMA_BLOCK
+    nop
+    beqz $v0, _GB_DMA_LOOP
+    nop
+    lw $ra, 0($sp)
+    addi $sp, $sp, 8
+_GB_SKIP_DMA:
+    jr $ra
+    nop
+
+GB_DMA_BLOCK:
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _GB_DMA_BLOCK_START
+    addi CYCLES_RUN, CYCLES_RUN, 8
+    addi CYCLES_RUN, CYCLES_RUN, 8
+_GB_DMA_BLOCK_START:
+    read_register_direct $at, REG_HDMA1
+    sll TMP2, $at, 8
+    read_register_direct $at, REG_HDMA2
+    or TMP2, TMP2, $at
+
+    addi TMP2, TMP2, 0x10
+    andi $at, TMP2, 0xFF
+    write_register_direct $at, REG_HDMA2
+    srl $at, TMP2, 8
+    write_register_direct $at, REG_HDMA1
+    addi TMP2, TMP2, -0x10
+    
+    read_register_direct $at, REG_HDMA3
+    sll TMP3, $at, 8
+    read_register_direct $at, REG_HDMA4
+    or TMP3, TMP3, $at
+
+    addi TMP3, TMP3, 0x10
+    andi $at, TMP3, 0xFF
+    write_register_direct $at, REG_HDMA4
+    srl $at, TMP3, 8
+    write_register_direct $at, REG_HDMA3
+    addi TMP3, TMP3, -0x10
+
+    andi $at, TMP2, 0xF000
+    srl $at, 10
+    add $at, $at, Memory
+    lw $at, MEMORY_ADDR_TABLE($at)
+    andi TMP2, TMP2, 0xFF0
+    add TMP2, TMP2, $at
+
+    addi TMP3, TMP3, 0x8000
+    andi $at, TMP3, 0xF000
+    srl $at, 10
+    add $at, $at, Memory
+    lw $at, MEMORY_ADDR_TABLE($at)
+    andi TMP3, TMP3, 0xFF0
+    add TMP3, TMP3, $at
+
+    lw $at, 0(TMP2)
+    sw $at, 0(TMP3)
+    lw $at, 4(TMP2)
+    sw $at, 4(TMP3)
+    lw $at, 8(TMP2)
+    sw $at, 8(TMP3)
+    lw $at, 12(TMP2)
+    sw $at, 12(TMP3)
+
+    read_register_direct TMP2, REG_HDMA5
+    andi $at, TMP2, 0x7F
+    beqz $at, _GB_DMA_BLOCK_DONE
+
+    addi TMP2, TMP2, -1
+    write_register_direct TMP2, REG_HDMA5
+
+    jr $ra
+    li $v0, 0
+_GB_DMA_BLOCK_DONE:
+    li $at, 0xFF # value when DMA is done
+    write_register_direct $at, REG_HDMA5
+    jr $ra
+    li $v0, 1
+
+############################
+
+_GB_WRITE_REG_6X:
+    li $at, REG_BCPS
+    beq $at, ADDR, _GB_WRITE_PALLETE_ADDR
+    li Param0, 0
+
+    li $at, REG_BCPD
+    beq $at, ADDR, _GB_WRITE_PALETTE
+
+    li $at, REG_OCPS
+    beq $at, ADDR, _GB_WRITE_PALLETE_ADDR
+    li Param0, 1
+    
+    li $at, REG_OCPD
+    beq $at, ADDR, _GB_WRITE_PALETTE
+    nop
+
+    jr $ra
+    nop    
+
+_GB_WRITE_PALETTE:
+    sll TMP3, Param0, 1
+    add TMP3, TMP3, Memory # TMP3 used to point to memory register
+
+    li $at, MEMORY_BG_PAL
+    sll TMP2, Param0, 6
+    add TMP2, TMP2, $at # TMP2 used to point to palette
+    add TMP2, TMP2, Memory
+
+    lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    andi $at, $at, 0x3F
+    add TMP2, TMP2, $at
+    sb VAL, 0(TMP2)
+    
+    lbu $at, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    andi $at, $at, 0x80
+    beqz $at, _GB_BASIC_REGISTER_WRITE
+    nop
+    lbu VAL, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    addi ADDR, ADDR, -1
+    addi VAL, VAL, 1
+    andi VAL, VAL, 0xBF
+
+_GB_WRITE_PALLETE_ADDR:
+    sll TMP3, Param0, 1
+    add TMP3, TMP3, Memory # TMP3 used to point to memory register
+    
+    sb VAL, (MEMORY_MISC_START+REG_BCPS-MM_REGISTER_START)(TMP3)
+    
+    li $at, MEMORY_BG_PAL
+    sll TMP2, Param0, 6
+    add TMP2, TMP2, $at # TMP2 used to point to palette
+    add TMP2, TMP2, Memory
+    andi $at, VAL, 0x3F
+    add TMP2, TMP2, $at
+
+    lbu $at, 0(TMP2)
+
+    jr $ra
+    sb $at, (MEMORY_MISC_START+REG_BCPD-MM_REGISTER_START)(TMP3)
 
     
 ############################
 
 _GB_WRITE_REG_7X:
-    ori $at, $zero, REG_SVBK
+    li $at, REG_SVBK
     bne ADDR, $at, _GB_WRITE_REG_7X_SKIP
     andi VAL, VAL, 0x7
     write_register_direct VAL, REG_SVBK
-    bne VAL, $zero, _GB_WRITE_REG_7X_CHANGE_BANK
+    bnez VAL, _GB_WRITE_REG_7X_CHANGE_BANK
     nop
     ori VAL, VAL, 0x1
 _GB_WRITE_REG_7X_CHANGE_BANK:
     sll $at, VAL, 12 # 
     add $at, $at, Memory
-    add $at, $at, MEMORY_RAM_START
-    jr $ra
+    addi $at, $at, MEMORY_RAM_START
     sw $at, (MEMORY_ADDR_TABLE + 4 * MEMORY_RAM_BANK_INDEX)(Memory)
+    jr $ra
+    sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_RAM_BANK_INDEX + 2))(Memory)
 _GB_WRITE_REG_7X_SKIP:
     jr $ra
     nop
@@ -753,7 +983,6 @@ _GB_DO_READ_REGISTERS_DIRECT:
     add ADDR, Memory, ADDR # Relative to memory
     jr $ra
     lbu $v0, 0(ADDR)
-
 
 _GB_DO_READ_SOUND:
     addi $sp, $sp, -8

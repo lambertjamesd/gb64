@@ -36,7 +36,7 @@
 .eqv CPU_STATE_PC, 0xA
 .eqv CPU_STATE_STOP_REASON, 0xC
 .eqv CPU_STATE_INTERRUPTS, 0xD
-.eqv CPU_STATE_NEXT_INTERRUPT, 0xE
+.eqv CPU_STATE_GBC, 0xE
 .eqv CPU_STATE_RUN_UNTIL_FRAME, 0xF
 .eqv CPU_STATE_CYCLES_RUN, 0x10
 
@@ -88,7 +88,7 @@
 .eqv H_FLAG, 0x20
 .eqv C_FLAG, 0x10
 
-.eqv STACK_SIZE, 0x34
+.eqv STACK_SIZE, 0x38
 .eqv ST_RA, 0x0
 # hole here
 .eqv ST_S0, 0x8
@@ -100,7 +100,7 @@
 .eqv ST_S6, 0x20
 .eqv ST_S7, 0x24
 .eqv ST_FP, 0x28
-.eqv ST_NEXT_V_INT, 0x30
+.eqv ST_STARTING_CLOCKS, 0x30
 
 .eqv CYCLES_PER_INSTR, 0x1
 
@@ -117,7 +117,7 @@
 .eqv INTERRUPTS_INPUT, 0x10;
 .eqv INTERRUPTS_ENABLED, 0x80;
 
-.eqv _C_CALLBACK_FRAME_SIZE, 0x14
+.eqv _C_CALLBACK_FRAME_SIZE, 0x18
 
 .macro save_state_on_stack
     addi $sp, $sp, -_C_CALLBACK_FRAME_SIZE

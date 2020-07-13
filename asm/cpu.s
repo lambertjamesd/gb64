@@ -54,7 +54,15 @@ runCPU:
 
     # load timer
     lw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
+    sw CYCLES_RUN, ST_STARTING_CLOCKS($fp)
 
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _CALC_CYCLE_TO
+    nop
+    # double speed mode
+    sll CycleTo, CycleTo, 1
+_CALC_CYCLE_TO:
     add TMP2, CycleTo, CYCLES_RUN    # calculate upper bound of execution
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
@@ -144,7 +152,9 @@ GB_BREAK_LOOP:
     jal CALCULATE_TIMA_VALUE
     sb GB_F, CPU_STATE_F(CPUState)
 
+    jal GB_CALC_UNSCALED_CLOCKS
     sb GB_B, CPU_STATE_B(CPUState)
+    sw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     sb GB_C, CPU_STATE_C(CPUState)
 
     sb GB_D, CPU_STATE_D(CPUState)
@@ -155,12 +165,16 @@ GB_BREAK_LOOP:
     sh GB_SP, CPU_STATE_SP(CPUState)
     sh GB_PC, CPU_STATE_PC(CPUState)
 
-    # TODO speed switching
-    sw CYCLES_RUN, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
     # calculate the number of cycles run
-    lw $v0, CPU_STATE_CYCLES_RUN(CPUState)
+    lw $v0, ST_STARTING_CLOCKS($fp)
     sub $v0, CYCLES_RUN, $v0
-
+    
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _GB_BREAK_LOOP_SAVE_CYCLES
+    nop
+    # double speed mode
+    srl $v0, $v0, 1
 _GB_BREAK_LOOP_SAVE_CYCLES:
     sw CYCLES_RUN, CPU_STATE_CYCLES_RUN(CPUState)
     
@@ -184,7 +198,7 @@ _GB_BREAK_LOOP_SAVE_CYCLES:
 #######################
 
 READ_NEXT_INSTRUCTION_16:
-    addi $sp, $sp, -0x4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     jal READ_NEXT_INSTRUCTION
     nop
@@ -194,7 +208,7 @@ READ_NEXT_INSTRUCTION_16:
     or $v0, $v0, $v1
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 0x4
+    addi $sp, $sp, 8
 
 READ_NEXT_INSTRUCTION:
     # read at PC, increment PC, return value
@@ -251,6 +265,18 @@ GB_SIMULATE_HALTED:
     nop
     j GB_SIMULATE_HALTED # loop, DEQUEUE_STOPPING_POINT will break the loop once it has been simulated
     nop
+
+GB_CALC_UNSCALED_CLOCKS:
+    lw $at, ST_STARTING_CLOCKS($fp)
+    read_register_direct $v0, REG_KEY1
+    andi $v0, $v0, REG_KEY1_CURRENT_SPEED
+    beqz $v0, _GB_CALC_UNSCALED_CLOCKS_NORMAL_SPEED
+    sub $at, CYCLES_RUN, $at
+    srl $at, $at, 1
+_GB_CALC_UNSCALED_CLOCKS_NORMAL_SPEED:
+    lw $v0, CPU_STATE_UNSCALED_CYCLES_RUN(CPUState)
+    jr $ra
+    add $v0, $v0, $at
 
 .include "asm/_stopping_point.s"
 .include "asm/_branch.s"

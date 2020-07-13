@@ -5,7 +5,7 @@
 ########################
 
 CALCULATE_NEXT_TIMER_INTERRUPT:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
@@ -42,14 +42,14 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
     nop
 _CALCULATE_NEXT_TIMER_INTERRUPT_NONE:
     la $at, 0xFFFFFFFF
     sw $at, CPU_STATE_NEXT_TIMER(CPUState)
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 ########################
 # Update DIV register to the correct value
@@ -174,8 +174,8 @@ CHECK_LCDC_STAT_FLAG:
     andi $at, Param0, REG_LCDC_STATUS_MODE
     li $v0, REG_LCDC_H_BLANK_INT
     sllv $at, $v0, $at # flag to check by mode
-    move $v0, Param0
-    andi $at, $v0, (REG_LCDC_H_BLANK_INT | REG_LCDC_V_BLANK_INT | REG_LCDC_OAM_INT)
+    and $at, Param0, $at
+    andi $at, $at, REG_LCDC_H_BLANK_INT | REG_LCDC_V_BLANK_INT | REG_LCDC_OAM_INT
     bnez $at, _CHECK_LCDC_STAT_FLAG_1
     andi $at, Param0, REG_LCDC_LYC_INT
     beqz $at, _CHECK_LCDC_STAT_FLAG_0
@@ -208,7 +208,7 @@ _CHECK_LCDC_STAT_FLAG_1:
 ########################
 
 DEQUEUE_STOPPING_POINT:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw $ra, 0($sp)
 
     lw $at, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
@@ -258,13 +258,27 @@ DEQUEUE_STOPPING_POINT_J_TABLE_END:
 # 1140
 
 ENTER_MODE_0:
+    read_register_direct $at, REG_HDMA5
+    andi $at, $at, 0x80
+    bnez $at, _ENTER_MODE_0_SKIP_DMA
+    nop
+    jal GB_DMA_BLOCK
+    addi CYCLES_RUN, CYCLES_RUN, 1
+_ENTER_MODE_0_SKIP_DMA:
     read_register_direct TMP3, REG_LY
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
 
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_0_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_0
+    li TMP2, REG_LCDC_STATUS_MODE_0_CYCLES
+    # in double speed mode screen events take double the number of cycles
+    sll TMP2, TMP2, 1 
+_QUEUE_NEXT_MODE_0:
+    add TMP2, TMP2, TMP4 # relative to the last event
     sll TMP2, TMP2, 8
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
     slti $at, TMP3, GB_SCREEN_H
@@ -276,7 +290,6 @@ _ENTER_MODE_0_NEXT_MODE:
     add TMP2, TMP2, TMP4
     j CHECK_LSTAT_INTERRUPT
     nop
-
 ENTER_MODE_1:
     read_register_direct TMP3, REG_LY
     li $at, GB_SCREEN_H
@@ -287,16 +300,19 @@ ENTER_MODE_1:
     li VAL, INTERRUPT_V_BLANK
     
 _MODE_1_SKIP_V_BLANK:
-    lbu $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
-    addi $at, $at, 1
-    sb $at, CPU_STATE_NEXT_INTERRUPT(CPUState)
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
     # request interrupt
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_1_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_1
+    li TMP2, REG_LCDC_STATUS_MODE_1_CYCLES
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_1:
+    add TMP2, TMP2, TMP4
     sll TMP2, TMP2, 8
     slti $at, TMP3, GB_SCREEN_LINES - 1
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
@@ -316,7 +332,13 @@ ENTER_MODE_2:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 2
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_2_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_2
+    li TMP2, REG_LCDC_STATUS_MODE_2_CYCLES
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_2:
+    add TMP2, TMP2, TMP4
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
@@ -349,7 +371,13 @@ ENTER_MODE_3:
     read_register_direct Param0, REG_LCDC_STATUS
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 3
-    addi TMP2, TMP4, REG_LCDC_STATUS_MODE_3_CYCLES
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _QUEUE_NEXT_MODE_3
+    li TMP2, REG_LCDC_STATUS_MODE_3_CYCLES
+    sll TMP2, TMP2, 1
+_QUEUE_NEXT_MODE_3:
+    add TMP2, TMP2, TMP4
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_0
@@ -357,10 +385,16 @@ ENTER_MODE_3:
     nop
 
 CHECK_LSTAT_INTERRUPT:
+    andi Param0, Param0, %lo(~REG_LCDC_STATUS_LYC)
+    read_register_direct $at, REG_LYC
+    bne TMP3, $at, _CHECK_LSTAT_INTERRUPT_CHECK_RISING
+    nop
+    ori Param0, Param0, REG_LCDC_STATUS_LYC
+_CHECK_LSTAT_INTERRUPT_CHECK_RISING:
     write_register_direct Param0, REG_LCDC_STATUS
     jal CHECK_LCDC_STAT_FLAG
-    move TMP2, $v0
-    slt $at, TMP2, $v0 # if previous stat < current state then trigger interrupt
+    move $v1, $v0
+    slt $at, $v1, $v0 # if previous stat < current state then trigger interrupt
     beqz $at, CHECK_LSTAT_INTERRUPT_SKIP_INTERRUPT
     nop
     # request interrupt
@@ -442,7 +476,7 @@ _HANDLE_DEQUEUE_INTERRUPT_SAVE:
     
 HANDLE_DEQUEUE_EXIT:
     j GB_BREAK_LOOP
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 HANDLE_DMA_DEQUEUE:
     read_register16_direct TMP3, _REG_DMA_LAST_CYCLE
@@ -486,7 +520,7 @@ HANDLE_DEBUGGER_DEQUEUE:
 _FINISH_DEQUEUE_INTERRUPT:
     lw $ra, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 
 ########################
@@ -496,7 +530,7 @@ _FINISH_DEQUEUE_INTERRUPT:
 ########################
 
 QUEUE_STOPPING_POINT:
-    addi $sp, $sp, -4
+    addi $sp, $sp, -8
     sw TMP3, 0($sp)
     lw $a2, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
     add $a2, $a2, CPUState
@@ -525,7 +559,7 @@ _QUEUE_STOPPING_POINT_SET:
 
     lw TMP3, 0($sp)
     jr $ra
-    addi $sp, $sp, 4
+    addi $sp, $sp, 8
 
 READ_NEXT_STOPPING_POINT:
     lw CycleTo, CPU_STATE_NEXT_STOPPING_POINT(CPUState)
@@ -572,3 +606,18 @@ _REMOVE_STOPPING_POINT_ZERO_LOOP:
 _REMOVE_STOPPING_POINT_EXIT:
     jr $ra
     nop
+
+CHECK_FOR_SPEED_SWITCH:
+    read_register_direct TMP2, REG_KEY1
+    andi $at, TMP2, REG_KEY1_PREPARE_SWITCH
+    bnez $at, _DO_SPEED_SWITCH
+    nop
+    jr $ra
+    li $v0, 0
+
+_DO_SPEED_SWITCH:
+    andi TMP2, TMP2, %lo(~REG_KEY1_PREPARE_SWITCH)
+    xori TMP2, TMP2, REG_KEY1_CURRENT_SPEED
+    write_register_direct TMP2, REG_KEY1
+    jr $ra
+    li $v0, 1

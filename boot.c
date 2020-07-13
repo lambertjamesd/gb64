@@ -32,6 +32,9 @@
 #include "controller.h"
 #include "memory.h"
 #include "src/rom.h"
+#include "src/debug_out.h"
+#include "render.h"
+#include "src/faulthandler.h"
 
 /*
  * Symbol genererated by "makerom" (RAM)
@@ -158,6 +161,8 @@ idle(void *arg)
 
 	osStartThread(&mainThread);
 
+	installFaultHandler(&mainThread);
+
 	/*
 	 * Become the idle thread
 	 */
@@ -233,11 +238,21 @@ mainproc(void *arg)
 	 * Wait for DMA to finish
 	 */
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+	
 
+	/*
+	 * Stick the texture segment right after the static segment
+	 */
 	_gEndSegments = staticSegment + 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
+		
+  	osFlashInit();
+
+	clearDebugOutput();
 
 	initHeap();
+
+	initColorBuffers();
 
 	initRomLayout(&gGBRom, _gbromSegmentRomStart);
 

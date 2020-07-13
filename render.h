@@ -4,6 +4,7 @@
 
 #include <ultra64.h> 
 #include "boot.h"
+#include "font_ext.h"
 
 /*
  * Message queues
@@ -22,7 +23,7 @@ extern Gfx	*glistp;
 /*
  * frame buffer symbols
  */
-extern u16	cfb[][SCREEN_WD*SCREEN_HT];	/* RAM address */
+extern u16*	cfb;	/* RAM address */
 extern u16	rsp_cfb[];			/* segment address */
 /*
  * buffers for RSP tasks:
@@ -32,6 +33,12 @@ extern u64	dram_stack[SP_DRAM_STACK_SIZE64]; /* used for matrix stack */
 extern u64	rdp_output[RDP_OUTPUT_LEN];	/* buffer for RDP DL */
 
 extern int		fontcol[4];	/* color for shadowed fonts */
+
+#define PACK16BIT(r, g, b) ((u16)(r) << 8 & 0xF800 | (u16)(g) << 3 & 0x07C0 | (u16)(b) >> 2 & 0x003E | 0x01)
+#define COL24TO16(rgb24) ((rgb24) >> 8 & 0xF800 | (rgb24) >> 5 & 0x07C0 | (rgb24) >> 2 & 0x003E | 0x01)
+#define GET_R(rgb16) ((rgb16) >> 8 & 0xF8)
+#define GET_G(rgb16) ((rgb16) >> 3 & 0xF8)
+#define GET_B(rgb16) ((rgb16) << 2 & 0xF8)
 
 #define	GLIST_LEN	2048
 
@@ -67,9 +74,10 @@ extern Dynamic	dynamic;
                 font_set_pos( x, y );                                         \
                 font_show_string( glp, str );}
 
-void preRenderFrame(int clear);
+void preRenderFrame();
 void renderDebugLog();
 void finishRenderFrame();
 u16* getColorBuffer();
+void initColorBuffers();
 
 #endif

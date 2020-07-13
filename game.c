@@ -39,6 +39,8 @@
 #include "src/debug_out.h"
 #include "render.h"
 #include "src/debugger.h"
+#include "src/mainmenu.h"
+#include "src/faulthandler.h"
 
 #define RUN_TESTS 0
 
@@ -49,8 +51,6 @@ void
 game(void)
 {
     OSContPad	**pad;
-    char 	*cstring;
-    char	str[200];
 	int loop;
 	int lastButton;
 	int accumulatedTime = 0;
@@ -65,30 +65,16 @@ game(void)
 	lastTime = osGetCount();
 	gGameboy.cpu.cyclesRun = 0;
 #if RUN_TESTS
+    char	str[200];
 	runTests(str);
+	debugInfo(str);
 #endif
 
-	debugInfo(str);
-
 	initGameboy(&gGameboy, &gGBRom);
+	
+    initAudio(&gAudioState, 22500, 30);
 
 	initDebugMenu(&gDebugMenu, &gGameboy.cpu, &gGameboy.memory);
-
-	gGameboy.memory.vram.colorPalletes[0] = 0b1100011110110100;
-	gGameboy.memory.vram.colorPalletes[1] = 0b1000111000011100;
-	gGameboy.memory.vram.colorPalletes[2] = 0b0011001101010100;
-	gGameboy.memory.vram.colorPalletes[3] = 0b0000100011001000;
-	
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 0] = 0b1100011110110100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 1] = 0b1000111000011100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 2] = 0b0011001101010100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 3] = 0b0000100011001000;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 4] = 0b1100011110110100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 5] = 0b1000111000011100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 6] = 0b0011001101010100;
-	gGameboy.memory.vram.colorPalletes[OBJ_PALLETE_INDEX_START + 7] = 0b0000100011001000;
-
-	zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 
 	debugWrite = (void*)(0x80700000 - 12);
 	*((u32*)debugWrite) = (int)&gGameboy.memory;
@@ -97,12 +83,9 @@ game(void)
 	debugWrite = (void*)(0x80700000 - 8);
 	*((u32*)debugWrite) = (int)&gGameboy.cpu;
 
-	OSTime startTime = osGetCount();
+	initMainMenu(&gMainMenu);
 
 	int frames = 0;
-
-	clearDebugOutput();
-	// DEBUG_PRINT_F("\n%X\n", 0);
 
     /*
      * Main game loop
@@ -111,7 +94,7 @@ game(void)
     while (1) {
 		pad = ReadController(0);
 
-        if ((pad[0]->button & U_CBUTTONS) && (~lastButton & U_CBUTTONS))
+        if ((pad[0]->button & L_CBUTTONS) && (~lastButton & L_CBUTTONS) && (pad[0]->button & R_TRIG) && (pad[0]->button & L_TRIG))
         {
             useDebugger(&gGameboy.cpu, &gGameboy.memory);
         }
@@ -122,12 +105,9 @@ game(void)
 		u32 frameTime = currentTime - lastTime;
 		lastTime = currentTime;
 
-
-		accumulatedTime += frameTime;
-
 		// time s  1024*1024 cycles/s 60 frames/s
 
-		cstring=str;
+
 
 		
 #if !RUN_TESTS
@@ -139,30 +119,38 @@ game(void)
 		
 		// clearDebugOutput();
 
-		
-		loop = MAX_FRAME_SKIP;
-		while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
-		{
-			handleInput(&gGameboy, pad[0]);
-			emulateFrame(&gGameboy, NULL);
-			pad = ReadController(0);
+		if (!isMainMenuOpen(&gMainMenu))
+		{		
+			accumulatedTime += frameTime;
+
+			if (lastButton & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.fastForward))
+			{
+				accumulatedTime += CPU_TICKS_PER_FRAME * 6;
+			}
+
+			loop = MAX_FRAME_SKIP;
+			frames = 0;
+			while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
+			{
+				handleGameboyInput(&gGameboy, pad[0]);
+				emulateFrame(&gGameboy, NULL);
+				pad = ReadController(0);
+				accumulatedTime -= CPU_TICKS_PER_FRAME;
+				--loop;
+				++frames;
+			}
+
+			while (accumulatedTime > CPU_TICKS_PER_FRAME)
+			{
+				accumulatedTime -= CPU_TICKS_PER_FRAME;
+			}
+
+			handleGameboyInput(&gGameboy, pad[0]);
+			emulateFrame(&gGameboy, getColorBuffer());
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
-			--loop;
+			finishAudioFrame(&gGameboy.memory);
 			++frames;
 		}
-
-		while (accumulatedTime > CPU_TICKS_PER_FRAME)
-		{
-			accumulatedTime -= CPU_TICKS_PER_FRAME;
-		}
-
-		handleInput(&gGameboy, pad[0]);
-		emulateFrame(&gGameboy, getColorBuffer());
-		accumulatedTime -= CPU_TICKS_PER_FRAME;
-		finishAudioFrame(&gGameboy.memory);
-		++frames;
-
-		osWritebackDCache(getColorBuffer(), sizeof(u16) * SCREEN_WD*SCREEN_HT);
 
 		lastDrawTime += osGetCount();
 		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
@@ -173,8 +161,16 @@ game(void)
 		// );
 		// debugInfo(str);
 #endif
-		preRenderFrame(0);
+		preRenderFrame();
+		
+    	gSPDisplayList(glistp++, gDrawScreen);
+
 		renderDebugLog();
+
+		updateMainMenu(&gMainMenu, pad[0]);
+		renderMainMenu(&gMainMenu);
+
 		finishRenderFrame();
+		faultHandlerHeartbeat();
     }
 }

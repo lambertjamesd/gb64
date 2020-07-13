@@ -64,7 +64,7 @@ struct CPUState {
     unsigned short pc;
     unsigned char stopReason;
     unsigned char interrupts;
-    unsigned char nextInterrupt;
+    unsigned char gbc;
     unsigned char runUntilNextFrame;
     unsigned long cyclesRun;
     unsigned long nextTimerTrigger;

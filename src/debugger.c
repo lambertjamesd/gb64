@@ -5,6 +5,7 @@
 #include "../render.h"
 #include "decoder.h"
 #include "bool.h"
+#include "faulthandler.h"
 
 u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
@@ -158,7 +159,7 @@ void editValueRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
     }
 }
 
-struct MenuItem* editValueHandleInput(struct MenuItem* menuItem, int buttons)
+struct MenuItem* editValueHandleInput(struct MenuItem* menuItem, int buttons, int buttonsState)
 {
     struct EditValueMenuState* editMenu = (struct EditValueMenuState*)menuItem->data;
     u16 offset = 0x1 << (editMenu->currentNibble * 4);
@@ -257,7 +258,7 @@ void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlight
     }
 }
 
-struct MenuItem* memoryAddressesHandleInput(struct MenuItem* menuItem, int buttons)
+struct MenuItem* memoryAddressesHandleInput(struct MenuItem* menuItem, int buttons, int buttonsState)
 {
     struct MemoryAddressMenuItem* address = (struct MemoryAddressMenuItem*)menuItem->data;
 
@@ -362,7 +363,7 @@ void memoryValuesRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     }
 }
 
-struct MenuItem* memoryValuesHandleInput(struct MenuItem* menuItem, int buttons)
+struct MenuItem* memoryValuesHandleInput(struct MenuItem* menuItem, int buttons, int buttonsState)
 {
     struct MemoryValueMenuItem* values = (struct MemoryValueMenuItem*)menuItem->data;
 
@@ -535,7 +536,7 @@ void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     }
 }
 
-struct MenuItem* instructionsHandleInput(struct MenuItem* menuItem, int buttons)
+struct MenuItem* instructionsHandleInput(struct MenuItem* menuItem, int buttons, int buttonsState)
 {
     struct InstructionsMenuItem* instructions = (struct InstructionsMenuItem*)menuItem->data;
     
@@ -766,16 +767,18 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 
         menuStateHandleInput(&gDebugMenu.menu, pad[0]);
     
-		preRenderFrame(1);
+		preRenderFrame();
 		renderDebugLog();
 
         menuStateRender(&gDebugMenu.menu);
 
 		finishRenderFrame();
+        
+		faultHandlerHeartbeat();
 
         int buttonDown = pad[0]->button & ~lastButton;
 
-        if (buttonDown & U_CBUTTONS)
+        if (buttonDown & L_CBUTTONS)
         {
             gDebugMenu.state.isDebugging = FALSE;
         }

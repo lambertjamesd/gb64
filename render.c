@@ -1,6 +1,7 @@
 #include "render.h"
 #include "static.h"
 #include "src/debug_out.h"
+#include "memory.h"
 
 /*
  * Task header.
@@ -33,9 +34,10 @@ Dynamic		dynamic;	/* dynamic data */
 int		draw_buffer=0;	/* frame buffer being updated (0 or 1) */
 int		fontcol[4];	/* color for shadowed fonts */
 Dynamic     *dynamicp;
+u16* cfb;
 
 
-void preRenderFrame(int clear)
+void preRenderFrame()
 {
     /*
     * pointers to build the display list.
@@ -50,7 +52,7 @@ void preRenderFrame(int clear)
     gSPSegment(glistp++, STATIC_SEGMENT, 
             OS_K0_TO_PHYSICAL(staticSegment));
     gSPSegment(glistp++, CFB_SEGMENT, 
-            OS_K0_TO_PHYSICAL(cfb[draw_buffer]));
+            OS_K0_TO_PHYSICAL(getColorBuffer()));
 
     /*
     * Clear color framebuffer.
@@ -66,7 +68,7 @@ void preRenderFrame(int clear)
             (int)1,
             (int)1,
             1));
-    gSPDisplayList(glistp++, clear ? clearcfb_dl : switchcfb_dl);
+    gSPDisplayList(glistp++, clearcfb_dl);
 
     /*
     * Initialize RCP state.
@@ -89,7 +91,6 @@ void renderDebugLog()
     gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
 
     font_init( &glistp );
-    font_set_transparent( 1 );
     
     font_set_scale( 1.0, 1.0 );
     font_set_win( 200, 1 );
@@ -176,7 +177,7 @@ void finishRenderFrame()
     /*
     * setup to swap buffers 
     */
-    osViSwapBuffer(cfb[draw_buffer]);
+    osViSwapBuffer(getColorBuffer());
 
     /*
     * Make sure there isn't an old retrace in queue 
@@ -196,5 +197,11 @@ void finishRenderFrame()
 
 u16* getColorBuffer()
 {
-    return cfb[draw_buffer];
+    return cfb + draw_buffer * (SCREEN_WD * SCREEN_HT);
+}
+
+void initColorBuffers()
+{
+    cfb = malloc(sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
+    zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 }

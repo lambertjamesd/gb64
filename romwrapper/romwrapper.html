@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>GB64</title>
+        <script src="gb.n64.js"></script>
+        <script src="crc.js"></script>
+        <style>
+            .file-input{
+                display: flex;
+                flex-direction: column;
+                line-height: 1.5em;
+            }
+
+            .file-input + .file-input {
+                margin-top: 1em;
+            }
+
+            .error-log {
+                color: red;
+            }
+
+            .save-db {
+                font-family: Lucida Console,Lucida Sans Typewriter,monaco,Bitstream Vera Sans Mono,monospace;
+                background: #f0f0f0;
+                border: solid 1px #404040;
+                padding: 12px;
+            }
+
+            body {
+                padding: 0px;
+                margin: 0px;
+            }
+
+            .body-wrapper {
+                display: flex;
+                justify-content: center;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                background: #090698;
+            }
+            
+            .center-section {
+                display: flex;
+                flex-direction: column;
+                max-width: 800px;
+                background: white;
+                padding: 20px;
+                overflow: auto;
+            }
+
+            .center-section > * + * {
+                margin-top: 20px;
+            }
+
+            .content {
+                display: flex;
+                border: solid 2px black;
+            }
+
+            .form-section {
+                padding: 20px;
+            }
+
+            .required-section {
+                flex: 1 1 0;
+            }
+
+            .bios-section {
+                flex: 1 1 0;
+            }
+
+            h2 {
+                margin: 0px;
+            }
+
+            .download-button {
+                padding: 8px;
+                cursor: pointer;
+                margin-top: 20px;
+            }
+
+            thead {
+                background: #f0f0f0;
+            }
+
+            td {
+                padding: 4px;
+                border: 1px solid black;
+            }
+
+            .placeholder {
+                font-style: italic;
+                opacity: 0.5;
+            }
+        </style>
+        <script>
+            const gGB64 = atob(gGB64Base64);
+            const gGB64ArrayBuffer = new Uint8Array(new ArrayBuffer(gGB64.length));
+
+            for (let i = 0; i < gGB64.length; ++i)
+            {
+                gGB64ArrayBuffer[i] = gGB64.charCodeAt(i);
+            }
+
+            function findIndex(arrayBuffer, string)
+            {
+                let inputIndex = 0;
+                let searchIndex = 0;
+                
+                while (searchIndex < arrayBuffer.length)
+                {
+                    if (string.charCodeAt(inputIndex) == arrayBuffer[searchIndex])
+                    {
+                        ++inputIndex;
+                        ++searchIndex;
+
+                        if (inputIndex == string.length)
+                        {
+                            return searchIndex - string.length;
+                        }
+                    }
+                    else
+                    {
+                        inputIndex = 0;
+                        ++searchIndex;
+                    }
+                }
+
+                return -1;
+            }
+
+            function copyInto(target, targetOffset, source)
+            {
+                for (let i = 0; i < source.length; ++i)
+                {
+                    target[i + targetOffset] = source[i];
+                }
+            }
+            
+            function reportError(message)
+            {
+                const parent = document.querySelector('.error-log');
+
+                if (parent)
+                {
+                    const line = document.createElement('div');
+                    line.appendChild(document.createTextNode(message));
+                    parent.appendChild(line);
+                }
+            }
+
+            function triggerDownload(filename, data) {
+                var blob = new Blob([data.buffer], {type: 'application/octet-stream'});
+
+                var elem = document.createElement('a');
+                elem.href = URL.createObjectURL(blob);
+                elem.download = filename;        
+                document.body.appendChild(elem);
+                elem.click();        
+                document.body.removeChild(elem);
+            }
+
+            function outputCRC(filename, crc) {
+                const parent = document.querySelector('.save-db');
+
+                if (parent)
+                {
+                    const placeholder = parent.querySelector('.placeholder');
+
+                    if (placeholder)
+                    {
+                        parent.removeChild(placeholder);
+                    }
+
+                    const line = document.createElement('div');
+                    line.appendChild(document.createTextNode(
+                        `0x${crc.toString(16)}=5 (${filename})`
+                    ));
+                    parent.appendChild(line);
+                }
+            }
+
+            function convert(romName, rom, dmgBoot, cgbBios) {
+                try {
+                    const romIndex = findIndex(gGB64ArrayBuffer, 'GB64_ROM');
+
+                    if (romIndex == -1)
+                    {
+                        reportError("Fatal: could not find rom insertion location");
+                        return;
+                    }
+
+                    const result = new Uint8Array(new ArrayBuffer(Math.max(romIndex + rom.length, 0x101000)));
+                    copyInto(result, 0, gGB64ArrayBuffer);
+                    
+                    const dmgIndex = findIndex(gGB64ArrayBuffer, 'DMG_BOOT');
+                    const cgbIndex = findIndex(gGB64ArrayBuffer, 'CGB_BIOS');
+
+                    if (dmgIndex == -1)
+                    {
+                        reportError("Could location DMG_BOOT location");
+                    }
+
+                    if (cgbIndex == -1)
+                    {
+                        reportError("Could location CGB_BIOS location");
+                    }
+    
+                    if (dmgBoot && dmgIndex != -1)
+                    {
+                        copyInto(result, dmgIndex - 4, dmgBoot);
+                    }
+    
+                    if (cgbBios && cgbIndex != -1)
+                    {
+                        copyInto(result, cgbIndex - 4, cgbBios);
+                    }
+
+                    copyInto(result, romIndex, rom);
+
+                    // Copy the title of the game over
+                    let targetIndex = 0x20;
+                    let sourceIndex = 0x134;
+                    for (let i = 0; i < 0x10; ++i, ++targetIndex, ++sourceIndex)
+                    {
+                        result[targetIndex] = rom[sourceIndex];
+                    }
+
+                    const crc = recalcCRC(result);
+                    outputCRC(romName, crc[0]);
+
+                    triggerDownload(`${romName}.n64`, result);
+                } 
+                catch (error)
+                {
+                    reportError(error.toString());
+                }
+            }
+
+            function readAsArrayBuffer(file)
+            {
+                return new Promise((resolve, reject) => {
+                    const fileReader = new FileReader();
+                    fileReader.readAsArrayBuffer(file);
+                    fileReader.onload = () => {
+                        resolve(new Uint8Array(fileReader.result));
+                    };
+                    fileReader.onerror = (error) => {
+                        reject(error);
+                    };
+                });
+            }
+
+            async function convertROM() {
+                const dmgBoot = document.querySelector('#dmgBoot').files[0];
+                const cgbBios = document.querySelector('#cgbBios').files[0];
+                const roms = document.querySelector('#rom').files;
+
+                if (!roms || roms.length == 0)
+                {
+                    reportError('Fatal: no rom selected');
+                }
+                else
+                {
+                    for (let rom of roms)
+                    {
+                        const filename = rom.name;
+                        const extensionIndex = filename.lastIndexOf('.');
+    
+                        convert(
+                            extensionIndex == -1 ? filename : filename.slice(0, extensionIndex),
+                            await readAsArrayBuffer(rom), 
+                            dmgBoot && await readAsArrayBuffer(dmgBoot), 
+                            cgbBios && await readAsArrayBuffer(cgbBios)
+                        );
+                    }
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div class="body-wrapper">
+            <div class="center-section">
+                <div class="header">
+                    <img src="GB64Logo.png">
+                </div>
+                <div class="content">
+                    <div class="required-section">
+                        <div class="form-section">
+                            <h2>Rom</h2>
+                            <div class="file-input">
+                                <label for="rom">.gb or .gbc rom to convert to an .n64 rom</label>
+                                <input id="rom" type="file" accept=".gb, .gbc" multiple>
+                            </div>
+                        </div>
+                        <div class="form-section">
+                            <h2>Convert</h2>
+                            <div>
+                                <input 
+                                    class="download-button"
+                                    value="Convert and Download" 
+                                    type="submit" 
+                                    onclick="convertROM()"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bios-section">
+                        <div class="form-section">
+                            <h2>Bios</h2>
+                            <p>
+                                Use a bios to get the gameboy startup animation with
+                                the nintendo or gameboy logo. Don't include them to
+                                skip the animation and boot directly into the game.
+                            </p>
+                            <div class="file-input">
+                                <label for="dmgBoot">dmg_boot.bin (optional) used for original gameboy</label>
+                                <input id="dmgBoot" type="file" accept=".bin">
+                            </div>
+                            <div class="file-input">
+                                <label for="cgbBios">cgb_bios.bin (optional) used for gameboy color</label>
+                                <input id="cgbBios" type="file" accept=".bin">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="error-log">
+        
+                </div>
+                <div>
+                    <h2>Getting save files to work</h2>
+                    <p>
+                        The emulator uses flashram to save. To get this to work with everdrive you need to specify that in 
+                        save_db.txt using the rom's CRC code. By adding the codes generated below when you convert a rom.
+                    </p>
+                    <div class="save-db">
+                        <div class="placeholder">
+                            (CRC code will appear here when you convert a rom)
+                        </div>
+                    </div>
+                    <p>
+                        This emulator supports save states. Press down C to save. Hold up C to load a save state.
+                        When staring a ROM it will not load the entire save state by default. It will only load the
+                        GameBoy cartridge ram emulating the behavior of the GameBoy. If you want a save file to load
+                        from a fresh boot you first need to save the game inside the emulator then create the save state
+                        with down C. 
+                    </p>
+                </div>
+                <div>
+                    <h2>Default Controls</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>Action</td>
+                                <td>Button</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>A</td>
+                                <td>A</td>
+                            </tr>
+                            <tr>
+                                <td>B</td>
+                                <td>B</td>
+                            </tr>
+                            <tr>
+                                <td>Start</td>
+                                <td>Start</td>
+                            </tr>
+                            <tr>
+                                <td>Select</td>
+                                <td>Z</td>
+                            </tr>
+                            <tr>
+                                <td>Save</td>
+                                <td>C Down</td>
+                            </tr>
+                            <tr>
+                                <td>Load Save State</td>
+                                <td>C Up</td>
+                            </tr>
+                            <tr>
+                                <td>Fast Forward</td>
+                                <td>C Right</td>
+                            </tr>
+                            <tr>
+                                <td>Menu</td>
+                                <td>C Left</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
