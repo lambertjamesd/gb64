@@ -515,7 +515,7 @@ void renderPixelRow(
 
         u8 pixelIndex;
         u8 pixelIndexOffset = (tileInfo & TILE_ATTR_PALETTE) << 2;
-        u16 palleteOffset = state->palleteWriteIndex - state->palleteReadIndex;
+        u16 palleteOffset = state->palleteWriteIndex - state->palleteReadIndex - PALETTE_COUNT;
         
         // A bit of a hack here
         // set the h flip flag to bit 3 and put the 
