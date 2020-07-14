@@ -87,10 +87,9 @@ CODESEGMENT =	codesegment.o
 OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS)
 
 LCDEFS +=	$(HW_FLAGS)
-LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64
+LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64 -I$(N64_NEWLIBINCDIR)
 LCOPTS =	-G 0
-LDFLAGS =	$(MKDEPOPT)  -L/usr/lib/n64 $(N64LIB) -L$(N64_LIBGCCDIR) -lgcc -lnustd
-
+LDFLAGS =	$(MKDEPOPT)  -L/usr/lib/n64 $(N64LIB) -L$(N64_LIBGCCDIR) -L$(N64_NEWLIBDIR) -lgcc -lc 
 LDIRT  =	$(APP) $(TARGETS)
 
 default:	$(TARGETS)
