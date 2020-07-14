@@ -125,6 +125,7 @@ extern struct GameBoy gGameboy;
 extern u16 gBGPColors;
 extern u16 gOBP0Colors;
 extern u16 gOBP1Colors;
+extern u32 gPalleteDirty;
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 

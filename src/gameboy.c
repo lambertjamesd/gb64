@@ -383,6 +383,8 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
             cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
         }
 
+        finishScreen(&graphicsState);
+
         // intentionally run short to make sure we don't leak into the next frame
         cyclesToRun += CYCLES_PER_LINE * V_BLANK_LINES - CYCLES_TIL_LINE_RENDER - 2;
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);

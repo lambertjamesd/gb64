@@ -5,6 +5,10 @@
 #include "memory_map.h"
 #include "gameboy.h"
 
+#define MAX_PALLETE_SIZE (PALETTE_COUNT * GB_SCREEN_TILE_H)
+
+#define GB_SCREEN_TILE_H    20
+
 #define GB_SCREEN_W         160
 #define GB_SCREEN_H         144
 #define GB_SCREEN_LINES     154
@@ -57,24 +61,27 @@
 // GGGRRRRR 1BBBBBGG to RRRRRGGGGGBBBBB1
 #define GBC_TO_N64_COLOR(color) (((color) << 3 & 0xF100) | ((color) >> 7 & 0x01C0 >> 7) | ((color) << 9 & 0x0600) | ((color) >> 1 & 0x003E) | 0x1)
 
-extern u16 gScreenPalette[PALETTE_COUNT];
+extern u16 gScreenPalette[PALETTE_COUNT * GB_SCREEN_TILE_H];
 extern Gfx gDrawScreen[];
 
 struct GraphicsState {
     struct Sprite sortedSprites[SPRITE_COUNT];
     u8 spriteIndexBuffer[GB_SCREEN_W];
     struct GameboyGraphicsSettings settings;
-    int gbc;
     int spriteCount;
-    int row;
-    int winY;
+    u16 gbc;
+    u16 row;
+    u16 lastRenderedRow;
+    u16 winY;
+    u16 palleteReadIndex;
+    u16 palleteWriteIndex;
 };
 
 int compareSprites(struct Sprite a, struct Sprite b);
 void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount, int sort);
 void renderSprites(struct Memory* memory, struct GraphicsState* state);
 void applyGrayscalePallete();
-void generateDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl);
+void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl);
 
 void initGraphicsState(
     struct Memory* memory,
@@ -88,5 +95,7 @@ void renderPixelRow(
     struct GraphicsState* state,
     u16* memoryBuffer
 );
+
+void finishScreen(struct GraphicsState* state);
 
 #endif

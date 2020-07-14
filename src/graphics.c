@@ -12,16 +12,18 @@ union {
     long long unusedAlign;
 } gScreenBuffer;
 
-u16 gScreenPalette[PALETTE_COUNT];
+Gfx* gCurrentScreenDL;
 
-#define COPY_SCREEN_STRIP(dl, blockY, scale, scaleInv)                      \
+u16 gScreenPalette[MAX_PALLETE_SIZE];
+
+#define COPY_SCREEN_STRIP(dl, y, maxY, scale, scaleInv)                     \
     gDPLoadTextureTile(                                                     \
         dl,                                                                 \
-        (int)gScreenBuffer.buffer + blockY * GB_SCREEN_W * GB_RENDER_STRIP_HEIGHT, \
+        (int)gScreenBuffer.buffer + y * GB_SCREEN_W,                        \
         G_IM_FMT_CI, G_IM_SIZ_8b,                                           \
-        GB_SCREEN_W, GB_RENDER_STRIP_HEIGHT,                                \
+        GB_SCREEN_W, maxY - y,                                              \
         0, 0,                                                               \
-        GB_SCREEN_W - 1, GB_RENDER_STRIP_HEIGHT - 1,                        \
+        GB_SCREEN_W - 1, (maxY - y) - 1,                                    \
         0,                                                                  \
         G_TX_CLAMP, G_TX_CLAMP,                                             \
         G_TX_NOMASK, G_TX_NOMASK,                                           \
@@ -30,21 +32,21 @@ u16 gScreenPalette[PALETTE_COUNT];
     gSPTextureRectangle(                                                    \
         dl,                                                                 \
         (SCREEN_WD << 1) - (((scale) * GB_SCREEN_W) >> 15),                 \
-        (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - GB_RENDER_STRIP_HEIGHT * blockY)) >> 14), \
+        (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - y)) >> 14),       \
         (SCREEN_WD << 1) + (((scale) * GB_SCREEN_W) >> 15),                 \
-        (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - GB_RENDER_STRIP_HEIGHT * (blockY + 1))) >> 14), \
+        (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - maxY)) >> 14),    \
         G_TX_RENDERTILE,                                                    \
         0, 0,                                                               \
         (scaleInv >> 6), (scaleInv >> 6)                                    \
     )
 
-Gfx gDrawScreen[0xC0] = {gsSPEndDisplayList()};
+Gfx gDrawScreen[0x100] = {gsSPEndDisplayList()};
 
-#define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX, priority)    \
+#define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX, priority, palleteOffset)    \
     if (priority <= 0 && (priority < 0 || (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)))) \
-        *targetMemory = (spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY) + OBJ_PALETTE_INDEX_START;                \
+        *targetMemory = (spriteBuffer[x] & ~SPRITE_FLAGS_PRIORITY) + OBJ_PALETTE_INDEX_START + palleteOffset;                \
     else                                                                                        \
-        *targetMemory = pixelIndex;                            \
+        *targetMemory = pixelIndex + palleteOffset;                            \
     ++x;                                                                                        \
     ++targetMemory;                                                                             \
     if (x == maxX)                                                                       \
@@ -161,35 +163,19 @@ static long gInvScreenScales[ScreenScaleSettingCount] = {
     0x0AAAA,
 };
 
-void generateDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl)
+void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl)
 {
-    long scale = gScreenScales[settings->scaleSetting];
-    long invScale = gInvScreenScales[settings->scaleSetting];
+    gCurrentScreenDL = dl;
     
-    gDPPipeSync(dl++);
-    gDPSetCycleType(dl++, G_CYC_1CYCLE);
-    gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-    gDPSetTextureFilter(dl++, settings->smooth ? G_TF_BILERP : G_TF_POINT);
-    gDPSetTexturePersp(dl++, G_TP_NONE);
-    gDPSetCombineMode(dl++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
-    gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
-    gDPLoadTLUT_pal256(dl++, gScreenPalette);
-    gDPSetTextureLUT(dl++, G_TT_RGBA16);
-
-    COPY_SCREEN_STRIP(dl++, 0, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 1, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 2, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 3, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 4, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 5, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 6, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 7, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 8, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 9, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 10, scale, invScale);
-    COPY_SCREEN_STRIP(dl++, 11, scale, invScale);
-
-    gSPEndDisplayList(dl++);
+    gDPPipeSync(gCurrentScreenDL++);
+    gDPSetCycleType(gCurrentScreenDL++, G_CYC_1CYCLE);
+    gDPSetRenderMode(gCurrentScreenDL++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
+    gDPSetTextureFilter(gCurrentScreenDL++, settings->smooth ? G_TF_BILERP : G_TF_POINT);
+    gDPSetTexturePersp(gCurrentScreenDL++, G_TP_NONE);
+    gDPSetCombineMode(gCurrentScreenDL++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
+    gDPSetPrimColor(gCurrentScreenDL++, 0, 0, 255, 255, 255, 255);
+    gDPSetTextureLUT(gCurrentScreenDL++, G_TT_RGBA16);
+    gDPLoadTLUT_pal256(gCurrentScreenDL++, gScreenPalette);
 }
 
 void initGraphicsState(
@@ -222,12 +208,73 @@ void initGraphicsState(
         applyGrayscalePallete();
     }
 
+    gPalleteDirty = 1;
     state->settings = *settings;
     state->gbc = gbc;
     state->row = 0;
+    state->lastRenderedRow = 0;
     state->winY = 0;
+    state->palleteReadIndex = 0;
+    state->palleteWriteIndex = 0;
 
-    generateDisplayList(&state->settings, gDrawScreen);
+    beginScreenDisplayList(&state->settings, gDrawScreen);
+}
+
+void renderScreenBlock(struct GraphicsState* state)
+{
+    if (state->lastRenderedRow != state->row)
+    {
+        COPY_SCREEN_STRIP(
+            gCurrentScreenDL++, 
+            state->lastRenderedRow, 
+            state->row, 
+            gScreenScales[state->settings.scaleSetting], 
+            gInvScreenScales[state->settings.scaleSetting]
+        );
+        state->lastRenderedRow = state->row;
+    }
+}
+
+void prepareGraphicsPallete(struct GraphicsState* state)
+{
+    if (gPalleteDirty)
+    {
+        gPalleteDirty = 0;
+
+        if (state->palleteWriteIndex >= MAX_PALLETE_SIZE)
+        {
+            return;
+        }
+
+        if (state->palleteWriteIndex - state->palleteReadIndex >= 256)
+        {
+            state->palleteReadIndex = state->palleteWriteIndex;
+            renderScreenBlock(state);
+            gDPLoadTLUT_pal256(gCurrentScreenDL++, gScreenPalette + state->palleteReadIndex);
+        }
+
+        if (state->gbc)
+        {
+            int i;
+
+            for (i = 0; i < PALETTE_COUNT; ++i)
+            {
+                gScreenPalette[i + state->palleteWriteIndex] = GBC_TO_N64_COLOR(gGameboy.memory.vram.colorPalettes[i]);
+            }
+        }
+        else
+        {
+
+        }
+
+        state->palleteWriteIndex += PALETTE_COUNT;
+    }
+}
+
+void finishScreen(struct GraphicsState* state)
+{
+    renderScreenBlock(state);
+    gSPEndDisplayList(gCurrentScreenDL++);
 }
 
 void renderSprites(struct Memory* memory, struct GraphicsState* state)
@@ -372,8 +419,14 @@ void renderPixelRow(
     int maxX = GB_SCREEN_W;
     int priority;
 
+    if (state->row - state->lastRenderedRow >= GB_RENDER_STRIP_HEIGHT)
+    {
+        renderScreenBlock(state);
+    }
+
     lcdcReg = READ_REGISTER_DIRECT(memory, REG_LCDC);
 
+    prepareGraphicsPallete(state);
     // is sprites are disabled then this just clears the
     // sprite index memory
     renderSprites(memory, state);
@@ -462,6 +515,7 @@ void renderPixelRow(
 
         u8 pixelIndex;
         u8 pixelIndexOffset = (tileInfo & TILE_ATTR_PALETTE) << 2;
+        u16 palleteOffset = state->palleteWriteIndex - state->palleteReadIndex;
         
         // A bit of a hack here
         // set the h flip flag to bit 3 and put the 
@@ -470,53 +524,53 @@ void renderPixelRow(
         {
             case 0:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 0) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 1:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 1) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 2:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 2) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 3:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 3) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 4:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 4) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 5:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 5) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 6:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 6) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 7:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 7) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
                 break;
             case 8:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 7) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 9:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 6) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 10:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 5) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 11:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 4) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 12:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 3) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 13:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 2) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 14:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 1) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
             case 15:
                 pixelIndex = READ_PIXEL_INDEX(spriteRow, 0) + pixelIndexOffset;
-                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority);
+                WRITE_PIXEL(pixelIndex, x, targetMemory, state->spriteIndexBuffer, maxX, priority, palleteOffset);
                 break;
         }
     }

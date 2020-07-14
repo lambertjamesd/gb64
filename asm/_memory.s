@@ -576,9 +576,9 @@ _GB_SPEED_KEY1:
 ############################
 
     .data
+    .align 2
 .global gBGPColors
 gBGPColors:
-    .align 2
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
 .global gOBP0Colors
 gOBP0Colors:
@@ -586,6 +586,11 @@ gOBP0Colors:
 .global gOBP1Colors
 gOBP1Colors:
     .half 0b1110011111110101, 0b1000111000011101, 0b0011001101010101, 0b0000100011001001
+
+    .align 4
+.global gPalleteDirty
+gPalleteDirty:
+    .word 1
     .text
 
 _GB_WRITE_BGP:
@@ -635,8 +640,12 @@ _GB_WRITE_DMA_PAL:
     srl $at, $at, 5
     add $at, TMP2, $at
     lhu $at, 0($at)
-    jr $ra
     sh $at, 6(ADDR)
+
+    la $at, gPalleteDirty
+    li TMP2, 1
+    jr $ra
+    sw TMP2, 0($at)
 
 _GB_WRITE_DMA_PAL_SKIP:
     jr $ra
@@ -847,6 +856,10 @@ _GB_WRITE_REG_6X:
     nop    
 
 _GB_WRITE_PALETTE:
+    la $at, gPalleteDirty
+    li TMP2, 1
+    sw TMP2, 0($at)
+
     sll TMP3, Param0, 1
     add TMP3, TMP3, Memory # TMP3 used to point to memory register
 

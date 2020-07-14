@@ -107,13 +107,14 @@ struct MenuItem* graphicsMenuHandleInput(struct MenuItem* menuItem, int buttonsD
 void setScaleSetting(struct CursorMenuItem* item, int id, int value)
 {
     gGameboy.settings.graphics.scaleSetting = value;
-    generateDisplayList(&gGameboy.settings.graphics, gDrawScreen);
+    // generateDisplayList(&gGameboy.settings.graphics, gDrawScreen);
 }
 
 void setPixelSetting(struct CursorMenuItem* item, int id, int value)
 {
     gGameboy.settings.graphics.smooth = value;
-    generateDisplayList(&gGameboy.settings.graphics, gDrawScreen);
+    // TODO update display list
+    // generateDisplayList(&gGameboy.settings.graphics, gDrawScreen);
 }
 
 void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
