@@ -943,13 +943,13 @@ GB_DO_READ:
     bgez $at, GB_DO_READ_REGISTERS # if ADDR >= 0xFE00
 
     srl $at, ADDR, 12 # load bank in $at
-    andi ADDR, ADDR, 0xFFF # keep offset in ADDR
     sll $at, $at, 2 # word align the memory map offset
     add $at, $at, Memory # lookup start of bank in array at Memory
     lw $at, 0($at) # load start of memory bank
-    add ADDR, ADDR, $at # use address relative to memory bank
+    andi $v0, ADDR, 0xFFF # keep offset in ADDR
+    add $at, $v0, $at # use address relative to memory bank
     jr $ra
-    lbu $v0, 0(ADDR) # load the byte
+    lbu $v0, 0($at) # load the byte
 
 ######################
 # Reads the ADDR Value in the range 0xFE00-0xFFFF
@@ -979,10 +979,10 @@ GB_DO_READ_REGISTERS:
 
 _GB_DO_READ_REGISTERS_DIRECT:
     li $at, MEMORY_MISC_START-MM_REGISTER_START
-    add ADDR, $at, ADDR # ADDR relative to MISC memory
-    add ADDR, Memory, ADDR # Relative to memory
+    add $at, $at, ADDR # ADDR relative to MISC memory
+    add $at, Memory, $at # Relative to memory
     jr $ra
-    lbu $v0, 0(ADDR)
+    lbu $v0, 0($at)
 
 _GB_DO_READ_SOUND:
     addi $sp, $sp, -8

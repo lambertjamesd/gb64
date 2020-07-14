@@ -44,18 +44,18 @@ GB_INC_HL_ADDR:
     jal GB_DO_READ
     or ADDR, ADDR, GB_L # write lower address
     jal GB_INC # call increment
-    addi Param0, $v0, 0 # move loaded value to call parameter
-    j DECODE_NEXT
-    sb Param0, 0(ADDR) # use same ADDR calculated in GB_DO_READ
+    move Param0, $v0 # move loaded value to call parameter
+    j GB_DO_WRITE
+    move VAL, Param0
 GB_DEC_HL_ADDR:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     sll ADDR, GB_H, 8 # write upper address
     jal GB_DO_READ
     or ADDR, ADDR, GB_L # write lower address
     jal GB_DEC # call decrement
-    addi Param0, $v0, 0 # move loaded value to call parameter
-    j DECODE_NEXT
-    sb Param0, 0(ADDR) # use same ADDR calculated in GB_DO_READ
+    move Param0, $v0 # move loaded value to call parameter
+    j GB_DO_WRITE
+    move VAL, Param0
 GB_LD_HL_ADDR_D8:
     jal READ_NEXT_INSTRUCTION # read immediate value
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
