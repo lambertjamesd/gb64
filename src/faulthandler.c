@@ -32,9 +32,6 @@ void dumpThreadInfo(OSThread *targetThread)
     DEBUG_PRINT_F("  ra=0x%x\n", (u32)targetThread->context.ra);
     DEBUG_PRINT_F("  cause=0x%x\n", targetThread->context.cause);
     DEBUG_PRINT_F("  version=abff1e2acb\n");
-    DEBUG_PRINT_F("  0x%x\n", (u32)targetThread->context.t4);
-    DEBUG_PRINT_F("  0x%x\n", (u32)targetThread->context.at);
-    DEBUG_PRINT_F("  0x%x\n", (u32)targetThread->context.v0);
 }
 
 static void faultHandlerProc(void* arg)

@@ -110,9 +110,9 @@ char* getROMBank(struct ROMLayout* romLayout, int bankIndex)
 {
     struct VirtualBank *useBank;
 
-    if (bankIndex < 0)
+    if (bankIndex <= 0)
     {
-        bankIndex = 0;
+        return romLayout->mainBank;
     }
     else if (bankIndex >= romLayout->romBankCount)
     {
