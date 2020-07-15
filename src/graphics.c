@@ -147,8 +147,8 @@ void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, i
     *spriteCount = currentOutput;
 }
 
-void applyGrayscalePallete() {
-    memCopy(gScreenPalette, gGameboy.memory.vram.colorPalettes, sizeof(gScreenPalette));
+void applyGrayscalePallete(struct GraphicsState* state) {
+    memCopy(gScreenPalette + state->palleteWriteIndex, gGameboy.memory.vram.colorPalettes, sizeof(gScreenPalette));
 }
 
 static long gScreenScales[ScreenScaleSettingCount] = {
@@ -205,7 +205,7 @@ void initGraphicsState(
     }
     else
     {
-        applyGrayscalePallete();
+        applyGrayscalePallete(state);
     }
 
     gPalleteDirty = 1;

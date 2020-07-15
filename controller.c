@@ -25,6 +25,7 @@ OSContPad	controllerdata[MAXCONTROLLERS];
 OSContPad	*validcontrollerdata[MAXCONTROLLERS];
 int		activeControllers[MAXCONTROLLERS];
 int		numControllers=0;
+u16	    gLastButton[MAXCONTROLLERS];
 
 /*
  * Return how many controllers are connected
@@ -70,7 +71,6 @@ OSContPad **ReadController(int oneshot)
 {
     int 	i;
     u16		button;
-    static u16	lastbutton[MAXCONTROLLERS];
 
     if (osRecvMesg(&controllerMsgQ, NULL, OS_MESG_NOBLOCK) != -1) {
     	osContGetReadData(controllerdata);
@@ -80,9 +80,14 @@ OSContPad **ReadController(int oneshot)
     for (i=0; i<numControllers; i++) {
 	button = validcontrollerdata[i]->button;
 	validcontrollerdata[i]->button = 
-		button & (~lastbutton[i] | ~oneshot);
-	lastbutton[i]=button;
+		button & (~gLastButton[i] | ~oneshot);
+	gLastButton[i]=button;
     }
 
     return validcontrollerdata;
+}
+
+extern u16 ReadLastButton(int index)
+{
+    return gLastButton[index];
 }

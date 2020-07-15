@@ -92,14 +92,13 @@ game(void)
      */
     /*osSyncPrintf("Use the L button and crosshair for menu options.\n");*/
     while (1) {
+		lastButton = ReadLastButton(0);
 		pad = ReadController(0);
 
         if ((pad[0]->button & L_CBUTTONS) && (~lastButton & L_CBUTTONS) && (pad[0]->button & R_TRIG) && (pad[0]->button & L_TRIG))
         {
             useDebugger(&gGameboy.cpu, &gGameboy.memory);
         }
-
-		lastButton = pad[0]->button;
 
 		u32 currentTime = osGetCount();
 		u32 frameTime = currentTime - lastTime;

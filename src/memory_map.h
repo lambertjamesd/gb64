@@ -25,6 +25,8 @@
 #define REGISTER_WRITER_COUNT   0x08
 
 #define REG_JOYP        0xFF00
+#define REG_SERIAL_DATA 0xFF01
+#define REG_SERIAL      0xFF02
 #define _REG_JOYSTATE   0xFF03
 #define REG_DIV         0xFF04 
 #define REG_TIMA        0xFF05 

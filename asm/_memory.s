@@ -142,17 +142,19 @@ _GB_WRITE_INTERRUPTS_ENABLED:
 ########################
 
 _GB_WRITE_REG_0X:
-    ori $at, $zero, REG_JOYP
+    li $at, REG_JOYP
     beq ADDR, $at, _GB_WRITE_REG_JOYP
-    ori $at, $zero, REG_DIV
+    li $at, REG_SERIAL
+    beq ADDR, $at, _GB_WRITE_REG_SERIAL
+    li $at, REG_DIV
     beq ADDR, $at, _GB_WRITE_REG_DIV
-    ori $at, $zero, REG_TIMA
+    li $at, REG_TIMA
     beq ADDR, $at, _GB_WRITE_REG_TIMA
-    ori $at, $zero, REG_TMA
+    li $at, REG_TMA
     beq ADDR, $at, _GB_WRITE_REG_TMA
-    ori $at, $zero, REG_TAC
+    li $at, REG_TAC
     beq ADDR, $at, _GB_WRITE_REG_TAC
-    ori $at, $zero, REG_INTERRUPTS_REQUESTED
+    li $at, REG_INTERRUPTS_REQUESTED
     beq ADDR, $at, _GB_WRITE_REG_INT_REQ
     nop
     jr $ra
@@ -174,6 +176,42 @@ _GB_WRITE_REG_JOYP_NEXT:
 _GB_WRITE_REG_JOYP_FINISH:
     jr $ra
     write_register_direct VAL, REG_JOYP 
+
+_GB_WRITE_REG_SERIAL:
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+    andi $at, VAL, 0x80
+    beqz $at, _GB_WRITE_REG_SERIAL_END
+    nop
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_SERIAL_RECIEVE
+
+    li TMP2, 1024
+    lbu $at, CPU_STATE_GBC(CPUState)
+    beqz $at, _GB_WRITE_REG_SERIAL_SCHEDULE
+    
+    andi $at, VAL, 0x02
+    beqz $at, _GB_WRITE_REG_SERIAL_CHECK_SPEED
+    nop
+    srl TMP2, TMP2, 1
+
+_GB_WRITE_REG_SERIAL_CHECK_SPEED:
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    beqz $at, _GB_WRITE_REG_SERIAL_SCHEDULE
+    nop
+    srl TMP2, TMP2, 1
+_GB_WRITE_REG_SERIAL_SCHEDULE:
+    add TMP2, TMP2, CYCLES_RUN
+    sll TMP2, TMP2, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_SERIAL_RECIEVE
+_GB_WRITE_REG_SERIAL_END:
+    write_register_direct VAL, REG_SERIAL
+    lw $ra, 0($sp)
+    jr $ra
+    addi $sp, $sp, 8
+
     
 _GB_WRITE_REG_DIV:
     # DIV = (((CYCLES_RUN << 2) + _REG_DIV_OFFSET) >> 8) & 0xFFFF
@@ -466,7 +504,6 @@ _GB_WRITE_REG_LCDC_OFF:
     
     read_register_direct $at, REG_LCDC_STATUS
     andi $at, $at, %lo(~(REG_LCDC_STATUS_MODE | REG_LCDC_STATUS_LYC))
-    ori $at, $at, REG_LCDC_STATUS_MODE_1
     # todo check if LYC is 0
     write_register_direct $at, REG_LCDC_STATUS # set mode to 1
     write_register_direct $zero, REG_LY # set LY to 0
