@@ -287,7 +287,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     }
 
     if (gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
-        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] && !(gameboy->settings.flags & GB_SETTINGS_FLAGS_DISABLE_GBC)
+        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT && !(gameboy->settings.flags & GB_SETTINGS_FLAGS_DISABLE_GBC)
     ) {
         gameboy->cpu.gbc = 1;
 
