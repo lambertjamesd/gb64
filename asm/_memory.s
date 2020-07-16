@@ -180,17 +180,20 @@ _GB_WRITE_REG_JOYP_FINISH:
 _GB_WRITE_REG_SERIAL:
     addi $sp, $sp, -8
     sw $ra, 0($sp)
-    andi $at, VAL, 0x80
+    andi $at, VAL, REG_SERIAL_TRANSFER
     beqz $at, _GB_WRITE_REG_SERIAL_END
     nop
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_SERIAL_RECIEVE
 
+    andi $at, VAL, REG_SERIAL_CLOCK
+    beqz $at, _GB_WRITE_REG_SERIAL_END
+
     li TMP2, 1024
     lbu $at, CPU_STATE_GBC(CPUState)
     beqz $at, _GB_WRITE_REG_SERIAL_SCHEDULE
     
-    andi $at, VAL, 0x02
+    andi $at, VAL, REG_SERIAL_SPEED
     beqz $at, _GB_WRITE_REG_SERIAL_CHECK_SPEED
     nop
     srl TMP2, TMP2, 1

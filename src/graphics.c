@@ -7,12 +7,14 @@
 #include "../memory.h"
 #include "gameboy.h"
 
+Gfx* gCurrentScreenDL;
+
 union {
     u8 buffer[GB_SCREEN_W * GB_SCREEN_H];
     long long unusedAlign;
 } gScreenBuffer;
 
-Gfx* gCurrentScreenDL;
+Gfx gDrawScreen[0x100] = {gsSPEndDisplayList()};
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
 
@@ -40,7 +42,6 @@ u16 gScreenPalette[MAX_PALLETE_SIZE];
         (scaleInv >> 6), (scaleInv >> 6)                                    \
     )
 
-Gfx gDrawScreen[0x100] = {gsSPEndDisplayList()};
 
 #define WRITE_PIXEL(pixelIndex, x, targetMemory, spriteBuffer, maxX, priority, palleteOffset)    \
     if (priority <= 0 && (priority < 0 || (spriteBuffer[x] && (!(spriteBuffer[x] & SPRITE_FLAGS_PRIORITY) || !pixelIndex)))) \
@@ -148,7 +149,7 @@ void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, i
 }
 
 void applyGrayscalePallete(struct GraphicsState* state) {
-    memCopy(gScreenPalette + state->palleteWriteIndex, gGameboy.memory.vram.colorPalettes, sizeof(gScreenPalette));
+    memCopy(&gScreenPalette[state->palleteWriteIndex], gGameboy.memory.vram.colorPalettes, sizeof(u16) * PALETTE_COUNT);
 }
 
 static long gScreenScales[ScreenScaleSettingCount] = {
@@ -192,20 +193,6 @@ void initGraphicsState(
     else
     {
         state->spriteCount = 0;
-    }
-
-    if (gbc)
-    {
-        int i;
-
-        for (i = 0; i < PALETTE_COUNT; ++i)
-        {
-            gScreenPalette[i] = GBC_TO_N64_COLOR(gGameboy.memory.vram.colorPalettes[i]);
-        }
-    }
-    else
-    {
-        applyGrayscalePallete(state);
     }
 
     gPalleteDirty = 1;
@@ -264,7 +251,7 @@ void prepareGraphicsPallete(struct GraphicsState* state)
         }
         else
         {
-
+            applyGrayscalePallete(state);
         }
 
         state->palleteWriteIndex += PALETTE_COUNT;
@@ -282,14 +269,13 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     int currentSpriteIndex;
     int renderedSprites = 0;
     int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT * 2 : SPRITE_BASE_HEIGHT;
-    int maxSprites = state->gbc ? state->spriteCount : 10;
     u8* targetMemory = state->spriteIndexBuffer;
     zeroMemory(targetMemory, GB_SCREEN_W);
 
     currentSpriteIndex = 0;
     renderedSprites = 0;
 
-    for (currentSpriteIndex = 0; currentSpriteIndex < state->spriteCount && renderedSprites < maxSprites; ++currentSpriteIndex)
+    for (currentSpriteIndex = 0; currentSpriteIndex < state->spriteCount && renderedSprites < 10; ++currentSpriteIndex)
     {
         struct Sprite currentSprite = state->sortedSprites[currentSpriteIndex];
         int sourceX = 0;

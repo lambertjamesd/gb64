@@ -5,9 +5,9 @@
 #include "memory_map.h"
 #include "gameboy.h"
 
-#define MAX_PALLETE_SIZE (PALETTE_COUNT * GB_SCREEN_TILE_H)
-
 #define GB_SCREEN_TILE_H    20
+
+#define MAX_PALLETE_SIZE (PALETTE_COUNT * GB_SCREEN_TILE_H)
 
 #define GB_SCREEN_W         160
 #define GB_SCREEN_H         144
