@@ -459,7 +459,7 @@ void renderPixelRow(
             tileInfo = memory->vram.tilemap0Atts[tilemapIndex];
             tileSource = (tileInfo & TILE_ATTR_VRAM_BANK) ? memory->vram.gbcTiles : memory->vram.tiles;
 
-            if (lcdcReg & LCDC_BG_ENABLE)
+            if ((lcdcReg & LCDC_BG_ENABLE) || usingWindow)
             {
                 priority = (tileInfo & TILE_ATTR_PRIORITY) ? 1 : 0;
             }
