@@ -77,10 +77,10 @@ GB_JR:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     sll $v0, $v0, 24 # sign extend the bytes
     sra $v0, $v0, 24
-    jal SET_GB_PC
     add Param0, GB_PC, $v0
+    jal SET_GB_PC
+    andi Param0, Param0, 0xFFFF
     j DECODE_NEXT
-    nop
 GB_ADD_HL_DE:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     sll Param0, GB_D, 8 # load high order bits

@@ -132,7 +132,7 @@ game(void)
 			while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
 			{
 				handleGameboyInput(&gGameboy, pad[0]);
-				emulateFrame(&gGameboy, NULL);
+				emulateFrame(&gGameboy, 0);
 				pad = ReadController(0);
 				accumulatedTime -= CPU_TICKS_PER_FRAME;
 				--loop;
@@ -145,7 +145,7 @@ game(void)
 			}
 
 			handleGameboyInput(&gGameboy, pad[0]);
-			emulateFrame(&gGameboy, getColorBuffer());
+			emulateFrame(&gGameboy, 1);
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
 			finishAudioFrame(&gGameboy.memory);
 			++frames;

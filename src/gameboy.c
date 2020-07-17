@@ -342,7 +342,7 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
     }
 }
 
-void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
+void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 {
     struct GraphicsState graphicsState;
     int line;
@@ -352,7 +352,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
 
     screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
 
-    if (targetMemory && screenWasEnabled)
+    if (renderScreen && screenWasEnabled)
     {
         ly = READ_REGISTER_DIRECT(&gameboy->memory, REG_LY);
 
@@ -378,7 +378,7 @@ void emulateFrame(struct GameBoy* gameboy, void* targetMemory)
         {
             graphicsState.row = line;
 
-		    renderPixelRow(&gameboy->memory, &graphicsState, targetMemory);
+		    renderPixelRow(&gameboy->memory, &graphicsState);
             cyclesToRun += CYCLES_PER_LINE;
             cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
         }

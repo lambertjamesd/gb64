@@ -92,8 +92,7 @@ void initGraphicsState(
 
 void renderPixelRow(
     struct Memory* memory,
-    struct GraphicsState* state,
-    u16* memoryBuffer
+    struct GraphicsState* state
 );
 
 void finishScreen(struct GraphicsState* state);

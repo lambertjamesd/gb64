@@ -134,7 +134,7 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt);
 /**
  * if targetMemory is null then the drawing routines are skipped
  */
-void emulateFrame(struct GameBoy* gameboy, void* targetMemory);
+void emulateFrame(struct GameBoy* gameboy, bool targetMemory);
 
 void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad);
 void unloadBIOS(struct Memory* memory);
