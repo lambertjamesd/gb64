@@ -80,6 +80,7 @@
 #define REG_VBK         0xFF4F
 #define REG_VBK_MASK    0x1
 
+#define REG_UNLOAD_BIOS 0xFF50
 #define REG_HDMA5       0xFF55
 
 #define REG_SVBK        0xFF70

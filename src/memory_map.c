@@ -217,6 +217,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     memory->mbc = mbc;
     memory->rom = rom;
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
+
     
     if (!mbc) {
         DEBUG_PRINT_F("Bad MBC %X\n", rom->mainBank[GB_ROM_H_CART_TYPE]);
@@ -269,5 +270,6 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
 
     WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
     WRITE_REGISTER_DIRECT(memory, REG_NR52, 0xF0);
+    WRITE_REGISTER_DIRECT(memory, REG_UNLOAD_BIOS, 0x00);
     WRITE_REGISTER_DIRECT(memory, REG_HDMA5, 0xFF);
 }

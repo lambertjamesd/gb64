@@ -734,6 +734,11 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     sw $ra, 0x20($sp)
     sw $fp, 0x24($sp)
 
+    read_register_direct $at, REG_UNLOAD_BIOS
+    bnez $at, _GB_WRITE_REG_UNLOAD_BIOS_SKIP
+    li $at, 1
+    write_register_direct $at, REG_UNLOAD_BIOS
+
     call_c_fn unloadBIOS
     move $a0, Memory
 
@@ -775,6 +780,7 @@ _GB_WRITE_REG_UNLOAD_BIOS_CGB:
     li GB_L, 0x0D
     li GB_SP, 0xFFFE
 
+_GB_WRITE_REG_UNLOAD_BIOS_SKIP:
     jr $ra
     addi $sp, $sp, _WRITE_CALLBACK_FRAME_SIZE
 
