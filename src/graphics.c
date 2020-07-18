@@ -186,14 +186,7 @@ void initGraphicsState(
     int gbc
 )
 {
-    if (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_ENABLE)
-    {
-        prepareSprites(memory->misc.sprites, state->sortedSprites, &state->spriteCount, !gbc);
-    }
-    else
-    {
-        state->spriteCount = 0;
-    }
+    prepareSprites(memory->misc.sprites, state->sortedSprites, &state->spriteCount, !gbc);
 
     gPalleteDirty = 1;
     state->settings = *settings;
@@ -271,6 +264,11 @@ void renderSprites(struct Memory* memory, struct GraphicsState* state)
     int spriteHeight = (READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_SIZE) ? SPRITE_BASE_HEIGHT * 2 : SPRITE_BASE_HEIGHT;
     u8* targetMemory = state->spriteIndexBuffer;
     zeroMemory(targetMemory, GB_SCREEN_W);
+
+    if (!(READ_REGISTER_DIRECT(memory, REG_LCDC) & LCDC_OBJ_ENABLE))
+    {
+        return;
+    }
 
     currentSpriteIndex = 0;
     renderedSprites = 0;
