@@ -281,7 +281,7 @@ _QUEUE_NEXT_MODE_0:
     add TMP2, TMP2, TMP4 # relative to the last event
     sll TMP2, TMP2, 8
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
-    slti $at, TMP3, GB_SCREEN_H
+    slti $at, TMP3, GB_SCREEN_H-1
     bnez $at, _ENTER_MODE_0_NEXT_MODE
     nop
     li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
@@ -292,7 +292,7 @@ _ENTER_MODE_0_NEXT_MODE:
     nop
 ENTER_MODE_1:
     read_register_direct TMP3, REG_LY
-    li $at, GB_SCREEN_H
+    li $at, GB_SCREEN_H-1
     bne $at, TMP3, _MODE_1_SKIP_V_BLANK
     nop
     # request v blank interrupt
