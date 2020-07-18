@@ -442,7 +442,7 @@ void renderPixelRow(
     {
         if (x >= wX)
         {
-            offsetX = x - wX;
+            offsetX = -wX;
             bgY = state->winY;
             tilemapRow = (bgY >> 3) * TILEMAP_W;
             tilemapRow += (lcdcReg & LCDC_WIN_TILE_MAP) ? 1024 : 0;
