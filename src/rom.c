@@ -116,7 +116,7 @@ char* getROMBank(struct ROMLayout* romLayout, int bankIndex)
     }
     else if (bankIndex >= romLayout->romBankCount)
     {
-        bankIndex = romLayout->romBankCount - 1;
+        bankIndex = bankIndex % romLayout->romBankCount;
     }
 
     useBank = romLayout->romBankToVirtualBank[bankIndex-1];

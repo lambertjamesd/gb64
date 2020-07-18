@@ -219,7 +219,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
     
     if (!mbc) {
-        DEBUG_PRINT_F("Bad MBC %X\n", mbcTypes[index].id);
+        DEBUG_PRINT_F("Bad MBC %X\n", rom->mainBank[GB_ROM_H_CART_TYPE]);
         memory->bankSwitch = nopBankSwitch;
     } else if (!mbc->bankSwitch) {
         DEBUG_PRINT_F("TODO MBC %X\n", mbcTypes[index].id);
