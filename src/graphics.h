@@ -7,7 +7,7 @@
 
 #define GB_SCREEN_TILE_H    20
 
-#define MAX_PALLETE_SIZE (PALETTE_COUNT * GB_SCREEN_TILE_H)
+#define MAX_PALLETE_SIZE (PALETTE_COUNT * GB_SCREEN_H / 4)
 
 #define GB_SCREEN_W         160
 #define GB_SCREEN_H         144
@@ -61,7 +61,7 @@
 // GGGRRRRR 1BBBBBGG to RRRRRGGGGGBBBBB1
 #define GBC_TO_N64_COLOR(color) (((color) << 3 & 0xF100) | ((color) >> 7 & 0x01C0 >> 7) | ((color) << 9 & 0x0600) | ((color) >> 1 & 0x003E) | 0x1)
 
-extern u16 gScreenPalette[PALETTE_COUNT * GB_SCREEN_TILE_H];
+extern u16 gScreenPalette[MAX_PALLETE_SIZE];
 extern Gfx gDrawScreen[];
 
 struct GraphicsState {
