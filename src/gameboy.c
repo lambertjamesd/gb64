@@ -224,35 +224,41 @@ int loadGameboyState(struct GameBoy* gameboy)
 int saveGameboyState(struct GameBoy* gameboy)
 {    
     if (osFlashAllErase()) {
+        DEBUG_PRINT_F("Save fail clear\n");
         return -1;
     }
     int offset = 0;
     int sectionSize = sizeof(struct GameboySettings);
     if (saveToFlash(&gameboy->settings, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 0 %X $X\n", offset, sectionSize);
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
     if (saveToFlash(gameboy->memory.cartRam, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 1 %X $X\n", offset, sectionSize);
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = sizeof(struct GraphicsMemory);
     if (saveToFlash(&gameboy->memory.vram, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = MAX_RAM_SIZE;
     if (saveToFlash(gameboy->memory.internalRam, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 3 %X $X\n", offset, sectionSize);
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = sizeof(struct MiscMemory);
     if (saveToFlash(&gameboy->memory.misc, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 4 %X $X\n", offset, sectionSize);
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
@@ -262,6 +268,7 @@ int saveGameboyState(struct GameBoy* gameboy)
     miscData.audioState = gameboy->memory.audio;
     sectionSize = sizeof(struct MiscSaveStateData);
     if (saveToFlash(&miscData, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 5 %X $X\n", offset, sectionSize);
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
@@ -381,6 +388,7 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 		    renderPixelRow(&gameboy->memory, &graphicsState);
             cyclesToRun += CYCLES_PER_LINE;
             cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+
         }
 
         finishScreen(&graphicsState);

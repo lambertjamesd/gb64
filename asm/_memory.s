@@ -486,14 +486,13 @@ _GB_WRITE_REG_LCDC_ON:
 
     read_register_direct $at, REG_LCDC_STATUS
     andi $at, $at, %lo(~REG_LCDC_STATUS_MODE)
-    ori $at, $at, REG_LCDC_STATUS_MODE_2
-    write_register_direct $at, REG_LCDC_STATUS # set mode to 2
+    ori $at, $at, REG_LCDC_STATUS_MODE_1
+    write_register_direct $at, REG_LCDC_STATUS # set mode to 1
 
-    # set up next stopping point to be the current cycle
-    # with LY at the last line to update the current
-    # lcd state on DECODE_NEXT
-    li $at, GB_SCREEN_LINES - 1
-    write_register_direct $at, REG_LY # set LY to 0
+    # setting status to 1 with ly = 0
+    # will result in the screen timing starting
+    # correctly
+    write_register_direct $zero, REG_LY # set LY to 0
 
     sll TMP2, CYCLES_RUN, 8
     jal QUEUE_STOPPING_POINT
@@ -518,6 +517,8 @@ _GB_WRITE_REG_LCDC_OFF:
     li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_2
     jal REMOVE_STOPPING_POINT # update stopping point
     li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_3
+    jal REMOVE_STOPPING_POINT # update stopping point
+    li Param0, CPU_STOPPING_POINT_TYPE_SCREEN_FINAL_LINE
     lw $ra, 0($sp)
     addi $sp, $sp, 8 
 _GB_WRITE_REG_LCDC_WRITE:

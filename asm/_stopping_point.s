@@ -239,6 +239,7 @@ DEQUEUE_STOPPING_POINT_J_TABLE:
     .word HANDLE_DEQUEUE_EXIT, ENTER_MODE_0, ENTER_MODE_1, ENTER_MODE_2, ENTER_MODE_3
     .word HANDLE_DEQUEUE_TIMER_RESET, HANDLE_DEQUEUE_INTERRUPT, HANDLE_DEQUEUE_EXIT
     .word HANDLE_DMA_DEQUEUE, HANDLE_DEBUGGER_DEQUEUE, HANDLE_SERIAL_FINISH
+    .word ENTER_LAST_LINE
 DEQUEUE_STOPPING_POINT_J_TABLE_END: 
 .text
 
@@ -303,25 +304,53 @@ _MODE_1_SKIP_V_BLANK:
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
-    # request interrupt
+    # set mode to 1
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 1
+
+    # default to loading the stats to the next line
+    li TMP2, REG_LCDC_STATUS_MODE_1_CYCLES
+    li $v1, CPU_STOPPING_POINT_TYPE_SCREEN_1
+    # check if this is the final v blank scanline
+    slti $at, TMP3, GB_SCREEN_LINES - 1
+    bnez $at, _ENTER_MODE_1_NEXT_MODE 
+    addi TMP3, TMP3, 1 #increment ly
+    # cycle to setting up the last scanline
+    li TMP2, REG_LCDC_STATUS_MODE_1_CYCLES - REG_LCDC_STATUS_MODE_LAST_LINE
+    li $v1, CPU_STOPPING_POINT_TYPE_SCREEN_FINAL_LINE
+_ENTER_MODE_1_NEXT_MODE:
+    #check for double speed mode
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
-    beqz $at, _QUEUE_NEXT_MODE_1
-    li TMP2, REG_LCDC_STATUS_MODE_1_CYCLES
-    sll TMP2, TMP2, 1
-_QUEUE_NEXT_MODE_1:
+    srl $at, $at, 7
+    sllv TMP2, TMP2, $at
+
+    # set clocks relative to last event
     add TMP2, TMP2, TMP4
     sll TMP2, TMP2, 8
-    slti $at, TMP3, GB_SCREEN_LINES - 1
-    li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_1
-    bnez $at, _ENTER_MODE_1_NEXT_MODE
-    addi TMP3, TMP3, 1
-    li TMP4, CPU_STOPPING_POINT_TYPE_SCREEN_2
-_ENTER_MODE_1_NEXT_MODE:
     jal QUEUE_STOPPING_POINT
+    add TMP2, TMP2, $v1
+    j CHECK_LSTAT_INTERRUPT
+    write_register_direct TMP3, REG_LY
+
+ENTER_LAST_LINE:
+    read_register_direct TMP3, REG_LY
+    # load current LCDC status flag
+    jal CHECK_LCDC_STAT_FLAG
+    read_register_direct Param0, REG_LCDC_STATUS
+    
+    # check for double speed mode
+    read_register_direct $at, REG_KEY1
+    andi $at, $at, REG_KEY1_CURRENT_SPEED
+    srl $at, $at, 7
+    li TMP2, REG_LCDC_STATUS_MODE_LAST_LINE
+    sllv TMP2, TMP2, $at
+
+    li TMP3, 0
     add TMP2, TMP2, TMP4
+    sll TMP2, TMP2, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_2
     j CHECK_LSTAT_INTERRUPT
     write_register_direct TMP3, REG_LY
     
@@ -330,19 +359,43 @@ ENTER_MODE_2:
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG
     read_register_direct Param0, REG_LCDC_STATUS
+
+    # previous mode can either be 1 or 0
+    # if it is 1, then don't increment
+    andi $at, Param0, 0x1
+    xori $at, $at, 0x1
+
+    # check if this is the start of new frame
+    bnez $at, _QUEUE_NEXT_MODE_2_SKIP_STOP
+    add TMP3, TMP3, $at
+
+    lbu $at, CPU_STATE_RUN_UNTIL_FRAME(CPUState)
+    beqz $at, _QUEUE_NEXT_MODE_2_SKIP_STOP
+    nop
+
+    jal REMOVE_STOPPING_POINT
+    li Param0, CPU_STOPPING_POINT_TYPE_EXIT
+    
+    read_register_direct Param0, REG_LCDC_STATUS # reload status into Param0
+    li TMP3, 0
+    
+    sll TMP2, CYCLES_RUN, 8
+    jal QUEUE_STOPPING_POINT
+    addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_EXIT # signal to stop running cpu
+_QUEUE_NEXT_MODE_2_SKIP_STOP:
     andi Param0, Param0, %lo(~REG_LCDC_STATUS_MODE)
     addi Param0, Param0, 2
+    
     read_register_direct $at, REG_KEY1
     andi $at, $at, REG_KEY1_CURRENT_SPEED
-    beqz $at, _QUEUE_NEXT_MODE_2
+    srl $at, $at, 7
     li TMP2, REG_LCDC_STATUS_MODE_2_CYCLES
-    sll TMP2, TMP2, 1
-_QUEUE_NEXT_MODE_2:
+    sllv TMP2, TMP2, $at
+
     add TMP2, TMP2, TMP4
     sll TMP2, TMP2, 8
     jal QUEUE_STOPPING_POINT
     addi TMP2, TMP2, CPU_STOPPING_POINT_TYPE_SCREEN_3
-    addi TMP3, TMP3, 1
     slti $at, TMP3, GB_SCREEN_LINES
     bnez $at, _ENTER_MODE_2_SKIP_SCREEN_START
     nop
