@@ -14,7 +14,7 @@ union {
     long long unusedAlign;
 } gScreenBuffer;
 
-Gfx gDrawScreen[0x100] = {gsSPEndDisplayList()};
+Gfx gDrawScreen[0x280] = {gsSPEndDisplayList()};
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
 
