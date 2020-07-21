@@ -4,6 +4,7 @@
         <title>GB64</title>
         <script src="gb.n64.js"></script>
         <script src="crc.js"></script>
+        <script src="https://stuk.github.io/jszip/dist/jszip.js"></script>
         <style>
             .file-input{
                 display: flex;
@@ -94,6 +95,28 @@
             .placeholder {
                 font-style: italic;
                 opacity: 0.5;
+            }
+
+            .drop-preview {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: rgba(0, 0, 0, 0.5);
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                pointer-events: none;
+                visibility: hidden;
+            }
+
+            .drop-prompt {
+                padding: 40px;
+                font-size: 36px;
+                background: black;
+                color: white;
+                border: 2px dashed white;
             }
         </style>
         <script>
@@ -232,7 +255,7 @@
                     const crc = recalcCRC(result);
                     outputCRC(romName, crc[0]);
 
-                    triggerDownload(`${romName}.n64`, result);
+                    return result;
                 } 
                 catch (error)
                 {
@@ -254,9 +277,54 @@
                 });
             }
 
-            async function convertROM() {
+            async function convertROMsAsFiles(roms) {
                 const dmgBoot = document.querySelector('#dmgBoot').files[0];
                 const cgbBios = document.querySelector('#cgbBios').files[0];
+                const dmgBootFile = dmgBoot && await readAsArrayBuffer(dmgBoot);
+                const cgbBiosFile = cgbBios && await readAsArrayBuffer(cgbBios);
+
+                const zip = new JSZip();
+                    const duplicateFiles = new Set();
+                    for (let rom of roms)
+                    {
+                        const filename = rom.name;
+                        const extensionIndex = filename.lastIndexOf('.');
+                        const romName = extensionIndex == -1 ? filename : filename.slice(0, extensionIndex);
+    
+                        const result = convert(
+                            romName,
+                            await readAsArrayBuffer(rom), 
+                            dmgBootFile, 
+                            cgbBiosFile
+                        );
+
+                        if (result) {
+                            if (roms.length == 1) {
+                                triggerDownload(`${romName}.n64`, result);
+                            } else {
+                                let index = 2;
+                                let finalRomName = romName;
+
+                                while (duplicateFiles.has(finalRomName)) {
+                                    finalRomName = `${romName} (${index})`;
+                                    ++index;
+                                }
+
+                                duplicateFiles.add(finalRomName);
+
+                                zip.file(`${finalRomName}.n64`, result);
+                            }
+                        }
+                    }
+
+                    if (roms.length > 1) {
+                        await triggerDownload(`roms.zip`, await zip.generateAsync({
+                            type: 'uint8array',
+                        }));
+                    }
+            }
+
+            async function convertROM() {
                 const roms = document.querySelector('#rom').files;
 
                 if (!roms || roms.length == 0)
@@ -265,18 +333,7 @@
                 }
                 else
                 {
-                    for (let rom of roms)
-                    {
-                        const filename = rom.name;
-                        const extensionIndex = filename.lastIndexOf('.');
-    
-                        convert(
-                            extensionIndex == -1 ? filename : filename.slice(0, extensionIndex),
-                            await readAsArrayBuffer(rom), 
-                            dmgBoot && await readAsArrayBuffer(dmgBoot), 
-                            cgbBios && await readAsArrayBuffer(cgbBios)
-                        );
-                    }
+                    convertROMsAsFiles(roms);
                 }
             }
         </script>
@@ -396,5 +453,49 @@
                 </div>
             </div>
         </div>
+        <div class="drop-preview">
+            <div class="drop-prompt">
+                Drop Files to Convert
+            </div>
+        </div>
+        <script>
+            const dropArea = document.querySelector('.body-wrapper');
+            const dropPreview = document.querySelector('.drop-preview');
+
+            dropArea.addEventListener('dragenter', function (event) {
+                dropPreview.style.visibility = 'visible';
+                event.preventDefault();
+                event.stopPropagation();
+            }, false);
+            dropArea.addEventListener('dragleave', function (event) {
+                dropPreview.style.visibility = 'hidden';
+                event.preventDefault();
+                event.stopPropagation();
+            }, false);
+            dropArea.addEventListener('dragover', function (event) {
+                dropPreview.style.visibility = 'visible';
+                event.preventDefault();
+                event.stopPropagation();
+
+            }, false);
+            dropArea.addEventListener('drop', async function (event) {
+                dropPreview.style.visibility = 'hidden';
+                event.preventDefault();
+                event.stopPropagation();
+                console.log(event.files);
+
+                const dataTransfer = event.dataTransfer;
+                
+                if (!dataTransfer) {
+                    reportError('Failed to convert roms, try using chrome instead');
+                    return;
+                }
+                try {
+                    await convertROMsAsFiles(dataTransfer.files);
+                } catch (error) {
+                    reportError(error.toString());
+                }
+            }, false);
+        </script>
     </body>
 </html>
