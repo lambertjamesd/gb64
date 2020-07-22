@@ -42,6 +42,8 @@ void initAudio(struct AudioState* audioState, int sampleRate, int frameRate)
 		audioState->buffers[index] = malloc(sizeof(struct AudioSample) * audioState->samplesPerBuffer);
 		zeroMemory(audioState->buffers[index], sizeof(struct AudioSample) * audioState->samplesPerBuffer);
 	}
+
+	audioState->freqLimit = 0x20000 / sampleRate;
 }
 
 /*
@@ -50,9 +52,10 @@ freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency fro
 sampleRate = samples/second - the number of samples per second the output is expecting
 ? steps/sample = steps_cycle * freq / sampleRate
 */
-int squareCycleStep(int frequency, int sampleRate)
+
+int squareCycleStep(int frequency, int sampleRate, int freqLimit)
 {
-	if (frequency < 0x800)
+	if (frequency < 0x800 - freqLimit)
 	{
 		return (int)(0x200000000L / ((0x800L - (frequency)) * (sampleRate)));
 	}
@@ -72,7 +75,7 @@ void renderSquareWave(
 {
     int sampleIndex;
 	
-	int cycleStep = squareCycleStep(sound->frequency, state->sampleRate);
+	int cycleStep = squareCycleStep(sound->frequency, state->sampleRate, state->freqLimit);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -89,12 +92,12 @@ void renderSquareWave(
 
 /*
 steps_cycle = 0x10000 steps/cycle - or the number of steps to overflow the cycleProgress
-freq = (0x20000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
+freq = (0x10000 / (2048 - x)) cycles/second - how to calculate the frequency from the gb sound register 
 sampleRate = samples/second - the number of samples per second the output is expecting
 ? steps/sample = steps_cycle * freq / sampleRate
 */
-int pcmCycleStep(int frequency, int sampleRate) {
-	if (frequency < 0x800)
+int pcmCycleStep(int frequency, int sampleRate, int freqLimit) {
+	if (frequency < 0x800 - freqLimit / 2)
 	{
 		return (int)(0x100000000L / ((0x800L - (frequency)) * (sampleRate)));
 	}
@@ -113,7 +116,7 @@ void renderPatternWave(
 	int leftVolume
 ) {
     int sampleIndex;
-	int cycleStep = pcmCycleStep(sound->frequency, state->sampleRate);
+	int cycleStep = pcmCycleStep(sound->frequency, state->sampleRate, state->freqLimit);
     struct AudioSample* output = state->buffers[state->currentWriteBuffer];
 
     for (sampleIndex = state->currentSampleIndex; sampleIndex < untilSamples; ++sampleIndex)
@@ -199,7 +202,10 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		int leftVolume = (READ_REGISTER_DIRECT(memory, REG_NR50) >> 4) & 0x7;
 		int rightVolume = (READ_REGISTER_DIRECT(memory, REG_NR50) >> 0) & 0x7;
 		
-		if (memory->audio.sound1.envelope.volume && (stereoSelect & 0x11))
+		if (
+			memory->audio.sound1.envelope.volume && 
+			memory->audio.sound1.length && 
+			(stereoSelect & 0x11))
 		{
 			renderSquareWave(
 				&gAudioState,
@@ -210,7 +216,10 @@ void renderAudio(struct Memory* memory, int untilSamples)
 			);
 		}
 		
-		if (memory->audio.sound2.envelope.volume && (stereoSelect & 0x22))
+		if (
+			memory->audio.sound2.envelope.volume && 
+			memory->audio.sound2.length &&
+			(stereoSelect & 0x22))
 		{
 			renderSquareWave(
 				&gAudioState,
@@ -221,7 +230,10 @@ void renderAudio(struct Memory* memory, int untilSamples)
 			);
 		}
 
-		if (memory->audio.pcmSound.volume && (stereoSelect & 0x33))
+		if (
+			memory->audio.pcmSound.volume && 
+			memory->audio.pcmSound.length &&
+			(stereoSelect & 0x33))
 		{
 			renderPatternWave(
 				memory,
@@ -234,6 +246,7 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		}
 
 		if (memory->audio.noiseSound.envelope.volume && 
+			memory->audio.noiseSound.length && 
 			memory->audio.noiseSound.sampleStep && 
 			(stereoSelect & 0x44)
 		)
@@ -348,6 +361,7 @@ void tickAudio(struct Memory* memory, int untilCyles)
 	if (!(READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED))
 	{
 		audio->pcmSound.length = 0;
+		audio->pcmSound.volume = 0;
 	}
 
 	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
