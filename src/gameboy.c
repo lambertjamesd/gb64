@@ -55,6 +55,7 @@ int loadFromFlash(void* target, int sramOffset, int length)
 
     if (length / FLASH_BLOCK_SIZE > 0)
     {
+        osInvalDCache(target, (length & ~0x7F));
         if (osFlashReadArray(
                 &dmaIoMesgBuf, 
                 OS_MESG_PRI_NORMAL, 
@@ -67,11 +68,11 @@ int loadFromFlash(void* target, int sramOffset, int length)
             return -1;
         }
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        osInvalDCache(target, (length & ~0x7F));
     }
 
     if (length % FLASH_BLOCK_SIZE != 0)
     {
+        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
         if (osFlashReadArray(
                 &dmaIoMesgBuf, 
                 OS_MESG_PRI_NORMAL, 
@@ -84,9 +85,9 @@ int loadFromFlash(void* target, int sramOffset, int length)
             return -1;
         }
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
         memCopy((char*)target + (length & ~0x7F), gFlashTmpBuffer, length % FLASH_BLOCK_SIZE);
     }
+
     return 0;
 }
 
@@ -200,6 +201,7 @@ int loadGameboyState(struct GameBoy* gameboy)
     {
         return -1;
     }
+
     gameboy->cpu = miscData.cpu;
     gameboy->memory.audio = miscData.audioState;
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
@@ -209,13 +211,14 @@ int loadGameboyState(struct GameBoy* gameboy)
     if (gameboy->cpu.gbc)
     {
         int bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_VBK) & REG_VBK_MASK;
-        gameboy->memory.memoryMap[0x8] = gameboy->memory.vramBytes + bank * MEMORY_MAP_SEGMENT_SIZE * 2;
+        gameboy->memory.memoryMap[0x8] = gameboy->memory.vramBytes + (bank ? MEMORY_MAP_SEGMENT_SIZE * 2 : 0);
         gameboy->memory.memoryMap[0x9] = gameboy->memory.memoryMap[0x8] + MEMORY_MAP_SEGMENT_SIZE;
 
         bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_SVBK) & REG_SVBK_MASK;
         gameboy->memory.memoryMap[0xD] = bank ?
-            gameboy->memory.internalRam + bank * MEMORY_MAP_SEGMENT_SIZE * 2 :
+            gameboy->memory.internalRam + bank * MEMORY_MAP_SEGMENT_SIZE :
             gameboy->memory.internalRam + MEMORY_MAP_SEGMENT_SIZE;
+        gameboy->memory.memoryMap[0xF] = gameboy->memory.memoryMap[0xD];
     }
 
     return 0;
@@ -272,6 +275,10 @@ int saveGameboyState(struct GameBoy* gameboy)
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    if (offset > 0x20000) {
+        DEBUG_PRINT_F("Save state too large\n");
+    }
 
     return 0;
 }
