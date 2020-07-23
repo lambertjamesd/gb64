@@ -56,6 +56,24 @@ GB_DO_WRITE_CALL:
     lw Param0, MEMORY_BANK_SWITCHING(Memory)
 _GB_DO_WRITE:
     srl $at, ADDR, 12 # load bank in $at
+
+    li TMP2, 0xD
+    bne $at, TMP2, _GB_DO_WRITE_RAM
+
+    lw TMP2, MEMORY_CART_WRITE(Memory)
+    beqz TMP2, _GB_DO_WRITE_RAM
+    nop
+
+    save_state_on_stack
+    move $a0, Memory
+    move $a1, ADDR
+    jalr $ra, TMP2
+    move $a2, VAL
+    restore_state_from_stack
+    jr $ra
+    nop
+
+_GB_DO_WRITE_RAM:
     andi ADDR, ADDR, 0xFFF # keep offset in ADDR
     sll $at, $at, 2 # word align the memory map offset
     add $at, $at, Memory # lookup start of bank in array at Memory
@@ -1004,6 +1022,25 @@ GB_DO_READ:
 
     srl $at, ADDR, 12 # load bank in $at
     sll $at, $at, 2 # word align the memory map offset
+
+    li $v0, 0xD
+    bne $v0, $at, _GB_DO_READ_RAM
+
+    lw $v0, MEMORY_CART_READ(Memory)
+    beqz $v0, _GB_DO_READ_RAM
+    nop
+
+    save_state_on_stack
+
+    move $a0, Memory
+    jalr $ra, $v0
+    move $a1, ADDR
+
+    restore_state_from_stack
+    jr $ra
+    nop
+
+_GB_DO_READ_RAM:
     add $at, $at, Memory # lookup start of bank in array at Memory
     lw $at, 0($at) # load start of memory bank
     andi $v0, ADDR, 0xFFF # keep offset in ADDR

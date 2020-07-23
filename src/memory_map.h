@@ -22,7 +22,6 @@
 
 #define MISC_START              0xFE00
 #define REGISTERS_START         0xFF00
-#define REGISTER_WRITER_COUNT   0x08
 
 #define REG_JOYP        0xFF00
 #define REG_SERIAL_DATA 0xFF01
@@ -183,6 +182,7 @@ struct GraphicsMemory {
 struct Memory;
 
 typedef void (*RegisterWriter)(struct Memory*, int addr, int value);
+typedef u8 (*RegisterReader)(struct Memory*, int addr);
 
 struct MBCData {
     RegisterWriter bankSwitch;
@@ -192,7 +192,8 @@ struct MBCData {
 
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
-    RegisterWriter registerWriters[REGISTER_WRITER_COUNT];
+    RegisterWriter cartRamWrite;
+    RegisterReader cartRamRead;
     RegisterWriter bankSwitch;
     union {
         struct MiscMemory misc;

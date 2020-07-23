@@ -263,11 +263,6 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     memory->memoryMap[0xE] = memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 0;
     memory->memoryMap[0xF] = memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1;
 
-    for (index = 0; index < REGISTER_WRITER_COUNT; ++index)
-    {
-        memory->registerWriters[index] = defaultRegisterWrite;
-    }
-
     WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
     WRITE_REGISTER_DIRECT(memory, REG_NR52, 0xF0);
     WRITE_REGISTER_DIRECT(memory, REG_UNLOAD_BIOS, 0x00);

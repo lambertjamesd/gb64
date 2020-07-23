@@ -91,14 +91,6 @@ unsigned char* getRegisterPointer(struct CPUState* cpu, unsigned char* hlTarget,
     }
 }
 
-void DefaultRegisterWriter(struct Memory* memory, int addr, int value)
-{
-    if (addr >= MISC_START && addr < 0x10000)
-    {
-        memory->miscBytes[addr - MISC_START] = value;
-    }
-}
-
 void BankSwitchingWriter(struct Memory* memory, int addr, int value)
 {
     
@@ -114,11 +106,6 @@ int runCPUTests(char* testOutput) {
     for (i = 0; i < MEMORY_MAP_SIZE; ++i)
     {
         gGameboy.memory.memoryMap[i] = gGameboy.memory.internalRam;
-    }
-
-    for (i = 0; i < REGISTER_WRITER_COUNT; ++i)
-    {
-        gGameboy.memory.registerWriters[i] = &DefaultRegisterWriter;
     }
 
     gGameboy.memory.bankSwitch = &BankSwitchingWriter;
