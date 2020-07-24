@@ -19,6 +19,7 @@
 #define GB_BUTTON_START     0x80
 
 #define CPU_TICKS_PER_FRAME     781250
+#define CPU_TICKS_PER_SECOND    0x100000
 #define MAX_FRAME_SKIP      8
 
 enum InputButtonSetting

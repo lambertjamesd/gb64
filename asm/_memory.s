@@ -64,13 +64,7 @@ _GB_DO_WRITE:
     beqz TMP2, _GB_DO_WRITE_RAM
     nop
 
-    save_state_on_stack
-    move $a0, Memory
-    move $a1, ADDR
-    jalr $ra, TMP2
-    move $a2, VAL
-    restore_state_from_stack
-    jr $ra
+    jr TMP2
     nop
 
 _GB_DO_WRITE_RAM:
@@ -1029,15 +1023,7 @@ GB_DO_READ:
     lw $v0, MEMORY_CART_READ(Memory)
     beqz $v0, _GB_DO_READ_RAM
     nop
-
-    save_state_on_stack
-
-    move $a0, Memory
-    jalr $ra, $v0
-    move $a1, ADDR
-
-    restore_state_from_stack
-    jr $ra
+    jr $v0
     nop
 
 _GB_DO_READ_RAM:

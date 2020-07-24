@@ -2,6 +2,7 @@
 #include "memory_map.h"
 #include "../memory.h"
 #include "debug_out.h"
+#include "gameboy.h"
 
 u16 paletteColors[] = {
     0x09C2,
@@ -62,6 +63,8 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     memory->memoryMap[0xB] = ramBank + MEMORY_MAP_SEGMENT_SIZE * 1;
 }
 
+extern void mbc2ReadRam();
+
 void handleMBC2Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
@@ -83,6 +86,8 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     memory->memoryMap[0x5] = romBank + MEMORY_MAP_SEGMENT_SIZE * 1;
     memory->memoryMap[0x6] = romBank + MEMORY_MAP_SEGMENT_SIZE * 2;
     memory->memoryMap[0x7] = romBank + MEMORY_MAP_SEGMENT_SIZE * 3;
+
+    memory->cartRamRead = mbc2ReadRam;
 }
 
 
@@ -90,6 +95,9 @@ void handleMMM0Write(struct Memory* memory, int addr, int value)
 {
     // TODO
 }
+
+extern void mbc3WriteTimer();
+extern void mbc3ReadTimer();
 
 void handleMBC3Write(struct Memory* memory, int addr, int value)
 {
@@ -104,19 +112,41 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     }
     else if (writeRange == 2)
     {
-        memory->misc.romBankUpper = value;
+        memory->misc.ramRomSelect = value;
     }
     else if (writeRange == 3)
     {
-        // TODO Timer
+        if (memory->misc.romBankUpper == 0 && value == 1)
+        {
+            u64 allTime = memory->misc.time;
+            allTime /= CPU_TICKS_PER_SECOND;
+            WRITE_REGISTER_DIRECT(memory, REG_RTC_S, allTime % 60);
+            allTime /= 60;
+            WRITE_REGISTER_DIRECT(memory, REG_RTC_M, allTime % 60);
+            allTime /= 60;
+            WRITE_REGISTER_DIRECT(memory, REG_RTC_H, allTime % 24);
+            allTime /= 24;
+            WRITE_REGISTER_DIRECT(memory, REG_RTC_DL, allTime & 0xFF);
+            allTime /= 0x100;
+            
+            u8 rtcDH = READ_REGISTER_DIRECT(memory, REG_RTC_DH);
+            rtcDH &= REG_RTC_DH_HALT;
+
+            rtcDH |= allTime & REG_RTC_DH_HIGH;
+            rtcDH |= allTime > 0x1 ? REG_RTC_DH_C : 0;
+            WRITE_REGISTER_DIRECT(memory, REG_RTC_DH, rtcDH);
+        }
+        memory->misc.romBankUpper = value;
     }
 
     char* ramBank;
-    if (memory->misc.romBankUpper < 4 || !memory->timerMemoryBank) {
-        ramBank = memory->cartRam + (memory->misc.romBankUpper & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
+    if (memory->misc.ramRomSelect < 4) {
+        ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
+        memory->cartRamRead = NULL;
+        memory->cartRamWrite = NULL;
     } else {
-        // TODO actually implement timer
-        ramBank = memory->timerMemoryBank;
+        memory->cartRamRead = mbc3ReadTimer;
+        memory->cartRamWrite = mbc3WriteTimer;
     }
 
     char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1);
@@ -227,12 +257,6 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
         memory->bankSwitch = nopBankSwitch;
     } else {
         memory->bankSwitch = mbc->bankSwitch;
-    }
-
-    if (mbc && (mbc->flags & MBC_FLAGS_TIMER))
-    {
-        // TODO actually implement the timer
-        memory->timerMemoryBank = malloc(RAM_BANK_SIZE);
     }
 
 	memory->audio.noiseSound.lfsr = 0x7FFF;

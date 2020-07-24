@@ -85,6 +85,16 @@
 #define REG_SVBK        0xFF70
 #define REG_SVBK_MASK   0x7
 
+#define REG_RTC_S       0xFF78
+#define REG_RTC_M       0xFF79
+#define REG_RTC_H       0xFF7A
+#define REG_RTC_DL      0xFF7B
+#define REG_RTC_DH      0xFF7C
+
+#define REG_RTC_DH_HIGH 0x1
+#define REG_RTC_DH_HALT 0x40
+#define REG_RTC_DH_C    0x80
+
 #define REG_KEY1_PREPARE_SWITCH  0x1
 #define REG_KEY1_CURRENT_SPEED  0x80
 
@@ -153,7 +163,8 @@ struct MiscMemory {
     int romBankUpper;
     int ramRomSelect;
     int biosLoaded;
-    unsigned char unused[0x50];
+    u64 time;
+    unsigned char unused[0x48];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };
@@ -182,7 +193,8 @@ struct GraphicsMemory {
 struct Memory;
 
 typedef void (*RegisterWriter)(struct Memory*, int addr, int value);
-typedef u8 (*RegisterReader)(struct Memory*, int addr);
+
+typedef void (*ASMHook)();
 
 struct MBCData {
     RegisterWriter bankSwitch;
@@ -192,8 +204,8 @@ struct MBCData {
 
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
-    RegisterWriter cartRamWrite;
-    RegisterReader cartRamRead;
+    ASMHook cartRamWrite;
+    ASMHook cartRamRead;
     RegisterWriter bankSwitch;
     union {
         struct MiscMemory misc;

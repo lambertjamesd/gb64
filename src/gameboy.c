@@ -363,6 +363,7 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
     int catchupCycles;
     int screenWasEnabled;
     int ly;
+    u64 accumulatedTime = 0;
 
     screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
 
@@ -374,7 +375,7 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
         {
             // Run the CPU until the start of the next frame
             gameboy->cpu.runUntilNextFrame = 1;
-            runCPU(
+            accumulatedTime += runCPU(
                 &gameboy->cpu, 
                 &gameboy->memory, 
                 (2 + GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
@@ -403,10 +404,13 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
         // intentionally run short to make sure we don't leak into the next frame
         cyclesToRun += CYCLES_PER_LINE * V_BLANK_LINES - CYCLES_TIL_LINE_RENDER - 2;
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+
+        accumulatedTime += CYCLES_PER_FRAME;
     }
     else
     {
         runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
+        accumulatedTime += CYCLES_PER_FRAME;
     }
 
     tickAudio(&gameboy->memory, gameboy->cpu.unscaledCyclesRun);
@@ -416,6 +420,11 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
     {
         gameboy->cpu.unscaledCyclesRun -= MAX_CYCLE_TIME;
         gameboy->memory.audio.cyclesEmulated -= MAX_CYCLE_TIME;
+    }
+
+    if (!(READ_REGISTER_DIRECT(&gameboy->memory, REG_RTC_DH) & REG_RTC_DH_HALT)) 
+    {
+        gameboy->memory.misc.time += accumulatedTime;
     }
 }
 

@@ -63,7 +63,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/BlockKuzushi.gb"
+	include "data/LionKing.gbc"
 endseg
 // */
 
