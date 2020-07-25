@@ -98,7 +98,7 @@ struct GameboyGraphicsSettings
 #define GB_SETTINGS_FLAGS_DISABLE_GBC   0x1
 
 #define GB_SETTINGS_HEADER              0x47423634
-#define GB_SETTINGS_CURRENT_VERSION     0
+#define GB_SETTINGS_CURRENT_VERSION     1
 
 struct GameboySettings
 {

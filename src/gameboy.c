@@ -5,6 +5,7 @@
 #include "debug_out.h"
 #include "../render.h"
 #include "../memory.h"
+#include "upgrade.h"
 
 struct GameBoy gGameboy;
 
@@ -159,7 +160,7 @@ int loadGameboyState(struct GameBoy* gameboy)
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-    if (settings.header != GB_SETTINGS_HEADER || settings.version != GB_SETTINGS_CURRENT_VERSION)
+    if (settings.header != GB_SETTINGS_HEADER || settings.version > GB_SETTINGS_CURRENT_VERSION)
     {
         DEBUG_PRINT_F("Invalid header %X %X\n", settings.header, settings.version);
         return -1;
@@ -220,6 +221,8 @@ int loadGameboyState(struct GameBoy* gameboy)
             gameboy->memory.internalRam + MEMORY_MAP_SEGMENT_SIZE;
         gameboy->memory.memoryMap[0xF] = gameboy->memory.memoryMap[0xD];
     }
+
+    updateToLatestVersion(gameboy);
 
     return 0;
 }
@@ -293,12 +296,13 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
 
     loadFromFlash(&gameboy->settings, 0, sizeof(struct GameboySettings));
 
-    if (gameboy->settings.header != GB_SETTINGS_HEADER || gameboy->settings.version != GB_SETTINGS_CURRENT_VERSION)
+    if (gameboy->settings.header != GB_SETTINGS_HEADER)
     {
         gameboy->settings = gDefaultSettings;
     }
     else
     {
+        updateToLatestVersion(gameboy);
         loadRAM(&gameboy->memory);
     }
 
