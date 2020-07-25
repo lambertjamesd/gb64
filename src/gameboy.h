@@ -124,6 +124,7 @@ struct GameBoy
 };
 
 extern struct GameBoy gGameboy;
+extern struct GameboySettings gDefaultSettings;
 extern u16 gBGPColors;
 extern u16 gOBP0Colors;
 extern u16 gOBP1Colors;
@@ -140,8 +141,6 @@ void emulateFrame(struct GameBoy* gameboy, bool targetMemory);
 
 void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad);
 void unloadBIOS(struct Memory* memory);
-int loadGameboyState(struct GameBoy* gameboy);
-int saveGameboyState(struct GameBoy* gameboy);
 
 enum InputButtonSetting getButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex);
 void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex buttonIndex, enum InputButtonSetting setting);

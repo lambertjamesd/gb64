@@ -35,6 +35,7 @@
 #include "src/debug_out.h"
 #include "render.h"
 #include "src/faulthandler.h"
+#include "src/save.h"
 
 /*
  * Symbol genererated by "makerom" (RAM)
@@ -246,7 +247,7 @@ mainproc(void *arg)
 	_gEndSegments = staticSegment + 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
 		
-  	osFlashInit();
+	initSaveCallbacks();
 
 	clearDebugOutput();
 

@@ -44,6 +44,8 @@ struct SaveState {
     u16 isFast;
     u16 showFastTimer;
     struct MenuItem* mainMenu;
+    char* saveMessage;
+    char* loadMessage;
 };
 
 struct MainMenu {

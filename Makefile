@@ -73,6 +73,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/graphicsmenu.c                    \
        src/clockmenu.c                       \
        src/upgrade.c                         \
+       src/save.c                            \
        src/faulthandler.c 
 
 S_FILES = asm/cpu.s

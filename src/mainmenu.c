@@ -2,6 +2,7 @@
 #include "../render.h"
 #include "gameboy.h"
 #include "debug_out.h"
+#include "save.h"
 
 ///////////////////////////////////
 
@@ -14,18 +15,23 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
 
     if (saveState->isLoading)
     {
-        ++saveState->showLoadTimer;
+        if (saveState->showLoadTimer < LOAD_TIMER_FRAMES)
+        {
+            ++saveState->showLoadTimer;
+        }
 
-        if (saveState->showLoadTimer == LOAD_TIMER_FRAMES)
+        enum StoredInfoType saveType = getStoredInfoType(&gGameboy);
+
+        if (saveState->showLoadTimer == LOAD_TIMER_FRAMES && saveType == StoredInfoTypeAll)
         {
             if (gGameboy.memory.misc.biosLoaded)
             {
                 unloadBIOS(&gGameboy.memory);
             }
 
-            if (loadGameboyState(&gGameboy))
+            if (loadGameboyState(&gGameboy, saveType))
             {
-                DEBUG_PRINT_F("Failed to load save state\n");
+                saveState->loadMessage = "Failed to load save state";
             }
             saveState->showLoadTimer = 0;
             saveState->isLoading = 0;
@@ -40,7 +46,7 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
     {
         buttonAlpha = 255 * saveState->showLoadTimer / LOAD_TIMER_FRAMES;
         FONTCOL(255, 255, 255, buttonAlpha);
-        SHOWFONT(&glistp, "HOLD TO LOAD", 32, 16);
+        SHOWFONT(&glistp, saveState->loadMessage, 32, 16);
         gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.load];
     }
     else if (saveState->showSaveTimer)
@@ -61,7 +67,7 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
             );
         }
 
-        SHOWFONT(&glistp, "SAVED", 32, 16);
+        SHOWFONT(&glistp, saveState->saveMessage, 32, 16);
         gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.save];
     }
     else if (saveState->showFastTimer > 0)
@@ -102,18 +108,52 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
 
     if (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.load))
     {
-        saveState->isLoading = 1;
-        if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)
+        enum StoredInfoType saveType = getStoredInfoType(&gGameboy);
+
+        if (saveType == StoredInfoTypeAll)
         {
-            saveState->showLoadTimer = LOAD_TIMER_START_FRAMES;
+            saveState->loadMessage = "HOLD TO LOAD";
+            saveState->isLoading = 1;
+            if (saveState->showLoadTimer < LOAD_TIMER_START_FRAMES)
+            {
+                saveState->showLoadTimer = LOAD_TIMER_START_FRAMES;
+            }
+        }
+        else
+        {
+            saveState->loadMessage = "Insufficient memory";
+            saveState->isLoading = 1;
+            saveState->showLoadTimer = LOAD_TIMER_FRAMES;
         }
     }
 
     if (!gGameboy.memory.misc.biosLoaded && (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save)))
     {
-        if (saveGameboyState(&gGameboy))
+        enum StoredInfoType saveType = getStoredInfoType(&gGameboy);
+
+        if (saveType == StoredInfoTypeNone)
         {
-            DEBUG_PRINT_F("Failed to save");
+            saveState->saveMessage = "Insufficient memory to save";
+        }
+        else if (saveGameboyState(&gGameboy, saveType))
+        {
+            saveState->saveMessage = "Error saving";
+        }
+        else
+        {
+            switch (saveType)
+            {
+            case StoredInfoTypeAll:
+                saveState->saveMessage = "Saved state";
+                break;
+            case StoredInfoTypeSettingsRAM:
+            case StoredInfoTypeRAM:
+                saveState->saveMessage = "Saved cart";
+                break;
+            case StoredInfoTypeSettings:
+                saveState->saveMessage = "Saved settings";
+                break;
+            }
         }
         saveState->showSaveTimer = SAVE_TIMER_FRAMES;
         
@@ -205,6 +245,8 @@ void initMainMenu(struct MainMenu* mainMenu)
         NULL
     );
     mainMenu->menuItems[MainMenuItemSaveState].handleButtonUp = saveStateHandleUp;
+    mainMenu->saveState.saveMessage = "Saved";
+    mainMenu->saveState.loadMessage = "Loaded";
     
     menuItemInit(
         &mainMenu->menuItems[MainMenuItemMainMenu],
