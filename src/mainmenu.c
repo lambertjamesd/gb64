@@ -241,7 +241,7 @@ void initMainMenu(struct MainMenu* mainMenu)
     initCursorMenu(
         &mainMenu->mainMenuState.cursorMenu, 
         mainMenu->mainMenuState.items,
-        MainMenuStateItemsCount
+        (!gGameboy.memory.mbc || (gGameboy.memory.mbc->flags & MBC_FLAGS_TIMER)) ? MainMenuStateItemsCount : MainMenuStateItemsClock
     );
 
     initCursorMenuItem(
