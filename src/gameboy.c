@@ -226,6 +226,8 @@ int loadGameboyState(struct GameBoy* gameboy)
 
 int saveGameboyState(struct GameBoy* gameboy)
 {    
+    gameboy->settings.timer = gameboy->memory.misc.time;
+
     if (osFlashAllErase()) {
         DEBUG_PRINT_F("Save fail clear\n");
         return -1;
@@ -300,6 +302,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
         loadRAM(&gameboy->memory);
     }
 
+
     if (gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
         gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT && !(gameboy->settings.flags & GB_SETTINGS_FLAGS_DISABLE_GBC)
     ) {
@@ -331,6 +334,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     gameboy->cpu.sp = 0x0;
 
     WRITE_REGISTER_DIRECT(&gameboy->memory, REG_LCDC, 0x00);
+    gameboy->memory.misc.time = gameboy->settings.timer;
 }
 
 void requestInterrupt(struct GameBoy* gameboy, int interrupt)

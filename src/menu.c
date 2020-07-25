@@ -150,6 +150,7 @@ void menuStateSetActive(struct MenuState* menu, struct MenuItem* item)
         {
             menu->currentMenuItem->setActive(menu->currentMenuItem, 1);
         }
+
     }
 }
 
@@ -421,12 +422,12 @@ void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, ch
 
 void renderMenuBorder()
 {
-    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 10, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 80, 40, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 80, 48, 1, 18);
-    renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 80, 192, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 10, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconBlack], 0, 48, 10, 18);
+    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 12, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 96, 40, 1, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 96, 48, 1, 18);
+    renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 96, 192, 1, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 12, 1);
+    renderSprite(&gGUIItemTemplates[GUIItemIconBlack], 0, 48, 12, 18);
 }
 
 ///////////////////////////////////
@@ -456,7 +457,16 @@ void renderSelectCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, i
 
     int currentValue = (select->value - select->minValue) % (select->maxValue - select->minValue);
     
-    SHOWFONT(&glistp, select->labels[currentValue], x + 12, y + 12);
+    if (select->labels)
+    {
+        SHOWFONT(&glistp, select->labels[currentValue], x + 12, y + 12);
+    }
+    else
+    {
+        char tmpString[16];
+        sprintf(tmpString, "%d", select->value);
+        SHOWFONT(&glistp, tmpString, x + 12, y + 12);
+    }
 }
 
 struct MenuItem* inputSelectCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown)

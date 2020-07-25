@@ -168,7 +168,7 @@ void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
         renderMenuBorder();
         FONTCOL(255, 255, 255, 255);
 
-        renderCursorMenu(&mainMenuState->cursorMenu, 8, 56, 160);
+        renderCursorMenu(&mainMenuState->cursorMenu, 20, 56, 160);
     }
 }
 
@@ -230,6 +230,14 @@ void initMainMenu(struct MainMenu* mainMenu)
         NULL
     );
 
+    menuItemInit(
+        &mainMenu->menuItems[MainMenuItemMainClock],
+        &mainMenu->clockMenu,
+        clockMenuRender,
+        clockMenuHandleInput,
+        setClockMenuActive
+    );
+
     initCursorMenu(
         &mainMenu->mainMenuState.cursorMenu, 
         mainMenu->mainMenuState.items,
@@ -250,6 +258,13 @@ void initMainMenu(struct MainMenu* mainMenu)
         16
     );
 
+    initCursorMenuItem(
+        &mainMenu->mainMenuState.items[MainMenuStateItemsClock],
+        &mainMenu->menuItems[MainMenuItemMainClock],
+        "CLOCK",
+        16
+    );
+
     mainMenu->saveState.mainMenu = &mainMenu->menuItems[MainMenuItemMainMenu];
     mainMenu->mainMenuState.cursorMenu.parentMenu = &mainMenu->menuItems[MainMenuItemSaveState];
 
@@ -260,6 +275,11 @@ void initMainMenu(struct MainMenu* mainMenu)
 
     initGraphicsMenu(
         &mainMenu->graphicsMenu,
+        &mainMenu->menuItems[MainMenuItemMainMenu]
+    );
+
+    initClockMenu(
+        &mainMenu->clockMenu,
         &mainMenu->menuItems[MainMenuItemMainMenu]
     );
 

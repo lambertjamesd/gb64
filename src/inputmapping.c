@@ -61,8 +61,8 @@ void inputMappingRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
         gButtonSprite.alpha = 255;
         renderMenuBorder();
         FONTCOL(255, 255, 255, 255);
-        SHOWFONT(&glistp, "INPUT", 8, 32);
-        renderCursorMenu(&inputMapping->cursor, 8, 56, 136);
+        SHOWFONT(&glistp, "INPUT", 16, 32);
+        renderCursorMenu(&inputMapping->cursor, 16, 56, 136);
     }
 }
 

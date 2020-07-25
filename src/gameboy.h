@@ -113,6 +113,7 @@ struct GameboySettings
     u16 obp1Index;
     struct InputMapping inputMapping;
     struct GameboyGraphicsSettings graphics;
+    u64 timer;
 };
 
 struct GameBoy

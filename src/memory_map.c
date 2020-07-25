@@ -99,6 +99,38 @@ void handleMMM0Write(struct Memory* memory, int addr, int value)
 extern void mbc3WriteTimer();
 extern void mbc3ReadTimer();
 
+void writeMBC3ClockRegisters(u64 time, u8* target)
+{
+    time /= CPU_TICKS_PER_SECOND;
+    target[REG_RTC_S - REG_RTC_S] = time % 60;
+    time /= 60;
+    target[REG_RTC_M - REG_RTC_S] = time % 60;
+    time /= 60;
+    target[REG_RTC_H - REG_RTC_S] = time % 24;
+    time /= 24;
+    target[REG_RTC_DL - REG_RTC_S] = time & 0xFF;
+    time /= 0x100;
+    
+    u8 rtcDH = target[REG_RTC_DH - REG_RTC_S];
+    rtcDH &= REG_RTC_DH_HALT;
+
+    rtcDH |= time & REG_RTC_DH_HIGH;
+    rtcDH |= (time > 0x1) ? REG_RTC_DH_C : 0;
+    target[REG_RTC_DH - REG_RTC_S] = rtcDH;
+}
+
+u64 readMBC3ClockRegisters(u8* source)
+{
+    u64 result = ((source[REG_RTC_DH - REG_RTC_S] & 0x1) << 8) |
+        source[REG_RTC_DL - REG_RTC_S];
+
+    result = result * 24 + source[REG_RTC_H - REG_RTC_S];
+    result = result * 60 + source[REG_RTC_M - REG_RTC_S];
+    result = result * 60 + source[REG_RTC_S - REG_RTC_S];
+
+    return result * CPU_TICKS_PER_SECOND;
+}
+
 void handleMBC3Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
@@ -118,24 +150,9 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     {
         if (memory->misc.romBankUpper == 0 && value == 1)
         {
-            u64 allTime = memory->misc.time;
-            allTime /= CPU_TICKS_PER_SECOND;
-            WRITE_REGISTER_DIRECT(memory, REG_RTC_S, allTime % 60);
-            allTime /= 60;
-            WRITE_REGISTER_DIRECT(memory, REG_RTC_M, allTime % 60);
-            allTime /= 60;
-            WRITE_REGISTER_DIRECT(memory, REG_RTC_H, allTime % 24);
-            allTime /= 24;
-            WRITE_REGISTER_DIRECT(memory, REG_RTC_DL, allTime & 0xFF);
-            allTime /= 0x100;
-            
-            u8 rtcDH = READ_REGISTER_DIRECT(memory, REG_RTC_DH);
-            rtcDH &= REG_RTC_DH_HALT;
-
-            rtcDH |= allTime & REG_RTC_DH_HIGH;
-            rtcDH |= (allTime > 0x1) ? REG_RTC_DH_C : 0;
-            WRITE_REGISTER_DIRECT(memory, REG_RTC_DH, rtcDH);
+            writeMBC3ClockRegisters(memory->misc.time, &READ_REGISTER_DIRECT(memory, REG_RTC_S));
         }
+        
         memory->misc.romBankUpper = value;
     }
 

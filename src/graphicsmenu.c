@@ -79,8 +79,8 @@ void graphicsMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
         gButtonSprite.alpha = 255;
         renderMenuBorder();
         FONTCOL(255, 255, 255, 255);
-        SHOWFONT(&glistp, "SCREEN", 8, 32);
-        renderCursorMenu(&graphicsMenu->cursor, 8, 56, 136);
+        SHOWFONT(&glistp, "SCREEN", 16, 32);
+        renderCursorMenu(&graphicsMenu->cursor, 16, 56, 136);
     }
 }
 
