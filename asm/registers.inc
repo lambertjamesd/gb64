@@ -86,7 +86,12 @@
 .eqv REG_OCPD, 0xFF6B
 
 .eqv REG_SVBK, 0xFF70
-.eqv REG_TIMER_OFFSET, 0xFF78
+
+.eqv REG_RTC_S,       0xFF78
+.eqv REG_RTC_M,       0xFF79
+.eqv REG_RTC_H,       0xFF7A
+.eqv REG_RTC_DL,      0xFF7B
+.eqv REG_RTC_DH,      0xFF7C
 
 .eqv INTERRUPT_V_BLANK, 0x01
 .eqv INTERRUPT_LCD_STAT, 0x02

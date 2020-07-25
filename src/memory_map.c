@@ -133,7 +133,7 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
             rtcDH &= REG_RTC_DH_HALT;
 
             rtcDH |= allTime & REG_RTC_DH_HIGH;
-            rtcDH |= allTime > 0x1 ? REG_RTC_DH_C : 0;
+            rtcDH |= (allTime > 0x1) ? REG_RTC_DH_C : 0;
             WRITE_REGISTER_DIRECT(memory, REG_RTC_DH, rtcDH);
         }
         memory->misc.romBankUpper = value;
@@ -145,6 +145,7 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         memory->cartRamRead = NULL;
         memory->cartRamWrite = NULL;
     } else {
+        ramBank = memory->cartRam;
         memory->cartRamRead = mbc3ReadTimer;
         memory->cartRamWrite = mbc3WriteTimer;
     }

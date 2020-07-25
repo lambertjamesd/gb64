@@ -57,8 +57,10 @@ GB_DO_WRITE_CALL:
 _GB_DO_WRITE:
     srl $at, ADDR, 12 # load bank in $at
 
-    li TMP2, 0xD
+    xori TMP2, $at, 0xA
+    andi TMP2, TMP2, 0xE
     bne $at, TMP2, _GB_DO_WRITE_RAM
+    sll $at, $at, 2 # word align the memory map offset
 
     lw TMP2, MEMORY_CART_WRITE(Memory)
     beqz TMP2, _GB_DO_WRITE_RAM
@@ -69,7 +71,6 @@ _GB_DO_WRITE:
 
 _GB_DO_WRITE_RAM:
     andi ADDR, ADDR, 0xFFF # keep offset in ADDR
-    sll $at, $at, 2 # word align the memory map offset
     add $at, $at, Memory # lookup start of bank in array at Memory
     lw $at, 0($at) # load start of memory bank
     add ADDR, ADDR, $at # use address relative to memory bank
@@ -1015,10 +1016,12 @@ GB_DO_READ:
     bgez $at, GB_DO_READ_REGISTERS # if ADDR >= 0xFE00
 
     srl $at, ADDR, 12 # load bank in $at
-    sll $at, $at, 2 # word align the memory map offset
 
-    li $v0, 0xD
-    bne $v0, $at, _GB_DO_READ_RAM
+    # check if $at is A or B
+    xori $v0, $at, 0xA
+    andi $v0, $v0, 0xE
+    bnez $v0, _GB_DO_READ_RAM
+    sll $at, $at, 2 # word align the memory map offset
 
     lw $v0, MEMORY_CART_READ(Memory)
     beqz $v0, _GB_DO_READ_RAM
