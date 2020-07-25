@@ -96,5 +96,6 @@ void renderPixelRow(
 );
 
 void finishScreen(struct GraphicsState* state);
+void rerenderDisplayList(struct GameboyGraphicsSettings* setting);
 
 #endif

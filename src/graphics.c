@@ -553,3 +553,40 @@ void renderPixelRow(
         }
     }
 }
+
+void rerenderDisplayList(struct GameboyGraphicsSettings* setting)
+{
+    struct GraphicsState state;
+    state.settings = *setting;
+    beginScreenDisplayList(&state.settings, gDrawScreen);
+    state.palleteReadIndex = 0;
+    state.palleteWriteIndex = 0;
+    gPalleteDirty = 1;
+    prepareGraphicsPallete(&state);
+    state.lastRenderedRow = 0;
+    state.row = GB_RENDER_STRIP_HEIGHT * 1;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 2;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 3;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 4;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 5;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 6;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 7;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 8;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 9;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 10;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 11;
+    renderScreenBlock(&state);
+    state.row = GB_RENDER_STRIP_HEIGHT * 12;
+    renderScreenBlock(&state);
+    finishScreen(&state);
+}
