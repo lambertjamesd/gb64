@@ -147,6 +147,8 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
                 saveState->saveMessage = "Saved state";
                 break;
             case StoredInfoTypeSettingsRAM:
+                saveState->saveMessage = "Saved cart w settings";
+                break;
             case StoredInfoTypeRAM:
                 saveState->saveMessage = "Saved cart";
                 break;

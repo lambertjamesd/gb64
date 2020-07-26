@@ -21,23 +21,88 @@ extern OSIoMesg        dmaIOMessageBuf;
 
 #define SRAM_ADDR   0x08000000
 
-char gFlashTmpBuffer[FLASH_BLOCK_SIZE];
+char gTmpSaveBuffer[FLASH_BLOCK_SIZE];
 SaveReadCallback gSaveReadCallback;
 SaveWriteCallback gSaveWriteCallback;
 
+int getSaveTypeSize(enum SaveType type)
+{
+    switch (type)
+    {
+        case SaveTypeFlash:
+            return 128 * 1024;
+        case SaveTypeSRAM:
+            return 32 * 1024;
+        case SaveTypeSRAM3X:
+            return 3 * 32 * 1024;
+    }
+
+    return 0;
+}
+
+#define SRAM_START_ADDR  0x08000000 
+#define SRAM_SIZE        0x8000 
+#define SRAM_latency     0x5 
+#define SRAM_pulse       0x0c 
+#define SRAM_pageSize    0xd 
+#define SRAM_relDuration 0x2
+
+OSPiHandle gSramHandle;
+
+OSPiHandle * osSramInit(void)
+{
+    if (gSramHandle.baseAddress == PHYS_TO_K1(SRAM_START_ADDR))
+            return(&gSramHandle);
+
+    /* Fill basic information */
+
+    gSramHandle.type = 3;
+    gSramHandle.baseAddress = PHYS_TO_K1(SRAM_START_ADDR);
+
+    /* Get Domain parameters */
+
+    gSramHandle.latency = (u8)SRAM_latency;
+    gSramHandle.pulse = (u8)SRAM_pulse;
+    gSramHandle.pageSize = (u8)SRAM_pageSize;
+    gSramHandle.relDuration = (u8)SRAM_relDuration;
+    gSramHandle.domain = PI_DOMAIN2;
+    gSramHandle.speed = 0;
+
+    /* TODO gSramHandle.speed = */
+
+    zeroMemory(&(gSramHandle.transferInfo), sizeof(gSramHandle.transferInfo));
+
+    /*
+        * Put the gSramHandle onto PiTable
+        */
+
+    OSIntMask saveMask = osGetIntMask();
+    osSetIntMask(OS_IM_NONE);
+    gSramHandle.next = __osPiTable;
+    __osPiTable = &gSramHandle;
+    osSetIntMask(saveMask);
+    return(&gSramHandle);
+}
+
 int loadFromSRAM(void* target, int sramOffset, int length)
 {
-	OSIoMesg dmaIoMesgBuf;
+    OSIoMesg dmaIoMesgBuf;
+    int saveSize = getSaveTypeSize(gSaveTypeSetting.saveType);
 
     dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
     dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
     dmaIoMesgBuf.dramAddr = target;
-    dmaIoMesgBuf.devAddr = SRAM_ADDR + sramOffset * FLASH_BLOCK_SIZE;
+    dmaIoMesgBuf.devAddr = SRAM_ADDR + sramOffset;
     dmaIoMesgBuf.size = length;
 
     osInvalDCache(target, length);
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
-	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    if (osEPiStartDma(&gSramHandle, &dmaIoMesgBuf, OS_READ) == -1)
+    {
+        return -1;
+    }
+    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+
+    return 0;
 }
 
 int saveToSRAM(void* target, int sramOffset, int length)
@@ -47,12 +112,16 @@ int saveToSRAM(void* target, int sramOffset, int length)
     dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
     dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
     dmaIoMesgBuf.dramAddr = target;
-    dmaIoMesgBuf.devAddr = SRAM_ADDR + sramOffset * FLASH_BLOCK_SIZE;
+    dmaIoMesgBuf.devAddr = SRAM_ADDR + sramOffset;
     dmaIoMesgBuf.size = length;
 
     osWritebackDCache(target, length);
-    osEPiStartDma(handler, &dmaIoMesgBuf, OS_WRITE);
+    if (osEPiStartDma(&gSramHandle, &dmaIoMesgBuf, OS_WRITE) == -1)
+    {
+        return -1;
+    }
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    return 0;
 }
 
 int loadFromFlash(void* target, int sramOffset, int length)
@@ -78,12 +147,12 @@ int loadFromFlash(void* target, int sramOffset, int length)
 
     if (length % FLASH_BLOCK_SIZE != 0)
     {
-        osInvalDCache(gFlashTmpBuffer, FLASH_BLOCK_SIZE);
+        osInvalDCache(gTmpSaveBuffer, FLASH_BLOCK_SIZE);
         if (osFlashReadArray(
                 &dmaIoMesgBuf, 
                 OS_MESG_PRI_NORMAL, 
                 sramOffset / FLASH_BLOCK_SIZE + length / FLASH_BLOCK_SIZE,
-                gFlashTmpBuffer,
+                gTmpSaveBuffer,
                 1,
                 &dmaMessageQ
             )) 
@@ -91,7 +160,7 @@ int loadFromFlash(void* target, int sramOffset, int length)
             return -1;
         }
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        memCopy((char*)target + (length & ~0x7F), gFlashTmpBuffer, length % FLASH_BLOCK_SIZE);
+        memCopy((char*)target + (length & ~0x7F), gTmpSaveBuffer, length % FLASH_BLOCK_SIZE);
     }
 
     return 0;
@@ -106,9 +175,9 @@ int saveToFlash(void *from, int sramOffset, int length)
 
         if (length < FLASH_BLOCK_SIZE)
         {
-            memCopy(gFlashTmpBuffer, from, length);
-            zeroMemory(gFlashTmpBuffer + length, FLASH_BLOCK_SIZE - length);
-            from = gFlashTmpBuffer;
+            memCopy(gTmpSaveBuffer, from, length);
+            zeroMemory(gTmpSaveBuffer + length, FLASH_BLOCK_SIZE - length);
+            from = gTmpSaveBuffer;
         }
 
         osWritebackDCache(from, FLASH_BLOCK_SIZE);
@@ -398,10 +467,9 @@ int getSaveStateSize(struct GameBoy* gameboy)
     return offset;
 }
 
-
 void initSaveCallbacks()
 {
-    if (gSaveTypeSetting.saveType == SAVE_HEADER_VALUE)
+    if (gSaveTypeSetting.header == SAVE_HEADER_VALUE)
     {
         switch (gSaveTypeSetting.saveType)
         {
@@ -409,11 +477,13 @@ void initSaveCallbacks()
             case SaveTypeSRAM3X:
                 gSaveWriteCallback = saveToSRAM;
                 gSaveReadCallback = loadFromSRAM;
+                osSramInit();
                 break;
             default:
                 gSaveWriteCallback = saveToFlash;
                 gSaveReadCallback = loadFromFlash;
                 osFlashInit();
+                break;
         }
     }
     else
@@ -424,25 +494,10 @@ void initSaveCallbacks()
     }
 }
 
-int getSaveTypeSize(enum SaveType type)
-{
-    switch (type)
-    {
-        case SaveTypeFlash:
-            return 128 * 1024;
-        case SaveTypeSRAM:
-            return 32 * 1024;
-        case SaveTypeSRAM3X:
-            return 3 * 32 * 1024;
-    }
-
-    return 0;
-}
-
 enum StoredInfoType getStoredInfoType(struct GameBoy* gameboy)
 {
     int saveTypeSize = getSaveTypeSize(gSaveTypeSetting.saveType);
-    int ramSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom) <= saveTypeSize;
+    int ramSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
 
     if (getSaveStateSize(gameboy) <= saveTypeSize)
     {

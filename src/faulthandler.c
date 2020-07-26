@@ -31,8 +31,8 @@ void dumpThreadInfo(OSThread *targetThread)
     DEBUG_PRINT_F("  badvaddr=0x%08x\n", targetThread->context.badvaddr);
     DEBUG_PRINT_F("  ra=0x%x\n", (u32)targetThread->context.ra);
     DEBUG_PRINT_F("  cause=0x%x\n", targetThread->context.cause);
-    DEBUG_PRINT_F("  GB_PC=0x%x\n", (u32)targetThread->context.t1);
-    DEBUG_PRINT_F("  t4=0x%x\n", (u32)targetThread->context.t4);
+    // DEBUG_PRINT_F("  GB_PC=0x%x\n", (u32)targetThread->context.t1);
+    // DEBUG_PRINT_F("  t4=0x%x\n", (u32)targetThread->context.t4);
     DEBUG_PRINT_F("  version=abff1e2acb\n");
 }
 
