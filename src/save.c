@@ -190,6 +190,9 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
         return -1;
     }
 
+    bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
+        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
+
     int offset = 0;
     int sectionSize;
     struct GameboySettings settings;
@@ -207,6 +210,13 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
         return -1;
     }
 
+    // The first version of the emualtor 
+    // had the same save layout as the gameboy color
+    if (settings.version == 0)
+    {
+        gbc = TRUE;
+    }
+
     gameboy->settings = settings;
 
     sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
@@ -216,14 +226,21 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-    sectionSize = sizeof(struct GraphicsMemory);
+    sectionSize = gbc ? 0x4000 : 0x2000;
     if (gSaveReadCallback(&gameboy->memory.vram, offset, sectionSize) == -1)
     {
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-    sectionSize = MAX_RAM_SIZE;
+    sectionSize = sizeof(u16) * PALETTE_COUNT;
+    if (gSaveReadCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
     if (gSaveReadCallback(gameboy->memory.internalRam, offset, sectionSize) == -1)
     {
         return -1;
@@ -292,6 +309,10 @@ int saveGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
     }
     else
     {
+        bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
+            gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
+
+
         int offset = 0;
         int sectionSize = sizeof(struct GameboySettings);
         if (gSaveWriteCallback(&gameboy->settings, offset, sectionSize)) {
@@ -317,14 +338,21 @@ int saveGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
             return 0;
         }
 
-        sectionSize = sizeof(struct GraphicsMemory);
+        sectionSize = gbc ? 0x4000 : 0x2000;
         if (gSaveWriteCallback(&gameboy->memory.vram, offset, sectionSize)) {
             DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
             return -1;
         }
         offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-        sectionSize = MAX_RAM_SIZE;
+        sectionSize = sizeof(u16) * PALETTE_COUNT;
+        if (gSaveWriteCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize)) {
+            DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
+            return -1;
+        }
+        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+        sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
         if (gSaveWriteCallback(gameboy->memory.internalRam, offset, sectionSize)) {
             DEBUG_PRINT_F("Save fail 3 %X $X\n", offset, sectionSize);
             return -1;
