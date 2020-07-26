@@ -4,6 +4,7 @@
 #include "render.h"
 #include "debug_out.h"
 #include "../controller.h"
+#include "version.h"
 
 #define FAULT_STACK_SIZE     0x200
 #define HANG_DELAY           OS_USEC_TO_CYCLES(3 * 1000000)   
@@ -33,7 +34,7 @@ void dumpThreadInfo(OSThread *targetThread)
     DEBUG_PRINT_F("  cause=0x%x\n", targetThread->context.cause);
     // DEBUG_PRINT_F("  GB_PC=0x%x\n", (u32)targetThread->context.t1);
     // DEBUG_PRINT_F("  t4=0x%x\n", (u32)targetThread->context.t4);
-    DEBUG_PRINT_F("  version=abff1e2acb\n");
+    DEBUG_PRINT_F("  version=" EMU_VERSION "\n");
 }
 
 static void faultHandlerProc(void* arg)

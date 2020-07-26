@@ -3,6 +3,7 @@
 #include "gameboy.h"
 #include "debug_out.h"
 #include "save.h"
+#include "version.h"
 
 ///////////////////////////////////
 
@@ -211,6 +212,8 @@ void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
         FONTCOL(255, 255, 255, 255);
 
         renderCursorMenu(&mainMenuState->cursorMenu, 20, 56, 160);
+
+        SHOWFONT(&glistp, EMU_VERSION, 16, 216);
     }
 }
 

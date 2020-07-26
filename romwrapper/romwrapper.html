@@ -27,6 +27,12 @@
                 padding: 12px;
             }
 
+            .version {
+                font-family: Lucida Console,Lucida Sans Typewriter,monaco,Bitstream Vera Sans Mono,monospace;
+                display: flex;
+                justify-content: flex-end;
+            }
+
             body {
                 padding: 0px;
                 margin: 0px;
@@ -186,7 +192,9 @@
                 document.body.removeChild(elem);
             }
 
-            function outputCRC(filename, crc) {
+            const edSavetypes = [5, 3];
+;
+            function outputCRC(filename, crc, saveType) {
                 const parent = document.querySelector('.save-db');
 
                 if (parent)
@@ -200,13 +208,13 @@
 
                     const line = document.createElement('div');
                     line.appendChild(document.createTextNode(
-                        `0x${crc.toString(16)}=5 (${filename})`
+                        `0x${crc.toString(16)}=${edSavetypes[saveType]} (${filename})`
                     ));
                     parent.appendChild(line);
                 }
             }
 
-            function convert(romName, rom, dmgBoot, cgbBios) {
+            function convert(romName, rom, dmgBoot, cgbBios, saveType) {
                 try {
                     const romIndex = findIndex(gGB64ArrayBuffer, 'GB64_ROM');
 
@@ -221,6 +229,7 @@
                     
                     const dmgIndex = findIndex(gGB64ArrayBuffer, 'DMG_BOOT');
                     const cgbIndex = findIndex(gGB64ArrayBuffer, 'CGB_BIOS');
+                    const saveTypeIndex = findIndex(gGB64ArrayBuffer, 'SVID');
 
                     if (dmgIndex == -1)
                     {
@@ -231,6 +240,11 @@
                     {
                         reportError("Could location CGB_BIOS location");
                     }
+
+                    if (saveTypeIndex == -1)
+                    {
+                        reportError("Could location SVID location");
+                    }
     
                     if (dmgBoot && dmgIndex != -1)
                     {
@@ -240,6 +254,11 @@
                     if (cgbBios && cgbIndex != -1)
                     {
                         copyInto(result, cgbIndex - 4, cgbBios);
+                    }
+
+                    if (saveTypeIndex != -1)
+                    {
+                        result[saveTypeIndex + 7] = saveType;
                     }
 
                     copyInto(result, romIndex, rom);
@@ -253,7 +272,7 @@
                     }
 
                     const crc = recalcCRC(result);
-                    outputCRC(romName, crc[0]);
+                    outputCRC(romName, crc[0], saveType);
 
                     return result;
                 } 
@@ -280,48 +299,50 @@
             async function convertROMsAsFiles(roms) {
                 const dmgBoot = document.querySelector('#dmgBoot').files[0];
                 const cgbBios = document.querySelector('#cgbBios').files[0];
+                const saveType = document.getElementById('save-type');
                 const dmgBootFile = dmgBoot && await readAsArrayBuffer(dmgBoot);
                 const cgbBiosFile = cgbBios && await readAsArrayBuffer(cgbBios);
 
                 const zip = new JSZip();
-                    const duplicateFiles = new Set();
-                    for (let rom of roms)
-                    {
-                        const filename = rom.name;
-                        const extensionIndex = filename.lastIndexOf('.');
-                        const romName = extensionIndex == -1 ? filename : filename.slice(0, extensionIndex);
-    
-                        const result = convert(
-                            romName,
-                            await readAsArrayBuffer(rom), 
-                            dmgBootFile, 
-                            cgbBiosFile
-                        );
+                const duplicateFiles = new Set();
+                for (let rom of roms)
+                {
+                    const filename = rom.name;
+                    const extensionIndex = filename.lastIndexOf('.');
+                    const romName = extensionIndex == -1 ? filename : filename.slice(0, extensionIndex);
 
-                        if (result) {
-                            if (roms.length == 1) {
-                                triggerDownload(`${romName}.n64`, result);
-                            } else {
-                                let index = 2;
-                                let finalRomName = romName;
+                    const result = convert(
+                        romName,
+                        await readAsArrayBuffer(rom), 
+                        dmgBootFile, 
+                        cgbBiosFile,
+                        saveType.selectedIndex
+                    );
 
-                                while (duplicateFiles.has(finalRomName)) {
-                                    finalRomName = `${romName} (${index})`;
-                                    ++index;
-                                }
+                    if (result) {
+                        if (roms.length == 1) {
+                            triggerDownload(`${romName}.n64`, result);
+                        } else {
+                            let index = 2;
+                            let finalRomName = romName;
 
-                                duplicateFiles.add(finalRomName);
-
-                                zip.file(`${finalRomName}.n64`, result);
+                            while (duplicateFiles.has(finalRomName)) {
+                                finalRomName = `${romName} (${index})`;
+                                ++index;
                             }
+
+                            duplicateFiles.add(finalRomName);
+
+                            zip.file(`${finalRomName}.n64`, result);
                         }
                     }
+                }
 
-                    if (roms.length > 1) {
-                        await triggerDownload(`roms.zip`, await zip.generateAsync({
-                            type: 'uint8array',
-                        }));
-                    }
+                if (roms.length > 1) {
+                    await triggerDownload(`roms.zip`, await zip.generateAsync({
+                        type: 'uint8array',
+                    }));
+                }
             }
 
             async function convertROM() {
@@ -382,8 +403,17 @@
                                 <input id="cgbBios" type="file" accept=".bin">
                             </div>
                         </div>
+                        <div class="form-section">
+                            <h2>Save Type</h2>
+                            <p>Use SRAM instead if you have trouble saving on 64drive.</p>
+                            <select id="save-type">
+                                <option>FLASH</option>
+                                <option>SRAM (64drive)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
+                <div class="version">V 2.0</div>
                 <div class="error-log">
         
                 </div>
