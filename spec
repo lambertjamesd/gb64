@@ -1,5 +1,7 @@
 #include "boot.h"
 
+#define USE_PLACEHOLDER 0
+
 /*
  * ROM spec file
  */
@@ -27,7 +29,7 @@ beginseg
 	include "rsp_cfb.o"
 endseg
 
-/*
+#if USE_PLACEHOLDER
 beginseg
 	name "dmg_boot"
 	flags RAW
@@ -45,9 +47,9 @@ beginseg
 	flags RAW
 	include "data/rom_placeholder.gb"
 endseg
-// */
 
-//*
+#else  // USE_PLACEHOLDER
+
 beginseg
 	name "dmg_boot"
 	flags RAW
@@ -63,9 +65,10 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/PokemonBlue.gb"
+	include "data/Aladdin.gbc"
 endseg
-// */
+
+#endif // USE_PLACEHOLDER
 
 beginwave
 	name "game"

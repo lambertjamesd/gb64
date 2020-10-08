@@ -42,7 +42,11 @@
 #include "src/mainmenu.h"
 #include "src/faulthandler.h"
 
+#include "debugger/debugger.h"
+
 #define RUN_TESTS 0
+
+char gTmpBuffer[512];
 
 /*
  * This is the main routine of the app.

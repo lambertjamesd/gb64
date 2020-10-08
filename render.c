@@ -132,12 +132,6 @@ void finishRenderFrame()
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
 
-#ifdef DEBUG
-#ifndef __MWERKS__
-    assert((glistp - dynamicp->glist) < GLIST_LEN);
-#endif
-#endif
-
     /*
     * Build graphics task:
     *

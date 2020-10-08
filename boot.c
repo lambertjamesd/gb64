@@ -37,6 +37,10 @@
 #include "src/faulthandler.h"
 #include "src/save.h"
 
+#ifdef USE_DEBUGGER
+#include "debugger/debugger.h"
+#endif
+
 /*
  * Symbol genererated by "makerom" (RAM)
  */
@@ -162,7 +166,9 @@ idle(void *arg)
 
 	osStartThread(&mainThread);
 
+#ifndef USE_DEBUGGER
 	installFaultHandler(&mainThread);
+#endif
 
 	/*
 	 * Become the idle thread
@@ -175,38 +181,8 @@ idle(void *arg)
 /*
  * This is the main routine of the app.
  */
-static void
-mainproc(void *arg)
+static void mainproc(void *arg)
 {
-#ifdef DEBUG
-	int             i;
-	char           *ap;
-	u32            *argp;
-	u32             argbuf[16];
-
-	/*
-	 * get arguments (options)
-	 */
-	argp = (u32 *) RAMROM_APP_WRITE_ADDR;
-	for (i = 0; i < sizeof(argbuf) / 4; i++, argp++) {
-		osEPiReadIo(handler, (u32) argp, &argbuf[i]);	/* Assume no DMA */
-	}
-
-	/*
-	 * Parse the options 
-	 */
-	ap = (char *) argbuf;
-	while (*ap != '\0') {
-		while (*ap == ' ')
-			ap++;
-		if (*ap == '-' && *(ap + 1) == 'r') {
-			rdp_flag = 1;
-			ap += 2;
-		}
-		else ap++;
-	}
-#endif
-
 	/*
 	 * Setup the message queues
 	 */
@@ -247,8 +223,16 @@ mainproc(void *arg)
 	_gEndSegments = staticSegment + 
 		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
 		
-
 	clearDebugOutput();
+
+#ifdef USE_DEBUGGER
+	OSThread* threads = &mainThread;
+	enum GDBError err = gdbInitDebugger(handler, &dmaMessageQ, &threads, 1);
+	if (err != GDBErrorNone)
+	{
+		DEBUG_PRINT_F("Failed to initialize debugger %x", err);
+	}
+#endif
 
 	initHeap();
 	

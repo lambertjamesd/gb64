@@ -10,9 +10,6 @@ struct HeapSegment* gFirstHeapSegment;
 extern char     _codeSegmentEnd[];
 extern char    *_gEndSegments;
 
-extern char     _cfbSegmentStart[];
-extern char     _cfbSegmentEnd[];
-
 void initHeap()
 {
     gFirstHeapSegment = (struct HeapSegment*)(((int)_codeSegmentEnd + 7) & ~0x7);
@@ -22,9 +19,6 @@ void initHeap()
 
     markAllocated(_codeSegmentEnd, 
         (int)_gEndSegments - (int)_codeSegmentEnd
-    );
-    markAllocated(_cfbSegmentStart,
-        (int)_cfbSegmentEnd - (int)_cfbSegmentStart
     );
 }
 
