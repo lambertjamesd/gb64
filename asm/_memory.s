@@ -82,10 +82,18 @@ _GB_DO_WRITE_RAM:
 _GB_CALL_WRITE_CALLBACK:
     save_state_on_stack
 
+.if DEBUG
+    addi $sp, $sp, -12
+.endif
+
     move $a0, Memory
     move $a1, ADDR
     jalr $ra, Param0
     move $a2, VAL
+
+.if DEBUG
+    addi $sp, $sp, 12
+.endif
 
     restore_state_from_stack
     jr $ra
@@ -327,16 +335,16 @@ _GB_RESTART_SOUND:
 
     # write the register before making the call
     jal _GB_BASIC_REGISTER_WRITE
+    nop
 
-    lui Param0, %hi(restartSound)
     jal GB_CALC_UNSCALED_CLOCKS
-    addiu Param0, Param0, %lo(restartSound)
+    nop
 
     move $a0, Memory
     move $a1, $v0
-    jalr $ra, Param0
     # TODO use unscaledCyclesRun
     move $a2, TMP2
+    call_c_fn restartSound, 3
 
     restore_state_from_stack
 
@@ -411,8 +419,8 @@ _GB_SYNC_AUDIO:
     nop
 
     move $a0, Memory
-    call_c_fn tickAudio
     move $a1, $v0
+    call_c_fn tickAudio, 2
 
     restore_state_from_stack
 
@@ -753,8 +761,8 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     li $at, 1
     write_register_direct $at, REG_UNLOAD_BIOS
 
-    call_c_fn unloadBIOS
     move $a0, Memory
+    call_c_fn unloadBIOS, 1
 
     lhu GB_PC, 0x8($sp)
     lhu GB_SP, 0xA($sp)

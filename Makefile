@@ -11,8 +11,6 @@
 #
 #
 
-N64_ASFLAGS = -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared
-
 include $(ROOT)/usr/include/make/PRdefs
 
 WARNING_FLAGS = -Werror=implicit-function-declaration
@@ -27,17 +25,19 @@ DEBUG_FILES =
 DEBUG_FLAGS =
 endif
 
-FINAL = YES
+# FINAL = YES
 ifeq ($(FINAL), YES)
-OPTIMIZER       = $(DEBUG_FLAGS) -O2 -std=gnu90 -Werror $(WARNING_FLAGS)
+OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu90 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
 N64LIB          = -lultra_rom
+N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared
 else
-OPTIMIZER       = -g -std=gnu90 -Werror $(WARNING_FLAGS)
+OPTIMIZER       = $(DEBUG_FLAGS) -g -std=gnu90 -Werror $(WARNING_FLAGS)
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
-N64LIB          = -lultra_d
+N64LIB          = -lultra_rom
+N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared --defsym DEBUG=1
 endif
 
 APP =		bin/gb.out

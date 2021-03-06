@@ -175,8 +175,15 @@
     addi $sp, $sp, _C_CALLBACK_FRAME_SIZE
 .endm
 
-.macro call_c_fn name
+.macro call_c_fn name paramCount
     lui $at, %hi(\name)
     addiu $at, $at, %lo(\name)
     jalr $ra, $at
+.if DEBUG
+    addi $sp, $sp, -4 * (\paramCount)
+    addi $sp, $sp, 4 * (\paramCount)
+.else
+    nop
+.endif
+
 .endm

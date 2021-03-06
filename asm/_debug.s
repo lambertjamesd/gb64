@@ -39,8 +39,7 @@ _CHECK_FOR_INVALID_STATE_INVALD:
     save_state_on_stack
 
     la $a0, ERROR_MSG
-    call_c_fn debugInfo
-    nop
+    call_c_fn debugInfo, 1
 
     restore_state_from_stack
 
@@ -60,8 +59,7 @@ OPEN_DEBUGGER:
     lw $fp, (ST_FP + _C_CALLBACK_FRAME_SIZE)($sp)
 
     # $a0 and $a1 already have the correct values
-    call_c_fn useDebugger
-    nop
+    call_c_fn useDebugger, 2
 
     restore_state_from_stack
     
