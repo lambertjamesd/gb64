@@ -108,6 +108,14 @@ LCOPTS =	-G 0
 LDFLAGS =	$(MKDEPOPT)  -L/usr/lib/n64 $(N64LIB) -L$(N64_LIBGCCDIR) -L$(N64_NEWLIBDIR) -lgcc -lc 
 LDIRT  =	$(APP) $(TARGETS)
 
+data/cgb_bios_placeholder.bin: data/cgb_bios_placeholder.asm
+	rgbasm data/cgb_bios_placeholder.asm -o data/cgb_bios_placeholder.o
+	rgblink --nopad -o data/cgb_bios_placeholder.bin data/cgb_bios_placeholder.o
+	
+data/dmg_boot_placeholder.bin: data/dmg_boot_placeholder.asm
+	rgbasm data/dmg_boot_placeholder.asm -o data/dmg_boot_placeholder.o
+	rgblink --nopad -o data/dmg_boot_placeholder.bin data/dmg_boot_placeholder.o
+
 default:	$(TARGETS)
 
 asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \

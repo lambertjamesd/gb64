@@ -12,3 +12,4 @@ data/*.s
 data/tests/*
 debugger/*
 !/bin/DUMMY
+tmp/
