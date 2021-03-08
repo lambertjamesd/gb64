@@ -1,0 +1,16 @@
+.name DMA_CACHE, $c0
+.name DMA_DRAM, $c1
+.name DMA_READ_LENGTH, $c2
+.name DMA_WRITE_LENGTH, $c3
+.name SP_STATUS, $c4
+.name DMA_FULL, $c5
+.name DMA_BUSY, $c6
+.name SP_RESERVED, $c7
+.name CMD_START, $c8
+.name CMD_END, $c9
+.name CMD_CURRENT, $c10
+.name CMD_STATUS, $c11
+.name CMD_CLOCK, $c12
+.name CMD_BUSY, $c13
+.name CMD_PIPE_BUSY, $c14
+.name CMD_TMEM_BUSY, $c15

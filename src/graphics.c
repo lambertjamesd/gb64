@@ -9,10 +9,7 @@
 
 Gfx* gCurrentScreenDL;
 
-union {
-    u8 buffer[GB_SCREEN_W * GB_SCREEN_H];
-    long long unusedAlign;
-} gScreenBuffer;
+u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
 
 Gfx gDrawScreen[0x280] = {gsSPEndDisplayList()};
 
@@ -21,7 +18,7 @@ u16 gScreenPalette[MAX_PALLETE_SIZE];
 #define COPY_SCREEN_STRIP(dl, y, maxY, scale, scaleInv)                     \
     gDPLoadTextureTile(                                                     \
         dl,                                                                 \
-        (int)gScreenBuffer.buffer + y * GB_SCREEN_W,                        \
+        (int)gScreenBuffer + y * GB_SCREEN_W,                        \
         G_IM_FMT_CI, G_IM_SIZ_8b,                                           \
         GB_SCREEN_W, maxY - y,                                              \
         0, 0,                                                               \
@@ -412,7 +409,7 @@ void renderPixelRow(
     // sprite index memory
     renderSprites(memory, state);
 
-    u8* targetMemory = gScreenBuffer.buffer + state->row * GB_SCREEN_W;
+    u8* targetMemory = gScreenBuffer + state->row * GB_SCREEN_W;
 
     offsetX = READ_REGISTER_DIRECT(memory, REG_SCX);
     bgY = (state->row + READ_REGISTER_DIRECT(memory, REG_SCY)) & 0xFF;

@@ -81,6 +81,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/menu.c                            \
        src/decoder.c                         \
        src/mainmenu.c                        \
+       src/rspppu.c                        \
        src/inputmapping.c                    \
        src/graphicsmenu.c                    \
        src/clockmenu.c                       \
@@ -100,7 +101,7 @@ DATAOBJECTS =	$(DATAFILES:.c=.o)
 
 CODESEGMENT =	codesegment.o
 
-OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin
+OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.text bin/rsp/ppu.text.dat
 
 LCDEFS +=	$(HW_FLAGS)
 LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64 -I$(N64_NEWLIBINCDIR)
@@ -115,6 +116,16 @@ data/cgb_bios_placeholder.bin: data/cgb_bios_placeholder.asm
 data/dmg_boot_placeholder.bin: data/dmg_boot_placeholder.asm
 	rgbasm data/dmg_boot_placeholder.asm -o data/dmg_boot_placeholder.o
 	rgblink --nopad -o data/dmg_boot_placeholder.bin data/dmg_boot_placeholder.o
+
+RSPFILES = $(wildcard ./rsp/*.s)
+
+bin/rsp/ppu.text bin/rsp/ppu.text.dat: $(RSPFILES)
+	mkdir -p bin/rsp
+	rspasm -o bin/rsp/ppu.text rsp/ppu.s
+
+bin/rsp/ppu.o: bin/rsp/ppu.text bin/rsp/ppu.text.dat
+	rsp2elf bin/rsp/ppu.text
+	mv bin/rsp/ppu.text.tvd bin/rsp/ppu.o
 
 default:	$(TARGETS)
 

@@ -7,6 +7,7 @@
 #include "../memory.h"
 #include "upgrade.h"
 #include "save.h"
+#include "rspppu.h"
 
 struct GameBoy gGameboy;
 
@@ -168,6 +169,8 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
 
         accumulatedTime += CYCLES_PER_FRAME;
+
+        startPPUFrame(&gameboy->memory);
     }
     else
     {

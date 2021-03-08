@@ -29,6 +29,18 @@ beginseg
 	include "rsp_cfb.o"
 endseg
 
+beginseg
+	name "ppu_text"
+	flags RAW
+	include "bin/rsp/ppu.text"
+endseg
+
+beginseg
+	name "ppu_data"
+	flags RAW
+	include "bin/rsp/ppu.text.dat"
+endseg
+
 #if USE_PLACEHOLDER
 beginseg
 	name "dmg_boot"
@@ -53,7 +65,8 @@ endseg
 beginseg
 	name "dmg_boot"
 	flags RAW
-	include "data/dmg_boot.bin"
+	//include "data/dmg_boot.bin"
+	include "data/dmg_boot_placeholder.bin"
 endseg
 
 beginseg
@@ -65,7 +78,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/Aladdin.gbc"
+	include "data/AdventureIslandII.gb"
 endseg
 
 #endif // USE_PLACEHOLDER
@@ -74,6 +87,8 @@ beginwave
 	name "game"
 	include "code"
 	include "static"
+	include "ppu_text"
+	include "ppu_data"
 	include "dmg_boot"
 	include "cgb_bios"
 	include "rsp_cfb"

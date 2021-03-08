@@ -36,6 +36,7 @@
 #include "render.h"
 #include "src/faulthandler.h"
 #include "src/save.h"
+#include "src/rspppu.h"
 
 #ifdef USE_DEBUGGER
 #include "debugger/debugger.h"
@@ -243,6 +244,8 @@ static void mainproc(void *arg)
 	initRomLayout(&gGBRom, _gbromSegmentRomStart);
 
 	initControllers(MAXCONTROLLERS);
+
+	setupPPU();
 
 	game();
 }
