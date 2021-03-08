@@ -13,6 +13,7 @@ beginseg
 	include "codesegment.o"
 	include "$(ROOT)/usr/lib/PR/rspboot.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.fifo.o"
+	include "bin/rsp/ppu.o"
 endseg
 
 beginseg
@@ -27,18 +28,6 @@ beginseg
 	flags OBJECT
 	number CFB_SEGMENT
 	include "rsp_cfb.o"
-endseg
-
-beginseg
-	name "ppu_text"
-	flags RAW
-	include "bin/rsp/ppu.text"
-endseg
-
-beginseg
-	name "ppu_data"
-	flags RAW
-	include "bin/rsp/ppu.text.dat"
 endseg
 
 #if USE_PLACEHOLDER
@@ -87,8 +76,6 @@ beginwave
 	name "game"
 	include "code"
 	include "static"
-	include "ppu_text"
-	include "ppu_data"
 	include "dmg_boot"
 	include "cgb_bios"
 	include "rsp_cfb"

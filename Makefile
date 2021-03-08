@@ -101,7 +101,7 @@ DATAOBJECTS =	$(DATAFILES:.c=.o)
 
 CODESEGMENT =	codesegment.o
 
-OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.text bin/rsp/ppu.text.dat
+OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.o
 
 LCDEFS +=	$(HW_FLAGS)
 LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64 -I$(N64_NEWLIBINCDIR)
@@ -119,13 +119,15 @@ data/dmg_boot_placeholder.bin: data/dmg_boot_placeholder.asm
 
 RSPFILES = $(wildcard ./rsp/*.s)
 
-bin/rsp/ppu.text bin/rsp/ppu.text.dat: $(RSPFILES)
+bin/rsp/ppu bin/rsp/ppu.dat: $(RSPFILES)
 	mkdir -p bin/rsp
-	rspasm -o bin/rsp/ppu.text rsp/ppu.s
+	rspasm -o bin/rsp/ppu rsp/ppu.s
 
-bin/rsp/ppu.o: bin/rsp/ppu.text bin/rsp/ppu.text.dat
-	rsp2elf bin/rsp/ppu.text
-	mv bin/rsp/ppu.text.tvd bin/rsp/ppu.o
+bin/rsp/ppu.o: bin/rsp/ppu bin/rsp/ppu.dat
+	rsp2elf -r bin/rsp/ppu
+	
+bin/rsp/ppu.tvd: bin/rsp/ppu bin/rsp/ppu.dat
+	rsp2elf bin/rsp/ppu
 
 default:	$(TARGETS)
 
@@ -158,6 +160,7 @@ font.o:		./gbfont_img.h
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)
+	rm -rf bin/rsp
 
 rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
