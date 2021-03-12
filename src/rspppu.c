@@ -3,11 +3,11 @@
 
 #include <ultra64.h>
 
-extern char ppuTextStart[];
-extern char ppuTextEnd[];
+extern long long int ppuTextStart[];
+extern long long int ppuTextEnd[];
 
-extern char ppuDataStart[];
-extern char ppuDataEnd[];
+extern long long int ppuDataStart[];
+extern long long int ppuDataEnd[];
 
 static char __attribute__((aligned(8))) outputBuffer[64];
 
@@ -40,11 +40,11 @@ void startPPUFrame(struct Memory* memory)
     task.t.type = M_GFXTASK;
     task.t.flags = OS_TASK_DP_WAIT;
     task.t.ucode_boot = (u64*)ppuTextStart;
-    task.t.ucode_boot_size = ppuTextEnd - ppuTextStart;
+    task.t.ucode_boot_size = (char*)ppuTextEnd - (char*)ppuTextStart;
     task.t.ucode = NULL;
     task.t.ucode_size = 0;
     task.t.ucode_data = (u64*)ppuDataStart;
-    task.t.ucode_data_size = ppuDataEnd - ppuDataStart;
+    task.t.ucode_data_size = (char*)ppuDataEnd - (char*)ppuDataStart;
     task.t.dram_stack = 0;
     task.t.dram_stack_size = 0;
     task.t.output_buff = (u64*)outputBuffer;
