@@ -15,6 +15,8 @@ include $(ROOT)/usr/include/make/PRdefs
 
 WARNING_FLAGS = -Werror=implicit-function-declaration
 
+RSP2DWARF = /home/james/go/src/github.com/lambertjamesd/rsp2dwarf/rsp2dwarf
+
 # INCLUDE_DEBUGGER = TRUE
 
 ifeq ($(INCLUDE_DEBUGGER), TRUE)
@@ -124,7 +126,8 @@ bin/rsp/ppu bin/rsp/ppu.dat: $(RSPFILES)
 	rspasm -o bin/rsp/ppu rsp/ppu.s
 
 bin/rsp/ppu.o: bin/rsp/ppu bin/rsp/ppu.dat
-	rsp2elf -r bin/rsp/ppu
+	$(RSP2DWARF) bin/rsp/ppu -o bin/rsp/ppu.o -n ppu
+	$(RSP2DWARF) bin/rsp/ppu -o bin/rsp/ppu.debug.o -n ppu -g
 	
 bin/rsp/ppu.tvd: bin/rsp/ppu bin/rsp/ppu.dat
 	rsp2elf bin/rsp/ppu

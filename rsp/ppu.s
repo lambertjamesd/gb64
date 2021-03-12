@@ -28,7 +28,7 @@ scanline:
 
 .text 0x0
 
-Main:
+ppuMain:
     # ori p0, zero, 0
     # lw p1, osTask_ucode_data($0)
     # lw p2, osTask_ucode_data_size($0)
@@ -75,6 +75,11 @@ yFillLoop:
 
     # jal DMAWait
     # nop
+
+.unname index
+.unname output
+.unname workingMemory
+.unname pixelIndex
 
     break
     .dmax 4096
