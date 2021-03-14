@@ -24,10 +24,23 @@ ppuTask:
 scanline:
     .space GB_SCREEN_WD
 
-    .dmax 4032
+.align 8
+tilemap:
+    .space GB_TILEMAP_W
+tilemapAttrs:
+    .space GB_TILEMAP_W
+tilemapTileCache:
+    .space GB_TILE_SIZE * GB_MAX_VISIBLE_TILES
+tilemapTileCacheInfo:
+    .space 2 * GB_MAX_VISIBLE_TILES
 
-helloFromRSP:
-    .word 0xDEADBEEF
+.align 8
+spriteTileCache:
+    .space GB_TILE_SIZE * GB_MAX_VISIBLE_SPRITES
+spriteTileCacheInfo:
+    .space 2 * GB_MAX_VISIBLE_SPRITES
+
+    .dmax 4032
 
 .text 0x0
 
@@ -129,5 +142,5 @@ WaitSpin:
     mfc0 tmp, DMA_BUSY
     bne tmp, zero, WaitSpin
     nop
-    jr return
+    jr $ra
     mtc0 zero, SP_RESERVED
