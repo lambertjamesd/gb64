@@ -8,7 +8,6 @@
 #include "../src/rspppu_includes.h"
 
 .name zero, $0
-.name sp, $30
 .name return, $31
 
 .name v0, $2
@@ -102,8 +101,9 @@ stackEnd:
     .dmax 4032
 
 .text 0x0
-ppuMain: # entry point
-    ori sp, zero, stackEnd + STACK_SIZE
+ppuMain: 
+    # entry point
+    ori $sp, zero, stackEnd + STACK_SIZE
 
     ori a0, zero, 0
     lw a1, osTask_ucode_data($0)
@@ -203,8 +203,8 @@ nextTile:
     sh $at, GB_TILE_INFO_ID(v1) # save tile pointer
 
 precacheLine:
-    addi sp, sp, -8
-    sw return, 0(sp)
+    addi $sp, $sp, -8
+    sw return, 0($sp)
 
     # get the current line
     lbu a1, (ppuTask + PPUTask_ly)(zero)
@@ -219,7 +219,7 @@ precacheLine:
     srl $at, $at, 7
     # store the offset into vram memory
     add a1, $at, a1
-    lbu $at, (ppuTask + PPUTask_graphicsSource)(zero)
+    lw $at, (ppuTask + PPUTask_graphicsSource)(zero)
     addi $at, $at, GraphicsMemory_tilemap0
     add a1, $at, a1 # calculate final ram address for tilemap row
     ori a0, zero, tilemap # dma target
@@ -239,5 +239,6 @@ precacheLine:
 
 skipTilemapInfo:
 
+    lw return, 0($sp)
     jr return
-    addi sp, sp, 8
+    addi $sp, $sp, 8
