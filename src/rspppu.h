@@ -5,6 +5,6 @@
 #include "memory_map.h"
 
 void setupPPU();
-void startPPUFrame(struct Memory* memory);
+void startPPUFrame(struct Memory* memory, int gdc);
 
 #endif

@@ -213,11 +213,11 @@ struct Memory {
     };
     unsigned char internalRam[MAX_RAM_SIZE];
     unsigned char* cartRam;
+    struct ROMLayout* rom;
     union {
         struct GraphicsMemory vram;
         unsigned char vramBytes[sizeof(struct GraphicsMemory)];
     };
-    struct ROMLayout* rom;
     struct AudioRenderState audio;
     struct Breakpoint breakpoints[BREAK_POINT_COUNT];
     u8* timerMemoryBank;

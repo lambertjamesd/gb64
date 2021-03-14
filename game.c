@@ -102,9 +102,6 @@ game(void)
 		lastTime = currentTime;
 
 		// time s  1024*1024 cycles/s 60 frames/s
-
-
-
 		
 #if !RUN_TESTS
 		lastDrawTime = -osGetCount();

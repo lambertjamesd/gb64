@@ -119,7 +119,7 @@ struct GameboySettings
 struct GameBoy
 {
     struct GameboySettings settings;
-    struct Memory memory;
+    struct Memory __attribute__((aligned(8))) memory;
     struct CPUState cpu;
 };
 

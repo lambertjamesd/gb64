@@ -3,6 +3,7 @@
 #include "../memory.h"
 #include "debug_out.h"
 #include "gameboy.h"
+#include "memory_map_offsets.h"
 
 u16 paletteColors[] = {
     0x09C2,

@@ -42,7 +42,7 @@ struct GameboySettings gDefaultSettings = {
 };
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
-{
+{    
     initializeCPU(&gameboy->cpu);
     initMemory(&gameboy->memory, rom);
     gameboy->memory.misc.biosLoaded = 1;
@@ -154,12 +154,15 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
+            if (line == 0) {
+                startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
+            }
+
             graphicsState.row = line;
 
 		    renderPixelRow(&gameboy->memory, &graphicsState);
             cyclesToRun += CYCLES_PER_LINE;
             cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
-
         }
 
         finishScreen(&graphicsState);
@@ -169,8 +172,6 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
 
         accumulatedTime += CYCLES_PER_FRAME;
-
-        startPPUFrame(&gameboy->memory);
     }
     else
     {

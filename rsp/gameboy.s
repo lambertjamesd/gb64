@@ -9,3 +9,6 @@
 #define GB_MAX_VISIBLE_TILES 21
 
 #define GB_MAX_VISIBLE_SPRITES 10
+
+#define GB_TILE_INFO_ID    0
+#define GB_TILE_INFO_SIZE  2

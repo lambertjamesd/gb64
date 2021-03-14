@@ -1,5 +1,6 @@
 
 #include "rspppu.h"
+#include "rspppu_includes.h"
 
 #include <ultra64.h>
 
@@ -20,6 +21,15 @@ struct PPUTask
 {
     u8* output;
     struct Memory* memorySource;
+    struct GraphicsMemory* graphics;
+    short flags;
+    char lcdc;
+    char ly;
+    char scy;
+    char scx;
+    char wy;
+    char wx;
+    int padding;
 };
 
 static struct PPUTask __attribute__((aligned(8))) gPPUTask;
@@ -30,12 +40,24 @@ void setupPPU()
 
 }
 
-void startPPUFrame(struct Memory* memory)
+void startPPUFrame(struct Memory* memory, int gbc)
 {
     OSTask task;
 
     gPPUTask.output = (u8*)K0_TO_PHYS(gScreenBuffer);
     gPPUTask.memorySource = (struct Memory*)K0_TO_PHYS(memory);
+    gPPUTask.graphics = (struct GraphicsMemory*)K0_TO_PHYS(&memory->vram);
+    gPPUTask.flags = 0;
+    gPPUTask.lcdc = READ_REGISTER_DIRECT(memory, REG_LCDC);
+    gPPUTask.ly = READ_REGISTER_DIRECT(memory, REG_LY);
+    gPPUTask.scy = READ_REGISTER_DIRECT(memory, REG_SCY);
+    gPPUTask.scx = READ_REGISTER_DIRECT(memory, REG_SCX);
+    gPPUTask.wy = READ_REGISTER_DIRECT(memory, REG_WY);
+    gPPUTask.wx = READ_REGISTER_DIRECT(memory, REG_WX);
+
+    if (gbc) {
+        gPPUTask.flags |= PPU_TASK_FLAGS_COLOR;
+    }
 
     task.t.type = M_GFXTASK;
     task.t.flags = OS_TASK_DP_WAIT;
