@@ -83,7 +83,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/menu.c                            \
        src/decoder.c                         \
        src/mainmenu.c                        \
-       src/rspppu.c                        \
+       src/rspppu.c                          \
        src/inputmapping.c                    \
        src/graphicsmenu.c                    \
        src/clockmenu.c                       \

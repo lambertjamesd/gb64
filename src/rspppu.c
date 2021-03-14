@@ -54,6 +54,8 @@ void startPPUFrame(struct Memory* memory)
     task.t.yield_data_ptr = 0;
     task.t.yield_data_size = 0;
 
+    osWritebackDCache(&gPPUTask, sizeof(struct PPUTask));
+
     osSpTaskStart(&task);
 
     int currentStatus;
