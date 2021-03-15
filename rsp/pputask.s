@@ -5,8 +5,14 @@
 #define PPUTask_flags          12
 #define PPUTask_lcdc           14
 
-#define REG_LCDC_LCD_ENABLE    0x80
-#define REG_LCDC_GDB_TILE_MAP  0x08
+#define LCDC_BG_ENABLE          0x01
+#define LCDC_OBJ_ENABLE         0x02
+#define LCDC_OBJ_SIZE           0x04
+#define LCDC_BG_TILE_MAP        0x08
+#define LCDC_BG_TILE_DATA       0x10
+#define LCDC_WIN_E              0x20
+#define LCDC_WIN_TILE_MAP       0x40
+#define LCDC_LCD_E              0x80
 
 #define GraphicsMemory_tilemap0          0x1800
 #define GraphicsMemory_tilemapOffset     0x2000

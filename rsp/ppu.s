@@ -125,6 +125,13 @@ ppuMain:
     jal precacheLine
     nop
 
+    li($at, tilemapTileCache)
+    sh $at, currentTile(zero)
+
+    li(a0, tilemap)
+    jal precacheTiles
+    li(a1, 20)
+
     break
     .dmax 4096
 
@@ -184,26 +191,30 @@ requestTile:
     # retrieve the current tile ID
     addi v1, v0, -tilemapTileCache
     srl v1, v1, 3
-    addi v1, v1, tilemapTileCacheInfo
     # check if the tile id matches
-    lhu $at, GB_TILE_INFO_ID(v1)
+    lhu $at, tilemapTileCacheInfo(v1)
     beq $at, a0, nextTile # bail out early 
-    addi $at, a0, GB_TILE_SIZE # increment tile pointer
-    sh $at, GB_TILE_INFO_ID(v1) # save tile pointer
+    addi $at, v0, GB_TILE_SIZE # increment tile pointer
+    sh $at, currentTile(zero) # save tile pointer
+
+    sh a0, tilemapTileCacheInfo(v1) # save new id
 
     lw a1, (ppuTask + PPUTask_graphicsSource)(zero)
     add a1, a1, a0 # load source of tile from main ram
     ori a0, v0, 0 # set the target in DMEM
-    ori a2, zero, GB_TILE_SIZE # size of dma copy
+    ori a2, zero, GB_TILE_SIZE - 1 # size of dma copy
     j DMAproc # copy tile into result
     ori a3, zero, 0 # mark as read
 
 nextTile:
     jr $ra
-    sh $at, GB_TILE_INFO_ID(v1) # save tile pointer
+    sh $at, currentTile(zero) # save tile pointer
+
+###############################################
+# Loads the tilemap row into memory
 
 precacheLine:
-    addi $sp, $sp, -8
+    addi $sp, $sp, -4
     sw return, 0($sp)
 
     # get the current line
@@ -213,8 +224,8 @@ precacheLine:
     sub a1, a1, $at # relative offset
     andi a1, a1, 0xF8 # wrap to 256 pixels and mask to tile
     srl a1, a1, 2 # get the tile offset in tilemap memory
-    lbu s0, (ppuTask + PPUTask_lcdc)(zero)
-    andi $at, s0, REG_LCDC_GDB_TILE_MAP
+    lbu $at, (ppuTask + PPUTask_lcdc)(zero)
+    andi $at, $at, LCDC_BG_TILE_MAP
     # convert to a tilemap offset
     srl $at, $at, 7
     # store the offset into vram memory
@@ -222,8 +233,14 @@ precacheLine:
     lw $at, (ppuTask + PPUTask_graphicsSource)(zero)
     addi $at, $at, GraphicsMemory_tilemap0
     add a1, $at, a1 # calculate final ram address for tilemap row
+    # intentially fall through
+
+###############################################
+# Loads the tilemap row into memory using a ram pointer
+# a1 - pointer into ram
+precacheLineFromPointer:
     ori a0, zero, tilemap # dma target
-    ori a2, zero, GB_TILEMAP_W # dma length
+    ori a2, zero, GB_TILEMAP_W - 1 # dma length
     jal DMAproc # read tilemap row
     ori a3, zero, 0 # is read
 
@@ -240,5 +257,36 @@ precacheLine:
 skipTilemapInfo:
 
     lw return, 0($sp)
+    j DMAWait
+    addi $sp, $sp, 4
+
+###############################################
+# Loads the tilemap row into memory
+#
+# a0 - address of tile source
+# a1 - number of sprites to load
+
+precacheTiles:
+    addi $sp, $sp, -12
+    sw return, 0($sp)
+    sw s0, 4($sp)
+    sw s1, 8($sp)
+
+    ori s0, a0, 0
+    ori s1, a1, 0
+
+precacheNextTile:
+    beq s1, zero, precacheTilesFinish
+    lbu a0, 0(s0)
+    jal requestTile
+    addi s0, s0, 1
+    j precacheNextTile
+    addi s1, s1, -1
+
+precacheTilesFinish:
+    lw return, 0($sp)
+    lw s0, 4($sp)
+    lw s1, 8($sp)
+
     jr return
-    addi $sp, $sp, 8
+    addi $sp, $sp, 12
