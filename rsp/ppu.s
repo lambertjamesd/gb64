@@ -105,6 +105,7 @@ ppuMain:
     # entry point
     ori $sp, zero, stackEnd + STACK_SIZE
 
+    # load ucode_data
     ori a0, zero, 0
     lw a1, osTask_ucode_data($0)
     lw a2, osTask_ucode_data_size($0)
@@ -112,12 +113,14 @@ ppuMain:
     jal DMAproc
     ori a3, zero, 0
 
+    # load PPUTask
     ori a0, zero, ppuTask
     lw a1, osTask_data_ptr($0)
     li(a2, PPUTask_sizeof-1)
     jal DMAproc
     ori a3, zero, 0
 
+    # wait for PPUTask to finish loading
     jal DMAWait
     # note delay slot
     nop
@@ -134,6 +137,18 @@ ppuMain:
 
     break
     .dmax 4096
+
+###############################################
+# Main loop algorithm
+# 1 setup initial state
+# 2 wait for MODE 3 on the CPU to access VRAM
+# 3 DMA Needed memory to DEMEM to render a single line
+# 4 signal to CPU that VRAM has been read so it can 
+#   continue to MODE 0
+# 5 Render single line
+# 6 If done with screen, break
+# 7 Setup state for another scanline
+# 8 goto step 2
 
 ###############################################
 # Procedure to do DMA reads/writes.
@@ -233,13 +248,14 @@ precacheLine:
     lw $at, (ppuTask + PPUTask_graphicsSource)(zero)
     addi $at, $at, GraphicsMemory_tilemap0
     add a1, $at, a1 # calculate final ram address for tilemap row
+    ori a0, zero, tilemap # dma target
     # intentially fall through
 
 ###############################################
 # Loads the tilemap row into memory using a ram pointer
-# a1 - pointer into ram
+# a0 - target pointer into DMEM
+# a1 - source pointer from ram
 precacheLineFromPointer:
-    ori a0, zero, tilemap # dma target
     ori a2, zero, GB_TILEMAP_W - 1 # dma length
     jal DMAproc # read tilemap row
     ori a3, zero, 0 # is read
@@ -249,10 +265,10 @@ precacheLineFromPointer:
     andi $at, $at, PPU_TASK_FLAGS_COLOR
     beq $at, zero, skipTilemapInfo
     # note delay slot
-    addi a1, a1, GraphicsMemory_tilemapOffset
+    addi a1, a1, GraphicsMemory_tilemapOffset # offset source from ram
 
     jal DMAproc
-    ori a0, zero, tilemapAttrs
+    ori a0, zero, (tilemapAttrs-tilemap) # offset target into DMEM
 
 skipTilemapInfo:
 
@@ -264,29 +280,60 @@ skipTilemapInfo:
 # Loads the tilemap row into memory
 #
 # a0 - address of tile source
-# a1 - number of sprites to load
+# a1 - offset into tile source
+# a2 - number of sprites to load
 
 precacheTiles:
-    addi $sp, $sp, -12
+    addi $sp, $sp, -16
     sw return, 0($sp)
     sw s0, 4($sp)
     sw s1, 8($sp)
+    sw s2, 12($sp)
 
     ori s0, a0, 0
     ori s1, a1, 0
+    ori s2, a2, 0
 
 precacheNextTile:
-    beq s1, zero, precacheTilesFinish
-    lbu a0, 0(s0)
+    beq s2, zero, precacheTilesFinish
+    add a1, s0, s1 # get the tile address
+    lbu a0, 0(a1) # load the tile index
+    sll a0, a0, 4 # convert the tile index to a relative tile pointer
+
+    # 
+    # calculate which tile range to use
+    #
+    lbu $at, (ppuTask + PPUTask_lcdc)(zero)
+    # determine which tile offset to use
+    andi $at, $at, LCDC_BG_TILE_DATA 
+    sll $at, $at, 3 # if set, LCDC_BG_TILE_DATA this values becomes 0x80
+    # a when LCDC_BG_TILE_DATA is set
+    # it should select the lower range
+    xori $at, $at, 0x80 
+    # selectes betweeen the tile range 8000-8FFF and 8800-97ff
+    add a0, a0, $at
+    andi a0, a0, 0xFF
+    add a0, a0, $at
+
+    #
+    # calculate which tile bank to use
+    #
+    lbu $at, (tilemap - tilemapAttrs)(a1)
+    andi $at, $at, TILE_ATTR_VRAM_BANK
+    sll $at, $at, 10 # converts 0x08 flag to 0x2000 offset
+    add a0, a0, $at
+
     jal requestTile
-    addi s0, s0, 1
+    addi s1, s1, 1
+    andi s1, s1, 0x1f # wrap to 32 tiles
     j precacheNextTile
-    addi s1, s1, -1
+    addi s2, s2, -1
 
 precacheTilesFinish:
     lw return, 0($sp)
     lw s0, 4($sp)
     lw s1, 8($sp)
+    lw s2, 12($sp)
 
     jr return
-    addi $sp, $sp, 12
+    addi $sp, $sp, 16

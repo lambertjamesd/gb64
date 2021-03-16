@@ -9,3 +9,9 @@
 #define GB_MAX_VISIBLE_TILES 21
 
 #define GB_MAX_VISIBLE_SPRITES 10
+
+#define TILE_ATTR_PALETTE       0x07
+#define TILE_ATTR_VRAM_BANK     0x08
+#define TILE_ATTR_H_FLIP        0x20
+#define TILE_ATTR_V_FLIP        0x40
+#define TILE_ATTR_PRIORITY      0x80
