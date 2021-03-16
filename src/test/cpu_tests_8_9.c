@@ -98,7 +98,7 @@ int testSingleADD(
                 memory->internalRam[0] = baseInstruction;
             }
 
-            run = runCPU(cpu, memory, 1);
+            run = runCPU(cpu, memory, 1, 0);
 
             if (baseInstruction == CPU_ADD_A_B || baseInstruction == CPU_ADD_A_d8) 
             {

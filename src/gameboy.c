@@ -132,6 +132,10 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 
     if (renderScreen && screenWasEnabled)
     {
+        // clear mode 3 bit
+        IO_WRITE(SP_STATUS_REG, SP_CLR_SIG0);
+        startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
+
         ly = READ_REGISTER_DIRECT(&gameboy->memory, REG_LY);
 
         if (ly != 0 || (READ_REGISTER_DIRECT(&gameboy->memory, REG_LCD_STAT) & REG_LCD_STAT_MODE) != 2)
@@ -141,7 +145,8 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
             accumulatedTime += runCPU(
                 &gameboy->cpu, 
                 &gameboy->memory, 
-                (2 + GB_SCREEN_LINES - ly) * CYCLES_PER_LINE
+                (2 + GB_SCREEN_LINES - ly) * CYCLES_PER_LINE,
+                RUN_CPU_FLAGS_RENDER
             );
             gameboy->cpu.runUntilNextFrame = 0;
         }
@@ -150,32 +155,31 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 
         int cyclesToRun = CYCLES_TIL_LINE_RENDER;
 
-        cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+        cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun, RUN_CPU_FLAGS_RENDER);
 
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
             if (line == 0) {
-                startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
             }
 
             graphicsState.row = line;
 
 		    renderPixelRow(&gameboy->memory, &graphicsState);
             cyclesToRun += CYCLES_PER_LINE;
-            cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+            cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun, RUN_CPU_FLAGS_RENDER);
         }
 
         finishScreen(&graphicsState);
 
         // intentionally run short to make sure we don't leak into the next frame
         cyclesToRun += CYCLES_PER_LINE * V_BLANK_LINES - CYCLES_TIL_LINE_RENDER - 2;
-        cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun);
+        cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun, RUN_CPU_FLAGS_RENDER);
 
         accumulatedTime += CYCLES_PER_FRAME;
     }
     else
     {
-        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME);
+        runCPU(&gameboy->cpu, &gameboy->memory, CYCLES_PER_FRAME, 0);
         accumulatedTime += CYCLES_PER_FRAME;
     }
 

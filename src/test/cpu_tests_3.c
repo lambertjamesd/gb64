@@ -16,7 +16,7 @@ int testJR_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = CPU_JR_NC;
     memory->internalRam[5] = (unsigned char)(-6);
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("JR NC", testOutput, cpu, &expected) ||
         !testInt("JR NC run result", testOutput, run, 3))
@@ -25,7 +25,7 @@ int testJR_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     }
     
     expected.pc = 0;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     if (!testCPUState("JR NC", testOutput, cpu, &expected) ||
         !testInt("JR NC run result", testOutput, run, 3))
@@ -36,7 +36,7 @@ int testJR_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->f = GB_FLAGS_C;
     expected.pc = 2;
     expected.f = GB_FLAGS_C;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("JR NC", testOutput, cpu, &expected) &&
@@ -58,7 +58,7 @@ int testLD_SP_d16(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[1] = 0x11;
     memory->internalRam[2] = 0xD0;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("LD SP d16", testOutput, cpu, &expected) &&
@@ -84,7 +84,7 @@ int testLDD_HL_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0] = CPU_LDD_HL_A;
     memory->internalRam[1] = CPU_LDD_HL_A;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     if (
         !testCPUState("LDD HL A", testOutput, cpu, &expected) ||
@@ -95,7 +95,7 @@ int testLDD_HL_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     }
 
     cpu->l = 0x00;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     expected.pc = 2;
     expected.h = 0x80;
     expected.l = 0xFF;
@@ -123,7 +123,7 @@ int testINC_SP(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0] = CPU_INC_SP;
     memory->internalRam[1] = CPU_INC_SP;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("INC SP", testOutput, cpu, &expected) &&
         testInt("INC SP run result", testOutput, run, 2);
@@ -142,7 +142,7 @@ int testINC_HL_ADDR(struct CPUState* cpu, struct Memory* memory, char* testOutpu
     memory->internalRam[0] = CPU_INC_HL_ADDR;
     memory->internalRam[0x130] = 0x31;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     return 
         testCPUState("INC (HL) half carry", testOutput, cpu, &expected) &&
@@ -166,7 +166,7 @@ int testDEC_HL_ADDR(struct CPUState* cpu, struct Memory* memory, char* testOutpu
     memory->internalRam[0] = CPU_DEC_HL_ADDR;
     memory->internalRam[0x130] = 0x31;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     return 
         testCPUState("DEC (HL) half carry", testOutput, cpu, &expected) &&
@@ -189,7 +189,7 @@ int testLD_HL_d8(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0] = CPU_LD_HL_d8;
     memory->internalRam[1] = 23;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("LD (HL) d8", testOutput, cpu, &expected) &&
@@ -212,7 +212,7 @@ int testSCF(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_SCF;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("SCF", testOutput, cpu, &expected) &&
@@ -237,7 +237,7 @@ int testJR_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = CPU_JR_C;
     memory->internalRam[5] = (unsigned char)(-6);
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("JR C", testOutput, cpu, &expected) ||
         !testInt("JR C run result", testOutput, run, 3))
@@ -246,7 +246,7 @@ int testJR_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     }
     
     expected.pc = 0;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     if (!testCPUState("JR C second", testOutput, cpu, &expected) ||
         !testInt("JR C run result", testOutput, run, 3))
@@ -257,7 +257,7 @@ int testJR_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->f = 0;
     expected.pc = 2;
     expected.f = 0;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("JR C third", testOutput, cpu, &expected) &&
@@ -282,7 +282,7 @@ int testADD_HL_SP(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_ADD_HL_SP;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("HL SP half", testOutput, cpu, &expected) &&
@@ -307,7 +307,7 @@ int testLDD_A_HL(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0] = CPU_LDD_A_HL;
     memory->internalRam[0x100] = 0xA3;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("LDD A HL", testOutput, cpu, &expected) &&
@@ -331,7 +331,7 @@ int testDEC_SP(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_DEC_SP;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("DEC SP", testOutput, cpu, &expected) &&
         testInt("DEC SP run result", testOutput, run, 2);
@@ -349,7 +349,7 @@ int testINC_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_INC_A;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     return 
         testCPUState("INC A", testOutput, cpu, &expected) &&
@@ -370,7 +370,7 @@ int testDEC_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_DEC_A;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     
     return 
         testCPUState("DEC A", testOutput, cpu, &expected) &
@@ -392,7 +392,7 @@ int testLD_A_d8(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0] = CPU_LD_A_d8;
     memory->internalRam[1] = 23;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("LD A d8", testOutput, cpu, &expected) &&
@@ -413,7 +413,7 @@ int testCCF(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_CCF;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return 
         testCPUState("CCF d16", testOutput, cpu, &expected) &&

@@ -32,6 +32,7 @@ runCPU:
     sw $s6, ST_S6($sp) 
     sw $s7, ST_S7($sp) 
     sw $fp, ST_FP($sp)
+    sw $a3, ST_FLAGS($sp)
 
     lbu GB_A, CPU_STATE_A(CPUState)
     lbu GB_F, CPU_STATE_F(CPUState)

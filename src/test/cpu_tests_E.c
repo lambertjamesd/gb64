@@ -13,7 +13,7 @@ int testLDH_a8_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0] = CPU_LDH_a8_A;
     memory->internalRam[1] = 0xF0;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("LDH a8 A branch", testOutput, cpu, &expected) &&
         testInt("LDH a8 A branch run result", testOutput, run, 3) &&
@@ -39,7 +39,7 @@ int testPOP_HL(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("POP HL branch", testOutput, cpu, &expected) &&
         testInt("POP HL branch run result", testOutput, run, 3) &&
@@ -59,7 +59,7 @@ int testLDH_C_ADDR_A(struct CPUState* cpu, struct Memory* memory, char* testOutp
 
     memory->internalRam[0] = CPU_LD_C_ADDR_A;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("LD (C) A branch", testOutput, cpu, &expected) &&
         testInt("LD (C) A branch run result", testOutput, run, 2) &&
@@ -83,7 +83,7 @@ int testPUSH_HL(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_PUSH_HL;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("PUSH HL", testOutput, cpu, &expected) &&
         testInt("PUSH HL run result", testOutput, run, 4) &&
@@ -111,7 +111,7 @@ int testADD_SP_r8(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[2] = CPU_ADD_SP_r8;
     memory->internalRam[3] = -0x30;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (
         !testCPUState("ADD SP r8 HL", testOutput, cpu, &expected) ||
@@ -121,7 +121,7 @@ int testADD_SP_r8(struct CPUState* cpu, struct Memory* memory, char* testOutput)
         return 0;
     }
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
     expected.pc = 4;
     expected.sp = 0x8010;
     expected.f = GB_FLAGS_C;
@@ -144,7 +144,7 @@ int testJP_HL(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_JP_HL;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("JP HL", testOutput, cpu, &expected) &&
         testInt("JP HL run result", testOutput, run, 1) &&
@@ -166,7 +166,7 @@ int testLD_a16_A(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[2] = 0x80;
     memory->internalRam[0x40] = 0x72;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("LD a16 A branch", testOutput, cpu, &expected) &&
         testInt("LD a16 A branch run result", testOutput, run, 4) &&

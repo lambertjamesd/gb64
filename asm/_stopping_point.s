@@ -259,6 +259,19 @@ DEQUEUE_STOPPING_POINT_J_TABLE_END:
 # 1140
 
 ENTER_MODE_0:
+    # check if ppu is rendering
+    lw $at, ST_FLAGS($fp)
+    andi $at, $at, RUN_CPU_FLAGS_RENDER
+    beqz $at, ENTER_MODE_0_SKIP_WAIT
+
+    # wait for the ppu running the rsp to
+    # catch up
+ENTER_MODE_0_WAIT_FOR_MODE_0:
+    lw $at, SP_STATUS_REG
+    andi $at, $at, MODE_3_FLAG
+    bnez $at, ENTER_MODE_0_WAIT_FOR_MODE_0
+
+ENTER_MODE_0_SKIP_WAIT:
     read_register_direct $at, REG_HDMA5
     andi $at, $at, 0x80
     bnez $at, _ENTER_MODE_0_SKIP_DMA

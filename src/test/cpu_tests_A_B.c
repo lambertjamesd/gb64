@@ -74,7 +74,7 @@ int testSingleBitwise(
                 expected.f |= GB_FLAGS_Z;
             }
 
-            run = runCPU(cpu, memory, 1);
+            run = runCPU(cpu, memory, 1, 0);
 
             if (
                 !testCPUState(instructionName, testOutput, cpu, &expected) ||

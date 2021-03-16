@@ -103,6 +103,9 @@
 .eqv ST_S7, 0x24
 .eqv ST_FP, 0x28
 .eqv ST_STARTING_CLOCKS, 0x30
+.eqv ST_FLAGS, 0x34
+
+.eqv RUN_CPU_FLAGS_RENDER, 0x1
 
 .eqv CYCLES_PER_INSTR, 0x1
 
@@ -120,6 +123,9 @@
 .eqv INTERRUPTS_ENABLED, 0x80;
 
 .eqv _C_CALLBACK_FRAME_SIZE, 0x18
+
+.eqv SP_STATUS_REG, 0xA4040010
+.eqv MODE_3_FLAG, 0x80
 
 .macro save_state_on_stack
     addi $sp, $sp, -_C_CALLBACK_FRAME_SIZE

@@ -100,3 +100,17 @@ void startPPUFrame(struct Memory* memory, int gbc)
 
     currentStatus = 0;
 }
+
+void renderPPURow(struct Memory* memory)
+{
+    gPPUTask.lcdc = READ_REGISTER_DIRECT(memory, REG_LCDC);
+    gPPUTask.ly = READ_REGISTER_DIRECT(memory, REG_LY);
+    gPPUTask.scy = READ_REGISTER_DIRECT(memory, REG_SCY);
+    gPPUTask.scx = READ_REGISTER_DIRECT(memory, REG_SCX);
+    gPPUTask.wy = READ_REGISTER_DIRECT(memory, REG_WY);
+    gPPUTask.wx = READ_REGISTER_DIRECT(memory, REG_WX);
+    osWritebackDCache(&gPPUTask, sizeof(struct PPUTask));
+
+    // set mode 3 bit
+    IO_WRITE(SP_STATUS_REG, SP_SET_SIG0);
+}

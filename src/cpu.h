@@ -76,7 +76,9 @@ struct CPUState {
     struct CPUStoppingPoint stoppingPoints[CPU_STOPPING_POINT_COUNT];
 };
 
-extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun);
+#define RUN_CPU_FLAGS_RENDER        0x1
+
+extern int runCPU(struct CPUState* state, struct Memory* memory, int cyclesToRun, int flags);
 extern void initializeCPU(struct CPUState* state);
 extern void addStoppingPoint(struct CPUState* state, struct CPUStoppingPoint stoppingPoint);
 

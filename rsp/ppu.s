@@ -101,8 +101,9 @@ stackEnd:
     .dmax 4032
 
 .text 0x0
+# entry point
 ppuMain: 
-    # entry point
+    # initialize stack pointer
     ori $sp, zero, stackEnd + STACK_SIZE
 
     # load ucode_data
@@ -112,6 +113,12 @@ ppuMain:
     addi a2, a2, -1
     jal DMAproc
     ori a3, zero, 0
+
+renderLine:
+    # busy loop to wait for cpu to signal mode 3
+    mfc0 $at, SP_STATUS
+    andi $at, $at, MODE_3_FLAG
+    beq $at, zero, renderLine
 
     # load PPUTask
     ori a0, zero, ppuTask
@@ -125,15 +132,41 @@ ppuMain:
     # note delay slot
     nop
     
+    # get the tilemap values and attibutes
     jal precacheLine
     nop
 
+    # reset the tile cache
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    # get the tiles needed to render the current row
     li(a0, tilemap)
     jal precacheTiles
     li(a1, 20)
+
+    # clear the MODE_3_FLAG bit
+    ori $at, zero, 0x200
+    mtc0 $at, SP_STATUS
+
+    jal writeScanline
+    nop
+
+    # reset the scanline buffer
+    ori a0, zero, scanline
+    lw a1, osTask_ucode_data($0)
+    addi a1, a1, scanline
+    ori a2, GB_SCREEN_WD-1
+    jal DMAproc
+    ori a3, zero, 0
+
+    # check if this is the last line
+    lbu $at, (ppuTask + PPUTask_ly)(zero)
+    addi $at, $at, -(GB_SCREEN_HT - 1)
+
+    # render the next line if there is more data to render
+    bne $at, zero, renderLine
+    nop
 
     break
     .dmax 4096
@@ -337,3 +370,27 @@ precacheTilesFinish:
 
     jr return
     addi $sp, $sp, 16
+
+###############################################
+# Write scanline
+#
+
+writeScanline:
+    # current the current y position
+    lbu a0, (ppuTask + PPUTask_ly)(zero)
+    # need to calculte ly * 160, since there is no
+    # multiply instruction ly * 128 + ly * 32 is done
+    # as it can be done with bit shifts and adds
+    sll a1, a0, 7 
+    sll a0, a0, 5
+    add a1, a1, a0
+
+    # get the output buffer
+    lw $at, (ppuTask + PPUTask_output)(zero)
+    # offset it by ly * 160
+    add a1, a1, $at
+    # load the source DMEM
+    ori a0, zero, scanline
+    ori a2, zero, GB_SCREEN_WD-1 # dma length
+    j DMAproc # have DMAProc jump back to $ra
+    ori a3, zero, 1 # is write

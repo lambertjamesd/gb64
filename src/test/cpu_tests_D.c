@@ -17,7 +17,7 @@ int testRET_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("RET NC", testOutput, cpu, &expected) ||
         !testInt("RET NC run result", testOutput, run, 2))
@@ -29,7 +29,7 @@ int testRET_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     expected.f = 0;
     expected.pc = 0x34E0;
     expected.sp = 0x8022;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("RET NC branch", testOutput, cpu, &expected) &&
         testInt("RET NC branch run result", testOutput, run, 3) &&
@@ -54,7 +54,7 @@ int testPOP_DE(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("POP DE branch", testOutput, cpu, &expected) &&
         testInt("POP DE branch run result", testOutput, run, 3) &&
@@ -78,7 +78,7 @@ int testJP_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("JP NC", testOutput, cpu, &expected) ||
         !testInt("JP NC run result", testOutput, run, 3))
@@ -89,7 +89,7 @@ int testJP_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->f = 0;
     expected.f = 0;
     expected.pc = 0x0030;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("JP NC branch", testOutput, cpu, &expected) &&
         testInt("JP NC branch run result", testOutput, run, 3) &&
@@ -114,7 +114,7 @@ int testCALL_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("CALL NC", testOutput, cpu, &expected) ||
         !testInt("CALL NC run result", testOutput, run, 3))
@@ -126,7 +126,7 @@ int testCALL_NC(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     expected.f = 0;
     expected.pc = 0x0030;
     expected.sp = 0x8020;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("CALL NC branch", testOutput, cpu, &expected) &&
         testInt("CALL NC branch run result", testOutput, run, 5) &&
@@ -151,7 +151,7 @@ int testPUSH_DE(struct CPUState* cpu, struct Memory* memory, char* testOutput)
 
     memory->internalRam[0] = CPU_PUSH_DE;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("PUSH DE", testOutput, cpu, &expected) &&
         testInt("PUSH DE run result", testOutput, run, 4) &&
@@ -178,7 +178,7 @@ int testRET_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("RET C", testOutput, cpu, &expected) ||
         !testInt("RET C run result", testOutput, run, 2))
@@ -190,7 +190,7 @@ int testRET_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     expected.f = GB_FLAGS_C;
     expected.pc = 0x34E0;
     expected.sp = 0x8022;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("RET C branch", testOutput, cpu, &expected) &&
         testInt("RET C branch run result", testOutput, run, 3) &&
@@ -214,7 +214,7 @@ int testRETI(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[0x20] = 0xE0;
     memory->internalRam[0x21] = 0x34;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("RETI", testOutput, cpu, &expected) &&
         testInt("RETI run result", testOutput, run, 3) &&
@@ -238,7 +238,7 @@ int testJP_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("JP C", testOutput, cpu, &expected) ||
         !testInt("JP C run result", testOutput, run, 3))
@@ -249,7 +249,7 @@ int testJP_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     cpu->f = GB_FLAGS_C;
     expected.f = GB_FLAGS_C;
     expected.pc = 0x0030;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("JP C branch", testOutput, cpu, &expected) &&
         testInt("JP C branch run result", testOutput, run, 3) &&
@@ -274,7 +274,7 @@ int testCALL_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     memory->internalRam[4] = 0x30;
     memory->internalRam[5] = 0x00;
 
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     if (!testCPUState("CALL C", testOutput, cpu, &expected) ||
         !testInt("CALL C run result", testOutput, run, 3))
@@ -286,7 +286,7 @@ int testCALL_C(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     expected.f = GB_FLAGS_C;
     expected.pc = 0x0030;
     expected.sp = 0x8020;
-    run = runCPU(cpu, memory, 1);
+    run = runCPU(cpu, memory, 1, 0);
 
     return testCPUState("CALL C branch", testOutput, cpu, &expected) &&
         testInt("CALL C branch run result", testOutput, run, 5) &&
