@@ -6,5 +6,6 @@
 
 void setupPPU();
 void startPPUFrame(struct Memory* memory, int gdc);
+void renderPPURow(struct Memory* memory);
 
 #endif

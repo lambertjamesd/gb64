@@ -164,6 +164,7 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 
             graphicsState.row = line;
 
+            renderPPURow(&gameboy->memory);
 		    renderPixelRow(&gameboy->memory, &graphicsState);
             cyclesToRun += CYCLES_PER_LINE;
             cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun, RUN_CPU_FLAGS_RENDER);
