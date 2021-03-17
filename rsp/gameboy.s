@@ -17,3 +17,4 @@
 #define TILE_ATTR_PRIORITY      0x80
 
 #define MODE_3_FLAG 0x80
+#define MODE_3_FLAG_CLR 0x0200

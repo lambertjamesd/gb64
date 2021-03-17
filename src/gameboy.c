@@ -159,9 +159,6 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 
         for (line = 0; line < GB_SCREEN_H; ++line)
         {
-            if (line == 0) {
-            }
-
             graphicsState.row = line;
 
             renderPPURow(&gameboy->memory);

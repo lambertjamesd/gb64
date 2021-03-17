@@ -405,6 +405,8 @@ void renderPixelRow(
     lcdcReg = READ_REGISTER_DIRECT(memory, REG_LCDC);
 
     prepareGraphicsPallete(state);
+
+    return;
     // is sprites are disabled then this just clears the
     // sprite index memory
     renderSprites(memory, state);

@@ -90,15 +90,6 @@ void startPPUFrame(struct Memory* memory, int gbc)
     osWritebackDCache(&gPPUTask, sizeof(struct PPUTask));
 
     osSpTaskStart(&task);
-
-    int currentStatus;
-
-    do
-    {
-        currentStatus = IO_READ(SP_STATUS_REG);
-    } while (~currentStatus & SP_STATUS_HALT);
-
-    currentStatus = 0;
 }
 
 void renderPPURow(struct Memory* memory)

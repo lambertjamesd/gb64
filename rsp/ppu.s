@@ -114,6 +114,10 @@ ppuMain:
     jal DMAproc
     ori a3, zero, 0
 
+    # clear the MODE_3_FLAG bit
+    li($at, MODE_3_FLAG_CLR)
+    mtc0 $at, SP_STATUS
+
 renderLine:
     # busy loop to wait for cpu to signal mode 3
     mfc0 $at, SP_STATUS
@@ -146,8 +150,12 @@ renderLine:
     li(a1, 20)
 
     # clear the MODE_3_FLAG bit
-    ori $at, zero, 0x200
+    ori $at, zero, MODE_3_FLAG_CLR
     mtc0 $at, SP_STATUS
+
+    lbu $at, (ppuTask + PPUTask_ly)(zero)
+    li(a0, 1)
+    sb a0, scanline($at)
 
     jal writeScanline
     nop
