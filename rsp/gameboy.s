@@ -16,5 +16,7 @@
 #define TILE_ATTR_V_FLIP        0x40
 #define TILE_ATTR_PRIORITY      0x80
 
+#define WINDOW_X_OFFSET         0x07
+
 #define MODE_3_FLAG 0x80
 #define MODE_3_FLAG_CLR 0x0200

@@ -111,6 +111,8 @@ tilemapTileCacheInfo:
 
 currentTile:
     .half tilemapTileCache
+currentWindowY:
+    .half 0
 
 #define STACK_SIZE  64
 stackEnd:
@@ -155,16 +157,60 @@ renderLine:
     nop
     
     # get the tilemap values and attibutes
+    li(a2, LCDC_BG_TILE_MAP)
+
+    # get the current line
+    lbu a1, (ppuTask + PPUTask_ly)(zero)
+    # get the current screen offset
+    lbu $at, (ppuTask + PPUTask_scy)(zero)
+    add a1, a1, $at # relative offset
+    andi a1, a1, 0xFF # wrap to 256 pixels and mask to tile
+
     jal precacheLine
-    nop
+    ori a0, zero, tilemap # dma target
 
     # reset the tile cache
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    # window x position
+    li(s0, GB_SCREEN_WD)
+
+    # check if the window is enabled
+    lbu $at, (ppuTask + PPUTask_lcdc)(zero)
+    andi $at, $at, LCDC_WIN_E
+    beq $at, zero, precacheTilemap
+
+    # check if the window is below the current row
+    lbu t0, (ppuTask + PPUTask_ly)(zero)
+    lbu t1, (ppuTask + PPUTask_wy)(zero)
+    sub $at, t1, t0
+    bgtz $at, precacheTilemap
+
+    # check if window x is less than the screen width
+    lbu t0, (ppuTask + PPUTask_wx)(zero)
+    addi t0, t0, -WINDOW_X_OFFSET
+    addi $at, t0, -GB_SCREEN_WD
+    bltz $at, precacheTilemap
+
+    lhu s1, currentWindowY(zero) # load current window y (note delay slot)
+
+    # TODO handle negative window position
+    ori s0, t0, 0 # set new window position
+
+    addi $at, s1, 1 # increment and save current window y
+    sh $at, currentWindowY(zero)
+
+    li(a2, LCDC_WIN_TILE_MAP) # flag for selecting background source
+    ori a1, s1, 0 # y line of row
+    jal precacheLine
+    ori a0, zero, window # dma target
+
+precacheTilemap:
     lbu $at, (ppuTask + PPUTask_scx)(zero)
     srl a1, $at, 3
-    addi a2, $at, GB_SCREEN_WD-1
+    add a2, $at, s0 # end pixel row at window position
+    addi a2, a2, -1
     srl a2, a2, 3
     # calculate number of tiles
     sub a2, a2, a1 
@@ -174,6 +220,21 @@ renderLine:
     jal precacheTiles
     li(a0, tilemap)
 
+    # check if the window is visible
+    li(a2, GB_SCREEN_WD)
+    beq s0, a2, beginDrawingRow
+
+    # calculate the number of tiles to render
+    li(a2, GB_SCREEN_WD-1)
+    sub a2, a2, s0 
+    srl a2, a2, 3
+    addi a2, a2, 1
+    # window always starts with the first tile
+    li(a1, 0)
+    jal precacheTiles
+    li(a0, window)
+
+beginDrawingRow:
     # clear the MODE_3_FLAG bit
     ori $at, zero, MODE_3_FLAG_CLR
     mtc0 $at, SP_STATUS
@@ -187,7 +248,7 @@ renderLine:
     # a2 sprite y
     # a3 src x
     li(a0, 0) # pixel x
-    li(a1, GB_SCREEN_WD) # pixel count
+    ori a1, s0, 0 # pixel count
     
     lbu a2, (ppuTask + PPUTask_ly)(zero)
     lbu $at, (ppuTask + PPUTask_scy)(zero)
@@ -195,9 +256,21 @@ renderLine:
     andi a2, a2, 0x7 # sprite y pos
 
     lbu a3, (ppuTask + PPUTask_scx)(zero)
+    li($at, 8)
+    sub a3, $at, a3
     jal copyTileLine
     andi a3, a3, 0x7 # sprite x pos
 
+    ori a0, s0, 0 # pixel x
+    li(a1, GB_SCREEN_WD)
+    sub a1, a1, a0 # pixel count
+    blez a1, writeOutPixels # check if the window is visible
+    andi a2, s1, 0x7 # sprite y pos
+    jal copyTileLine
+    ori a3, zero, 0 # sprite x pos
+
+
+writeOutPixels:
     jal writeScanline
     nop
 
@@ -308,30 +381,37 @@ nextTile:
     sh $at, currentTile(zero) # save tile pointer
 
 ###############################################
+# Loads the window tilemap row into memory
+
+precacheWindow:
+
+    j precacheLineFromPointer
+    ori a0, zero, window # dma target
+
+
+###############################################
 # Loads the tilemap row into memory
+# a0 - target dma target
+# a1 - y line of row
+# a2 - tile map flag
 
 precacheLine:
     addi $sp, $sp, -4
     sw return, 0($sp)
 
-    # get the current line
-    lbu a1, (ppuTask + PPUTask_ly)(zero)
-    # get the current screen offset
-    lbu $at, (ppuTask + PPUTask_scy)(zero)
-    add a1, a1, $at # relative offset
-    andi a1, a1, 0xFF # wrap to 256 pixels and mask to tile
-    srl a1, a1, 3 # divde by 8 (8 pixels per tile
+    srl a1, a1, 3 # divde by 8 (8 pixels per tile)
     sll a1, a1, 5 # multiply by 32 (32 tiles per row)
     lbu $at, (ppuTask + PPUTask_lcdc)(zero)
-    andi $at, $at, LCDC_BG_TILE_MAP
+    and $at, $at, a2 # determine which tile map to use
+    slt $at, zero, $at
     # convert to a tilemap offset
-    srl $at, $at, 7
+    srl $at, $at, 10
     # store the offset into vram memory
     add a1, $at, a1
     lw $at, (ppuTask + PPUTask_graphicsSource)(zero)
     addi $at, $at, GraphicsMemory_tilemap0
     add a1, $at, a1 # calculate final ram address for tilemap row
-    ori a0, zero, tilemap # dma target
+    
     # intentially fall through
 
 ###############################################
