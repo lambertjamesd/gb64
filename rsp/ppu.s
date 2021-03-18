@@ -191,7 +191,7 @@ renderLine:
     lbu t0, (ppuTask + PPUTask_wx)(zero)
     addi t0, t0, -WINDOW_X_OFFSET
     addi $at, t0, -GB_SCREEN_WD
-    bltz $at, precacheTilemap
+    bgez $at, precacheTilemap
 
     lhu s1, currentWindowY(zero) # load current window y (note delay slot)
 
@@ -207,6 +207,9 @@ renderLine:
     ori a0, zero, window # dma target
 
 precacheTilemap:
+    #check if tilemap is visible
+    blez s0, precacheWindow 
+
     lbu $at, (ppuTask + PPUTask_scx)(zero)
     srl a1, $at, 3
     add a2, $at, s0 # end pixel row at window position
@@ -224,6 +227,7 @@ precacheTilemap:
     li(a2, GB_SCREEN_WD)
     beq s0, a2, beginDrawingRow
 
+precacheWindow:
     # calculate the number of tiles to render
     li(a2, GB_SCREEN_WD-1)
     sub a2, a2, s0 
@@ -243,6 +247,9 @@ beginDrawingRow:
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    # check if tilemap is visible
+    blez s0, drawWindow
+
     # a0 pixel x
     # a1 pixel count
     # a2 sprite y
@@ -261,6 +268,7 @@ beginDrawingRow:
     jal copyTileLine
     andi a3, a3, 0x7 # sprite x pos
 
+drawWindow:
     ori a0, s0, 0 # pixel x
     li(a1, GB_SCREEN_WD)
     sub a1, a1, a0 # pixel count
@@ -268,7 +276,6 @@ beginDrawingRow:
     andi a2, s1, 0x7 # sprite y pos
     jal copyTileLine
     ori a3, zero, 0 # sprite x pos
-
 
 writeOutPixels:
     jal writeScanline
@@ -381,15 +388,6 @@ nextTile:
     sh $at, currentTile(zero) # save tile pointer
 
 ###############################################
-# Loads the window tilemap row into memory
-
-precacheWindow:
-
-    j precacheLineFromPointer
-    ori a0, zero, window # dma target
-
-
-###############################################
 # Loads the tilemap row into memory
 # a0 - target dma target
 # a1 - y line of row
@@ -405,7 +403,7 @@ precacheLine:
     and $at, $at, a2 # determine which tile map to use
     slt $at, zero, $at
     # convert to a tilemap offset
-    srl $at, $at, 10
+    sll $at, $at, 10
     # store the offset into vram memory
     add a1, $at, a1
     lw $at, (ppuTask + PPUTask_graphicsSource)(zero)

@@ -250,6 +250,7 @@ void prepareGraphicsPallete(struct GraphicsState* state)
 
 void finishScreen(struct GraphicsState* state)
 {
+    state->row = GB_SCREEN_H;
     renderScreenBlock(state);
     gSPEndDisplayList(gCurrentScreenDL++);
 }
