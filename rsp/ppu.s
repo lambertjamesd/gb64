@@ -18,6 +18,15 @@
 .name a2, $6
 .name a3, $7
 
+.name t0, $8
+.name t1, $9
+.name t2, $10
+.name t3, $11
+.name t4, $12
+.name t5, $13
+.name t6, $14
+.name t7, $15
+
 .name s0, $16
 .name s1, $17
 .name s2, $18
@@ -26,6 +35,14 @@
 .name s5, $21
 .name s6, $22
 .name s7, $23
+
+.name t8, $24
+.name t9, $25
+
+.name k0, $26
+.name k1, $27
+
+.name gp, $28
     
 .data
 
@@ -90,6 +107,7 @@ tilemapTileCacheInfo:
     .half -1
 
     .half -1
+    .half -1
 
 currentTile:
     .half tilemapTileCache
@@ -144,18 +162,41 @@ renderLine:
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    lbu $at, (ppuTask + PPUTask_scx)(zero)
+    srl a1, $at, 3
+    addi a2, $at, GB_SCREEN_WD-1
+    srl a2, a2, 3
+    # calculate number of tiles
+    sub a2, a2, a1 
+    addi a2, a2, 1
+
     # get the tiles needed to render the current row
-    li(a0, tilemap)
     jal precacheTiles
-    li(a1, 20)
+    li(a0, tilemap)
 
     # clear the MODE_3_FLAG bit
     ori $at, zero, MODE_3_FLAG_CLR
     mtc0 $at, SP_STATUS
 
-    lbu $at, (ppuTask + PPUTask_ly)(zero)
-    li(a0, 1)
-    sb a0, scanline($at)
+    # reset the tile cache
+    li($at, tilemapTileCache)
+    sh $at, currentTile(zero)
+
+    # a0 pixel x
+    # a1 pixel count
+    # a2 sprite y
+    # a3 src x
+    li(a0, 0) # pixel x
+    li(a1, GB_SCREEN_WD) # pixel count
+    
+    lbu a2, (ppuTask + PPUTask_ly)(zero)
+    lbu $at, (ppuTask + PPUTask_scy)(zero)
+    sub a2, a2, $at
+    andi a2, a2, 0x7 # sprite y pos
+
+    lbu a3, (ppuTask + PPUTask_scx)(zero)
+    jal copyTileLine
+    andi a3, a3, 0x7 # sprite x pos
 
     jal writeScanline
     nop
@@ -277,9 +318,10 @@ precacheLine:
     lbu a1, (ppuTask + PPUTask_ly)(zero)
     # get the current screen offset
     lbu $at, (ppuTask + PPUTask_scy)(zero)
-    sub a1, a1, $at # relative offset
-    andi a1, a1, 0xF8 # wrap to 256 pixels and mask to tile
-    srl a1, a1, 2 # get the tile offset in tilemap memory
+    add a1, a1, $at # relative offset
+    andi a1, a1, 0xFF # wrap to 256 pixels and mask to tile
+    srl a1, a1, 3 # divde by 8 (8 pixels per tile
+    sll a1, a1, 5 # multiply by 32 (32 tiles per row)
     lbu $at, (ppuTask + PPUTask_lcdc)(zero)
     andi $at, $at, LCDC_BG_TILE_MAP
     # convert to a tilemap offset
@@ -339,7 +381,6 @@ precacheNextTile:
     beq s2, zero, precacheTilesFinish
     add a1, s0, s1 # get the tile address
     lbu a0, 0(a1) # load the tile index
-    sll a0, a0, 4 # convert the tile index to a relative tile pointer
 
     # 
     # calculate which tile range to use
@@ -356,10 +397,12 @@ precacheNextTile:
     andi a0, a0, 0xFF
     add a0, a0, $at
 
+    sll a0, a0, 4 # convert the tile index to a relative tile pointer
+
     #
     # calculate which tile bank to use
     #
-    lbu $at, (tilemap - tilemapAttrs)(a1)
+    lbu $at, (tilemapAttrs - tilemap)(a1)
     andi $at, $at, TILE_ATTR_VRAM_BANK
     sll $at, $at, 10 # converts 0x08 flag to 0x2000 offset
     add a0, a0, $at
@@ -378,6 +421,79 @@ precacheTilesFinish:
 
     jr return
     addi $sp, $sp, 16
+
+###############################################
+# Tiles To Scanline
+# a0 pixel x
+# a1 pixel count
+# a2 sprite y
+# a3 src x
+
+copyTileLine:
+    # convert y to pixel offset 
+    # (2 bytes per row of pixels in a tile)
+    sll a2, a2, 1
+    # current pixel shift
+    addi a3, a3, 7
+    andi a3, a3, 7
+    # current pixel shift dir
+    li(t3, -1)
+
+    # load pointer into tile cache
+    lhu t4, currentTile(zero)
+
+copyTileLine_nextPixelRow:
+    add $at, t4, a2
+
+    # load the pixel row
+    lhu t6, 0($at)
+
+copyTileLine_nextPixel:
+    # check if finished copying pixels
+    beq a1, zero, copyTileLine_finish    
+
+    srlv $at, t6, a3
+    # get current pixel lsb
+    andi t1, $at, 0x0100
+    # get current pixel msb
+    andi $at, $at, 0x0001
+
+    # shift bits into position
+    sll $at, $at, 1
+    srl t1, t1, 8
+    # combine into final pixel value
+    or t1, t1, $at
+
+    # write pixel into screen
+    sb t1, scanline(a0) 
+
+    # increment screen output
+    addi a0, a0, 1
+
+    # calculate next pixel shift amount
+    add a3, a3, t3
+
+    # this is a bit of a hack any time
+    # a3, the current offset, falls outside
+    # the range [0, 7] it should stop copying
+    # the current tile. no numbers in [0, 7]
+    # have the 4th bit set but both -1 and 8 do
+    andi $at, a3, 0x8
+    beq $at, zero, copyTileLine_nextPixel
+    # decrement pixel count (note delay slot)
+    addi a1, a1, -1
+
+    # increment tile cache pointer
+    addi t4, t4, GB_TILE_SIZE
+
+    j copyTileLine_nextPixelRow
+    andi a3, a3, 7
+
+
+copyTileLine_finish:
+    jr return
+    # save current tile before exiting
+    sh t4, currentTile(zero)
 
 ###############################################
 # Write scanline

@@ -75,18 +75,7 @@ void startPPUFrame(struct Memory* memory, int gbc)
     task.t.data_size = sizeof(struct PPUTask);
     task.t.yield_data_ptr = 0;
     task.t.yield_data_size = 0;
-
-    int i;
-    for (i = 0; i < 32; ++i) {
-        memory->vram.tilemap0[i] = i;
-    }
-
-    for (i = 0; i < 512; ++i) {
-        memory->vramBytes[i] = i;
-    }
-
-    osWritebackDCache(memory->vram.tilemap0, 32);
-    osWritebackDCache(memory->vramBytes, 512);
+    
     osWritebackDCache(&gPPUTask, sizeof(struct PPUTask));
 
     osSpTaskStart(&task);

@@ -6,7 +6,7 @@
 
 #define GB_TILE_SIZE 16
 
-#define GB_MAX_VISIBLE_TILES 21
+#define GB_MAX_VISIBLE_TILES 22
 
 #define GB_MAX_VISIBLE_SPRITES 10
 

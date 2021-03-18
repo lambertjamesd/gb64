@@ -107,8 +107,6 @@ OSPiHandle	*handler;
 void
 boot(void)
 {
-
-
 	/*
 	 * notice that you can't call osSyncPrintf() until you set
 	 * up an idle thread.
