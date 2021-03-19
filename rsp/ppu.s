@@ -195,6 +195,9 @@ renderLine:
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    jal loadSpriteTiles
+    nop
+
     # window x position
     li(s0, GB_SCREEN_WD)
 
@@ -690,3 +693,27 @@ checkNextSprite:
 finishSortSprites:
     jr return
     sw zero, 0(t1) # null terminate sprite list
+
+###############################################
+# Write scanline
+loadSpriteTiles:
+    addi $sp, $sp, -4
+    sw return, 0($sp)
+    li(t0, sprites)
+loadNextSpriteTile:
+    lw t1, 0(t0)
+    beq t1, zero, loadSpriteTilesFinish
+    lbu a0, SPRITE_TILE(t0)
+    # convert tile index into a tile offset
+    sll a0, a0, 4 
+    # load the tile into the cache
+    # TODO check for vram bank 2
+    jal requestTile
+    nop
+    j loadNextSpriteTile
+    addi t0, t0, SPRITE_SIZE
+
+loadSpriteTilesFinish:
+    lw return, 0($sp)
+    jr return
+    addi $sp, $sp, 4
