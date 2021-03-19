@@ -175,6 +175,10 @@ copyTileLine_nextPixel:
     # check if finished copying pixels
     beq a1, zero, copyTileLine_finish    
 
+    # check if sprite is already visible on the current line
+    lbu $at, scanline(a0)
+    bne $at, zero, copyTileLine_skipPixel
+
     srlv $at, t6, a3
     # get current pixel lsb
     andi t1, $at, 0x0100
@@ -190,6 +194,7 @@ copyTileLine_nextPixel:
     # write pixel into screen
     sb t1, scanline(a0) 
 
+copyTileLine_skipPixel:
     # increment screen output
     addi a0, a0, 1
 
