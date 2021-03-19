@@ -126,6 +126,7 @@
 
 .eqv SP_STATUS_REG, 0xA4040010
 .eqv MODE_3_FLAG, 0x80
+.eqv MODE_2_FLAG_SET, 0x1000
 
 .macro save_state_on_stack
     addi $sp, $sp, -_C_CALLBACK_FRAME_SIZE

@@ -9,7 +9,7 @@
 #include "save.h"
 #include "rspppu.h"
 
-struct GameBoy gGameboy;
+struct GameBoy __attribute__((aligned(8))) gGameboy;
 
 struct GameboySettings gDefaultSettings = {
     GB_SETTINGS_HEADER,
@@ -132,9 +132,6 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
 
     if (renderScreen && screenWasEnabled)
     {
-        // clear mode 3 bit
-        IO_WRITE(SP_STATUS_REG, SP_CLR_SIG0);
-        startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
 
         ly = READ_REGISTER_DIRECT(&gameboy->memory, REG_LY);
 
@@ -150,6 +147,8 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
             );
             gameboy->cpu.runUntilNextFrame = 0;
         }
+        
+        startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
 
         initGraphicsState(&gameboy->memory, &graphicsState, &gameboy->settings.graphics, gameboy->cpu.gbc);
 

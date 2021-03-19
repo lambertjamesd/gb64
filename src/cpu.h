@@ -48,7 +48,7 @@ struct CPUStoppingPoint {
 
 #define CPU_STOPPING_POINT_AS_LONG(value) *((unsigned long*)&value)
 
-#define CPU_STOPPING_POINT_COUNT    16
+#define CPU_STOPPING_POINT_COUNT    0x10
 #define MAX_CYCLE_TIME  0x00800000
 
 struct CPUState {

@@ -40,7 +40,7 @@ int runTimerInterruptTest(struct CPUState* cpu, struct Memory* memory, char* tes
     memory->internalRam[0x50] = CPU_INC_A;
     memory->internalRam[0x51] = CPU_RETI;
 
-    runCPU(cpu, memory, 19);
+    runCPU(cpu, memory, 19, 0);
 
     if (!testInt("INT TIMER", testOutput, 
         cpu->pc, 
@@ -53,7 +53,7 @@ int runTimerInterruptTest(struct CPUState* cpu, struct Memory* memory, char* tes
         return 0;
     }
     
-    runCPU(cpu, memory, 4);
+    runCPU(cpu, memory, 4, 0);
 
     if (!testInt("INT TIMER CALLED", testOutput, 
         cpu->a, 
@@ -66,7 +66,7 @@ int runTimerInterruptTest(struct CPUState* cpu, struct Memory* memory, char* tes
         return 0;
     }
 
-    runCPU(cpu, memory, 0x400);
+    runCPU(cpu, memory, 0x400, 0);
 
     return testInt("INT TIMER TWICE", testOutput, 
         cpu->a, 

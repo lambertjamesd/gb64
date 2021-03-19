@@ -78,6 +78,8 @@ void startPPUFrame(struct Memory* memory, int gbc)
     
     osWritebackDCache(&gPPUTask, sizeof(struct PPUTask));
 
+    // clear mode 3 bit
+    IO_WRITE(SP_STATUS_REG, SP_CLR_SIG0 | SP_SET_SIG1);
     osSpTaskStart(&task);
 }
 

@@ -18,5 +18,20 @@
 
 #define WINDOW_X_OFFSET         0x07
 
-#define MODE_3_FLAG 0x80
+#define SPRITE_SIZE             0x4
+#define SPRITE_MAX_COUNT        40
+#define SPRITE_MAX_PER_LINE     10
+
+#define SPRITE_Y                0x0
+#define SPRITE_X                0x1
+#define SPRITE_TILE             0x2
+#define SPRITE_FLAGS            0x3
+
+#define SPRITE_OFFSCREEN_X      168
+
+#define SPRITE_SHIFT_Y          -16
+
+#define MODE_3_FLAG 0x080
+#define MODE_2_FLAG 0x100
 #define MODE_3_FLAG_CLR 0x0200
+#define MODE_2_FLAG_CLR 0x0800

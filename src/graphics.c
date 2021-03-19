@@ -7,9 +7,14 @@
 #include "../memory.h"
 #include "gameboy.h"
 
+
 Gfx* gCurrentScreenDL;
 
-u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * GB_SCREEN_H];
+// For some reason gScreenBuffer is overwritten by 8 bytes without
+// this padding
+u64 gPadding;
+
+u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * (GB_SCREEN_H + 1)];
 
 Gfx gDrawScreen[0x280] = {gsSPEndDisplayList()};
 

@@ -263,6 +263,7 @@ ENTER_MODE_0:
     lw $at, ST_FLAGS($fp)
     andi $at, $at, RUN_CPU_FLAGS_RENDER
     beqz $at, ENTER_MODE_0_SKIP_WAIT
+    nop
 
     # wait for the ppu running the rsp to
     # catch up
@@ -368,6 +369,10 @@ ENTER_LAST_LINE:
     write_register_direct TMP3, REG_LY
     
 ENTER_MODE_2:
+    la TMP3, MODE_2_FLAG_SET
+    la $at, SP_STATUS_REG
+    sw TMP3, 0($at)
+
     read_register_direct TMP3, REG_LY
     # load current LCDC status flag
     jal CHECK_LCDC_STAT_FLAG

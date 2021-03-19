@@ -114,6 +114,9 @@ currentTile:
 currentWindowY:
     .half 0
 
+sprites:
+    .space SPRITE_SIZE * SPRITE_MAX_COUNT
+
 #define STACK_SIZE  64
 stackEnd:
     .space STACK_SIZE
@@ -134,9 +137,28 @@ ppuMain:
     jal DMAproc
     ori a3, zero, 0
 
-    # clear the MODE_3_FLAG bit
-    li($at, MODE_3_FLAG_CLR)
-    mtc0 $at, SP_STATUS
+    li(s2, 0)
+
+loadSprites:
+    mfc0 $at, SP_STATUS
+    andi $at, $at, MODE_2_FLAG
+    beq $at, zero, renderLine
+
+    li(a0, sprites) # DMEM target
+    lw a1, (ppuTask + PPUTask_memorySource)(zero)
+    addi a1, a1, Memory_misc_sprites # RAM source
+    li(a2, SPRITE_SIZE * SPRITE_MAX_COUNT - 1) # len
+    jal DMAproc
+    li(a3, 0) # is read
+
+    jal DMAWait
+    nop
+
+    jal sortSprites
+    ori a0, s2, 0
+    
+    # increment current y
+    addi s2, s2, 1
 
 renderLine:
     # busy loop to wait for cpu to signal mode 3
@@ -240,7 +262,7 @@ precacheWindow:
 
 beginDrawingRow:
     # clear the MODE_3_FLAG bit
-    ori $at, zero, MODE_3_FLAG_CLR
+    li($at, MODE_3_FLAG_CLR | MODE_2_FLAG_CLR)
     mtc0 $at, SP_STATUS
 
     # reset the tile cache
@@ -294,7 +316,7 @@ writeOutPixels:
     addi $at, $at, -(GB_SCREEN_HT - 1)
 
     # render the next line if there is more data to render
-    bne $at, zero, renderLine
+    bne $at, zero, loadSprites
     nop
 
     break
@@ -596,3 +618,75 @@ writeScanline:
     ori a2, zero, GB_SCREEN_WD-1 # dma length
     j DMAproc # have DMAProc jump back to $ra
     ori a3, zero, 1 # is write
+
+###############################################
+# Write scanline
+# a0 - current y
+sortSprites:
+    li(t0, sprites) # read head
+    li(t1, sprites) # write head
+
+    # calculate sprite y size
+    lbu t2, (ppuTask + PPUTask_lcdc)(zero)
+    andi t2, t2, LCDC_OBJ_SIZE
+    sll t2, t2, 1
+    addi t2, t2, 0x8 # sprite size y
+
+sortNextSprite:
+    # check if sprite is hidden off the right side
+    lbu t3, SPRITE_X(t0)
+    slti $at, t3, SPRITE_OFFSCREEN_X
+    beq $at, zero, checkNextSprite
+
+    # check if sprite is on current line
+    lbu $at, SPRITE_Y(t0)
+    addi $at, $at, SPRITE_SHIFT_Y
+    sub $at, a0, $at
+    bltz $at, checkNextSprite
+    slt $at, $at, t2
+    beq $at, zero, checkNextSprite
+
+    lw t4, 0(t0) # load sprite from read head
+
+    # check if sprites should be sorted
+    lhu $at, (ppuTask + PPUTask_flags)(zero)
+    andi $at, $at, PPU_TASK_FLAGS_COLOR
+    bne $at, zero, writeNextSprite
+    ori t5, t1, 0 # write out at end of list
+
+    li(t6, sprites) # compare head
+
+checkNextSlot:
+    # check if compare head has reached the write head
+    beq t6, t1, writeNextSprite
+
+    # compare the x positions of the tiles
+    lbu $at, SPRITE_X(t6)
+    slt $at, t3, $at
+    beq $at, zero, checkNextSlot
+    addi t6, t6, SPRITE_SIZE
+
+    addi t6, t6, -SPRITE_SIZE
+shiftSprites:
+    addi t5, t5, -SPRITE_SIZE
+    # shift sprite one slot
+    lw $at, 0(t5)
+    sw $at, SPRITE_SIZE(t5)
+    bne t5, t6, shiftSprites
+    nop
+
+writeNextSprite:
+    sw t4, 0(t5)
+    # increment write head
+    addi t1, t1, SPRITE_SIZE
+
+checkNextSprite:
+    addi t0, t0, SPRITE_SIZE
+    slti $at, t0, sprites + SPRITE_SIZE * SPRITE_MAX_COUNT
+    beq $at, zero, finishSortSprites
+    slti $at, t1, sprites + SPRITE_SIZE * SPRITE_MAX_PER_LINE
+    bne $at, zero, sortNextSprite
+    nop
+finishSortSprites:
+    jr return
+    sw zero, 0(t1) # null terminate sprite list
