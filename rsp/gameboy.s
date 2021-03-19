@@ -30,10 +30,14 @@
 #define SPRITE_OFFSCREEN_X      168
 
 #define SPRITE_SHIFT_Y          -16
+#define SPRITE_SHIFT_X          -8
 
-#define SPRITE_FLAGS_PRIO       0x80
-#define SPRITE_FLAGS_FLIP_Y     0x40
-#define SPRITE_FLAGS_FLIP_X     0x20
+#define SPRITE_FLAGS_PRIO           0x80
+#define SPRITE_FLAGS_FLIP_Y         0x40
+#define SPRITE_FLAGS_FLIP_X         0x20
+#define SPRITE_FLAGS_DMA_PALETTE    0x10
+#define SPRITE_FLAGS_VRAM_BANK      0x08
+#define SPRITE_FLAGS_GBC_PALETTE    0x07
 
 #define MODE_3_FLAG 0x080
 #define MODE_2_FLAG 0x100
