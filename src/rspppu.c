@@ -60,7 +60,7 @@ void startPPUFrame(struct Memory* memory, int gbc)
     }
 
     task.t.type = M_GFXTASK;
-    task.t.flags = OS_TASK_DP_WAIT;
+    task.t.flags = OS_TASK_SP_ONLY;
     task.t.ucode_boot = (u64*)ppuTextStart;
     task.t.ucode_boot_size = (char*)ppuTextEnd - (char*)ppuTextStart;
     task.t.ucode = NULL;

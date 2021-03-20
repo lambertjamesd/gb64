@@ -139,7 +139,7 @@ game(void)
 			}
 
 			handleGameboyInput(&gGameboy, pad[0]);
-			emulateFrame(&gGameboy, 1);
+			emulateFrame(&gGameboy, getColorBuffer());
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
 			finishAudioFrame(&gGameboy.memory);
 			++frames;
@@ -156,7 +156,7 @@ game(void)
 #endif
 		preRenderFrame();
 		
-    	gSPDisplayList(glistp++, gDrawScreen);
+    	// gSPDisplayList(glistp++, gDrawScreen);
 
 		renderDebugLog();
 

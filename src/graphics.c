@@ -6,9 +6,12 @@
 #include "debug_out.h"
 #include "../memory.h"
 #include "gameboy.h"
+#include "../gfx_extend.h"
 
 
 Gfx* gCurrentScreenDL;
+Gfx* gCurrentDP;
+Gfx* gLastDP;
 
 // For some reason gScreenBuffer is overwritten by 8 bytes without
 // this padding
@@ -17,8 +20,17 @@ u64 gPadding;
 u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * (GB_SCREEN_H + 1)];
 
 Gfx gDrawScreen[0x280] = {gsSPEndDisplayList()};
+Gfx gDPCommands[0x280];
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
+
+void prepareGraphicsPallete(struct GraphicsState* state);
+
+void flushDPCommands() {
+    osWritebackDCache(gLastDP, (gCurrentDP - gLastDP) / sizeof(Gfx));
+    gLastDP = gCurrentDP;
+    IO_WRITE(DPC_END_REG, OS_K0_TO_PHYSICAL(gCurrentDP));
+}
 
 #define COPY_SCREEN_STRIP(dl, y, maxY, scale, scaleInv)                     \
     gDPLoadTextureTile(                                                     \
@@ -33,7 +45,7 @@ u16 gScreenPalette[MAX_PALLETE_SIZE];
         G_TX_NOMASK, G_TX_NOMASK,                                           \
         G_TX_NOLOD, G_TX_NOLOD                                              \
     );                                                                      \
-    gSPTextureRectangle(                                                    \
+    gDPTextureRectangle(                                                    \
         dl,                                                                 \
         (SCREEN_WD << 1) - (((scale) * GB_SCREEN_W) >> 15),                 \
         (SCREEN_HT << 1) - (((scale) * (GB_SCREEN_H / 2 - y)) >> 14),       \
@@ -166,18 +178,79 @@ static long gInvScreenScales[ScreenScaleSettingCount] = {
     0x0AAAA,
 };
 
-void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl)
+void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl, void* colorBuffer)
 {
     gCurrentScreenDL = dl;
-    
+    gCurrentDP = gDPCommands;
+    gLastDP = gCurrentDP;
+
+    gDPSetFillColor(gCurrentDP++, GPACK_RGBA5551(1, 1, 1, 1) << 16 | GPACK_RGBA5551(1, 1, 1, 1));
+    gDPSetScissor(gCurrentDP++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
+    gDPSetOtherMode(gCurrentDP++, 0x300000, 0);
+    gDPSetColorImage(gCurrentDP++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(colorBuffer));
+    gDPFillRectangle(gCurrentDP++, 0, 0, SCREEN_WD-1, SCREEN_HT-1);
+
+    gDPPipeSync(gCurrentDP++);
+
+    union OtherModes otherModes;
+    otherModes.force_structure_alignment = 0;
+
+    otherModes.cycle_type = 0; // 1 Cycle
+    otherModes.persp_tex_en = 0;
+    otherModes.en_tlut = 1;
+    otherModes.tlut_type = 0; // RGBA 16
+    otherModes.sample_type = settings->smooth ? 1 : 0;
+
+    otherModes.bi_lerp_0 = 1;
+    otherModes.bi_lerp_1 = 1;
+
+    otherModes.m1a0 = 0;
+    otherModes.m1a1 = 0;
+    otherModes.m1b0 = 3;
+    otherModes.m1b1 = 3;
+    otherModes.m2a0 = 0;
+    otherModes.m2a1 = 0;
+    otherModes.m2b0 = 2;
+    otherModes.m2b1 = 2;
+
+    otherModes.reserved2 = 0;
+    otherModes.force_blend = 1;
+    otherModes.alpha_cvg_select = 0;
+    otherModes.cvg_times_alpha = 0;
+
+    otherModes.z_mode = 0;
+    otherModes.cvg_dest = 0;
+    otherModes.color_on_cvg = 0;
+    otherModes.image_read_en = 0;
+    otherModes.z_update_en = 0;
+    otherModes.z_compare_en = 0;
+    otherModes.antialias_en = 0;
+
+    gDPSetOtherMode(gCurrentDP++, otherModes.word0, otherModes.word1);
+
+    gDPSetCombineMode(gCurrentDP++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
+    gDPSetPrimColor(gCurrentDP++, 0, 0, 255, 255, 255, 255);
+    gDPLoadTLUT_pal256(gCurrentDP++, OS_K0_TO_PHYSICAL(gScreenPalette));
+
+    // wait for DP to be available
+    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
+
+    // start dp commands
+    IO_WRITE(DPC_STATUS_REG, DPC_CLR_FLUSH | DPC_CLR_FREEZE | DPC_CLR_XBUS_DMEM_DMA);
+    IO_WRITE(DPC_START_REG, OS_K0_TO_PHYSICAL(gDPCommands));
+
+    flushDPCommands();
+
     gDPPipeSync(gCurrentScreenDL++);
+
     gDPSetCycleType(gCurrentScreenDL++, G_CYC_1CYCLE);
     gDPSetRenderMode(gCurrentScreenDL++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
     gDPSetTextureFilter(gCurrentScreenDL++, settings->smooth ? G_TF_BILERP : G_TF_POINT);
     gDPSetTexturePersp(gCurrentScreenDL++, G_TP_NONE);
+    gDPSetTextureLUT(gCurrentScreenDL++, G_TT_RGBA16);
+
     gDPSetCombineMode(gCurrentScreenDL++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
     gDPSetPrimColor(gCurrentScreenDL++, 0, 0, 255, 255, 255, 255);
-    gDPSetTextureLUT(gCurrentScreenDL++, G_TT_RGBA16);
     gDPLoadTLUT_pal256(gCurrentScreenDL++, gScreenPalette);
 }
 
@@ -199,7 +272,8 @@ void initGraphicsState(
     state->palleteReadIndex = 0;
     state->palleteWriteIndex = 0;
 
-    beginScreenDisplayList(&state->settings, gDrawScreen);
+    prepareGraphicsPallete(state);
+    beginScreenDisplayList(&state->settings, gDrawScreen, state->colorBuffer);
 }
 
 void renderScreenBlock(struct GraphicsState* state)
@@ -207,12 +281,13 @@ void renderScreenBlock(struct GraphicsState* state)
     if (state->lastRenderedRow != state->row)
     {
         COPY_SCREEN_STRIP(
-            gCurrentScreenDL++, 
+            gCurrentDP++, 
             state->lastRenderedRow, 
             state->row, 
             gScreenScales[state->settings.scaleSetting], 
             gInvScreenScales[state->settings.scaleSetting]
         );
+        flushDPCommands();
         state->lastRenderedRow = state->row;
     }
 }
@@ -226,13 +301,6 @@ void prepareGraphicsPallete(struct GraphicsState* state)
         if (state->palleteWriteIndex >= MAX_PALLETE_SIZE)
         {
             return;
-        }
-
-        if (state->palleteWriteIndex - state->palleteReadIndex >= 256)
-        {
-            state->palleteReadIndex = state->palleteWriteIndex;
-            renderScreenBlock(state);
-            gDPLoadTLUT_pal256(gCurrentScreenDL++, gScreenPalette + state->palleteReadIndex);
         }
 
         if (state->gbc)
@@ -249,6 +317,14 @@ void prepareGraphicsPallete(struct GraphicsState* state)
             applyGrayscalePallete(state);
         }
 
+        if (state->palleteWriteIndex - state->palleteReadIndex >= 256)
+        {
+            state->palleteReadIndex = state->palleteWriteIndex;
+            renderScreenBlock(state);
+            gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette + state->palleteReadIndex);
+            flushDPCommands();
+        }
+
         state->palleteWriteIndex += PALETTE_COUNT;
     }
 }
@@ -257,7 +333,11 @@ void finishScreen(struct GraphicsState* state)
 {
     state->row = GB_SCREEN_H;
     renderScreenBlock(state);
-    gSPEndDisplayList(gCurrentScreenDL++);
+
+    gDPFullSync(gCurrentDP++);
+    flushDPCommands();
+
+    // gSPEndDisplayList(gCurrentScreenDL++);
 }
 
 void renderSprites(struct Memory* memory, struct GraphicsState* state)
@@ -559,11 +639,11 @@ void renderPixelRow(
     }
 }
 
-void rerenderDisplayList(struct GameboyGraphicsSettings* setting)
+void rerenderDisplayList(struct GameboyGraphicsSettings* setting, void* colorBuffer)
 {
     struct GraphicsState state;
     state.settings = *setting;
-    beginScreenDisplayList(&state.settings, gDrawScreen);
+    beginScreenDisplayList(&state.settings, gDrawScreen, colorBuffer);
     state.palleteReadIndex = 0;
     state.palleteWriteIndex = 0;
     gPalleteDirty = 1;

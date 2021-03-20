@@ -119,7 +119,7 @@ void requestInterrupt(struct GameBoy* gameboy, int interrupt)
     }
 }
 
-void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
+void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
 {
     struct GraphicsState graphicsState;
     int line;
@@ -127,10 +127,11 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
     int screenWasEnabled;
     int ly;
     u64 accumulatedTime = 0;
+    graphicsState.colorBuffer = colorBuffer;
 
     screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
 
-    if (renderScreen && screenWasEnabled)
+    if (colorBuffer && screenWasEnabled)
     {
 
         ly = READ_REGISTER_DIRECT(&gameboy->memory, REG_LY);

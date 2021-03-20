@@ -50,7 +50,7 @@ struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDow
     {
         *paletteIndexPtr = (*paletteIndexPtr + 1) % getPaletteCount();
         updatePaletteInfo(&gGameboy);
-        rerenderDisplayList(&gGameboy.settings.graphics);
+        rerenderDisplayList(&gGameboy.settings.graphics, getColorBuffer());
     }
 
     if (buttonDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.left))
@@ -64,7 +64,7 @@ struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDow
             *paletteIndexPtr = *paletteIndexPtr - 1;
         }
         updatePaletteInfo(&gGameboy);
-        rerenderDisplayList(&gGameboy.settings.graphics);
+        rerenderDisplayList(&gGameboy.settings.graphics, getColorBuffer());
     }
 
     return NULL;
@@ -107,13 +107,13 @@ struct MenuItem* graphicsMenuHandleInput(struct MenuItem* menuItem, int buttonsD
 void setScaleSetting(struct CursorMenuItem* item, int id, int value)
 {
     gGameboy.settings.graphics.scaleSetting = value;
-    rerenderDisplayList(&gGameboy.settings.graphics);
+    rerenderDisplayList(&gGameboy.settings.graphics, getColorBuffer());
 }
 
 void setPixelSetting(struct CursorMenuItem* item, int id, int value)
 {
     gGameboy.settings.graphics.smooth = value;
-    rerenderDisplayList(&gGameboy.settings.graphics);
+    rerenderDisplayList(&gGameboy.settings.graphics, getColorBuffer());
 }
 
 void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)

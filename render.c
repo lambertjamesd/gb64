@@ -158,6 +158,8 @@ void finishRenderFrame()
     */
     osWritebackDCache(&dynamic, sizeof(dynamic));
 
+    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
+
     /*
     * start up the RSP task
     */
