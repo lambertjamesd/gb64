@@ -17,7 +17,7 @@ ppuMain:
 loadSprites:
     mfc0 $at, SP_STATUS
     andi $at, $at, MODE_2_FLAG
-    beq $at, zero, renderLine
+    beq $at, zero, loadSprites
 
     li(a0, sprites) # DMEM target
     lw a1, (ppuTask + PPUTask_memorySource)(zero)

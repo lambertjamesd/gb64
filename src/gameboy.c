@@ -148,9 +148,9 @@ void emulateFrame(struct GameBoy* gameboy, bool renderScreen)
             gameboy->cpu.runUntilNextFrame = 0;
         }
         
-        startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
-
         initGraphicsState(&gameboy->memory, &graphicsState, &gameboy->settings.graphics, gameboy->cpu.gbc);
+
+        startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
 
         int cyclesToRun = CYCLES_TIL_LINE_RENDER;
 

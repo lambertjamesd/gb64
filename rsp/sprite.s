@@ -187,7 +187,7 @@ drawSpriteCheckFlipX:
     lb t6, startDirXFlip($at)
 
     lbu t7, SPRITE_X(t0)
-    addi t7, t7 SPRITE_SHIFT_X
+    addi t7, t7, SPRITE_SHIFT_X
 
     # convert y index into a byte tile offset
     sll t3, t3, 1
@@ -225,7 +225,7 @@ drawSpriteNextPixel:
     # mask out upper bit
     andi $at, t8, 0x1
     # mask out lower bit
-    andi t8, t8, 0x10
+    andi t8, t8, 0x100
     sll $at, $at, 1
     srl t8, t8, 8
     or t8, t8, $at
