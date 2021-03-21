@@ -32,6 +32,28 @@ nextTile:
     jr $ra
     sh $at, currentTile(zero) # save tile pointer
 
+blankTile:
+    # retrieve current ile
+    lhu v0, currentTile(zero)
+
+    # set to blank tile
+    sw zero, 0(v0)
+    sw zero, 4(v0)
+    sw zero, 8(v0)
+    sw zero, 12(v0)
+
+    # calculate index for cache info
+    addi v1, v0, -tilemapTileCache
+    srl v1, v1, 3
+    li($at, -1)
+    # set tile id to -1
+    sh $at, tilemapTileCacheInfo(v1)
+
+    addi $at, v0, GB_TILE_SIZE # increment tile pointer
+    jr $ra
+    sh $at, currentTile(zero) # save tile pointer
+
+
 ###############################################
 # Loads the tilemap row into memory
 # a0 - target dma target
@@ -80,6 +102,21 @@ skipTilemapInfo:
 
     lw return, 0($sp)
     j DMAWait
+    addi $sp, $sp, 4
+
+###############################################
+# a2 - number of sprites to load
+precacheBlankTiles:
+    addi $sp, $sp, -4
+    sw return, 0($sp)
+precacheBlankTiles_next:
+    beq a2, zero, precacheBlankTilesFinish
+    addi a2, a2, -1
+    jal blankTile
+    li(return, precacheBlankTiles_next)
+precacheBlankTilesFinish:
+    lw return, 0($sp)
+    jr return
     addi $sp, $sp, 4
 
 ###############################################

@@ -35,11 +35,11 @@ loadSprites:
     # increment current y
     addi s2, s2, 1
 
-renderLine:
+loadLine:
     # busy loop to wait for cpu to signal mode 3
     mfc0 $at, SP_STATUS
     andi $at, $at, MODE_3_FLAG
-    beq $at, zero, renderLine
+    beq $at, zero, loadLine
 
     # load PPUTask
     ori a0, zero, ppuTask
@@ -70,9 +70,18 @@ renderLine:
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    lbu $at, (ppuTask + PPUTask_lcdc)(zero)
+    andi $at, $at, LCDC_OBJ_ENABLE
+    bne $at, zero, checkForSprites
+    nop
+    # remove sprites if disabled
+    sw zero, sprites(zero)
+
+checkForSprites:
     jal loadSpriteTiles
     nop
 
+checkForWindow:
     # window x position
     li(s0, GB_SCREEN_WD)
 
@@ -119,10 +128,21 @@ precacheTilemap:
     sub a2, a2, a1 
     addi a2, a2, 1
 
+    lbu $at, (ppuTask + PPUTask_lcdc)(zero)
+    andi $at, $at, LCDC_BG_ENABLE
+    bne $at, zero, precacheTilemap_enabled
+    nop
+    jal precacheBlankTiles
+    nop
+    j precacheWindow_check
+    nop
+
     # get the tiles needed to render the current row
+precacheTilemap_enabled:
     jal precacheTiles
     li(a0, tilemap)
 
+precacheWindow_check:
     # check if the window is visible
     li(a2, GB_SCREEN_WD)
     beq s0, a2, beginDrawingRow

@@ -201,7 +201,7 @@ drawSpriteCheckFlipX:
     andi $at, $at, PPU_TASK_FLAGS_COLOR
 
     beq $at, zero, drawSpriteDMGPallete
-    andi $at, t4, SPRITE_FLAGS_DMA_PALETTE
+    andi $at, t4, SPRITE_FLAGS_GBC_PALETTE
     j drawSpriteCheckPriority
     srl t9, $at, 2
 drawSpriteDMGPallete:
