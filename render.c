@@ -111,8 +111,6 @@ void finishRenderFrame()
 
     font_finish( &glistp );
 
-    glistp = dynamicp->glist;
-
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
 

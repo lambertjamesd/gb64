@@ -67,6 +67,7 @@ currentTile:
 currentWindowY:
     .half 0
 
+.align 8
 sprites:
     .space SPRITE_SIZE * SPRITE_MAX_COUNT
 
