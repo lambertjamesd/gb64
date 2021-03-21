@@ -233,11 +233,11 @@ static void mainproc(void *arg)
 	}
 #endif
 
-	initHeap();
+	void* heapEnd = initColorBuffers((void*)(0x80000000 | osMemSize));
+
+	initHeap(heapEnd);
 	
 	initSaveCallbacks();
-
-	initColorBuffers();
 
 	initRomLayout(&gGBRom, _gbromSegmentRomStart);
 

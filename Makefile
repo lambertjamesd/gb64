@@ -96,8 +96,7 @@ S_FILES = asm/cpu.s
 
 CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
 
-DATAFILES   =	gfxinit.c \
-		rsp_cfb.c
+DATAFILES   =	gfxinit.c
 
 DATAOBJECTS =	$(DATAFILES:.c=.o)
 

@@ -36,7 +36,6 @@ int		fontcol[4];	/* color for shadowed fonts */
 Dynamic     *dynamicp;
 u16* cfb;
 
-
 void preRenderFrame()
 {
     /*
@@ -49,26 +48,9 @@ void preRenderFrame()
     * Tell RCP where each segment is
     */
     gSPSegment(glistp++, 0, 0x0);	/* physical segment */
-    gSPSegment(glistp++, STATIC_SEGMENT, 
-            OS_K0_TO_PHYSICAL(staticSegment));
-    gSPSegment(glistp++, CFB_SEGMENT, 
-            OS_K0_TO_PHYSICAL(getColorBuffer()));
+    gSPSegment(glistp++, STATIC_SEGMENT, OS_K0_TO_PHYSICAL(staticSegment));
 
-    /*
-    * Clear color framebuffer.
-    */
-
-    gDPSetFillColor(glistp++, GPACK_RGBA5551(
-            (int)1,
-            (int)1,
-            (int)1,
-            1) << 16 |
-            GPACK_RGBA5551(
-            (int)1,
-            (int)1,
-            (int)1,
-            1));
-    gSPDisplayList(glistp++, clearcfb_dl);
+    gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(getColorBuffer()));
 
     /*
     * Initialize RCP state.
@@ -158,8 +140,6 @@ void finishRenderFrame()
     */
     osWritebackDCache(&dynamic, sizeof(dynamic));
 
-    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
-
     /*
     * start up the RSP task
     */
@@ -188,7 +168,7 @@ void finishRenderFrame()
     */
     (void) osRecvMesg(&retraceMessageQ, NULL, OS_MESG_BLOCK);
 
-    draw_buffer ^= 1;
+    draw_buffer = (draw_buffer + 1) % BUFFER_COUNT;
 }
 
 u16* getColorBuffer()
@@ -196,8 +176,9 @@ u16* getColorBuffer()
     return cfb + draw_buffer * (SCREEN_WD * SCREEN_HT);
 }
 
-void initColorBuffers()
+void* initColorBuffers(void* memoryEnd)
 {
-    cfb = malloc(sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
-    zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
+    cfb = (u16*)memoryEnd - BUFFER_COUNT * SCREEN_WD * SCREEN_HT;
+    zeroMemory(cfb, sizeof(u16) * BUFFER_COUNT * SCREEN_WD * SCREEN_HT);
+    return cfb;
 }

@@ -122,7 +122,7 @@ game(void)
 			}
 
 			loop = MAX_FRAME_SKIP;
-			frames = 0;
+			// frames = 0;
 			while (accumulatedTime > CPU_TICKS_PER_FRAME && loop > 0)
 			{
 				handleGameboyInput(&gGameboy, pad[0]);
@@ -137,11 +137,12 @@ game(void)
 			{
 				accumulatedTime -= CPU_TICKS_PER_FRAME;
 			}
-
+			
 			handleGameboyInput(&gGameboy, pad[0]);
 			emulateFrame(&gGameboy, getColorBuffer());
 			accumulatedTime -= CPU_TICKS_PER_FRAME;
 			finishAudioFrame(&gGameboy.memory);
+
 			++frames;
 		}
 
@@ -164,6 +165,7 @@ game(void)
 		renderMainMenu(&gMainMenu);
 
 		finishRenderFrame();
+
 		faultHandlerHeartbeat();
     }
 }

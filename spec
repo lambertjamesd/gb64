@@ -23,13 +23,6 @@ beginseg
 	include "gfxinit.o"
 endseg
 
-beginseg
-	name "rsp_cfb"
-	flags OBJECT
-	number CFB_SEGMENT
-	include "rsp_cfb.o"
-endseg
-
 #if USE_PLACEHOLDER
 beginseg
 	name "dmg_boot"
@@ -78,6 +71,5 @@ beginwave
 	include "static"
 	include "dmg_boot"
 	include "cgb_bios"
-	include "rsp_cfb"
 	include "gbrom"
 endwave

@@ -75,7 +75,6 @@ struct GraphicsState {
     u16 winY;
     u16 palleteReadIndex;
     u16 palleteWriteIndex;
-    void* colorBuffer;
 };
 
 int compareSprites(struct Sprite a, struct Sprite b);
@@ -88,7 +87,8 @@ void initGraphicsState(
     struct Memory* memory,
     struct GraphicsState* state,
     struct GameboyGraphicsSettings* settings,
-    int gbc
+    int gbc,
+    void* colorBuffer
 );
 
 void renderPixelRow(
@@ -98,5 +98,6 @@ void renderPixelRow(
 
 void finishScreen(struct GraphicsState* state);
 void rerenderDisplayList(struct GameboyGraphicsSettings* setting, void* colorBuffer);
+void waitForRDP();
 
 #endif

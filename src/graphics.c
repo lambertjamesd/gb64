@@ -20,7 +20,7 @@ u64 gPadding;
 u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * (GB_SCREEN_H + 1)];
 
 Gfx gDrawScreen[0x280] = {gsSPEndDisplayList()};
-Gfx gDPCommands[0x280];
+Gfx gDPCommands[0x400];
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
 
@@ -184,10 +184,12 @@ void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl, v
     gCurrentDP = gDPCommands;
     gLastDP = gCurrentDP;
 
-    gDPSetFillColor(gCurrentDP++, GPACK_RGBA5551(1, 1, 1, 1) << 16 | GPACK_RGBA5551(1, 1, 1, 1));
-    gDPSetScissor(gCurrentDP++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
-    gDPSetOtherMode(gCurrentDP++, 0x300000, 0);
+    gDPPipeSync(gCurrentDP++);
     gDPSetColorImage(gCurrentDP++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(colorBuffer));
+    gDPPipeSync(gCurrentDP++);
+    gDPSetScissor(gCurrentDP++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
+    gDPSetFillColor(gCurrentDP++, GPACK_RGBA5551(1, 1, 1, 1) << 16 | GPACK_RGBA5551(1, 1, 1, 1));
+    gDPSetOtherMode(gCurrentDP++, 0x300000, 0);
     gDPFillRectangle(gCurrentDP++, 0, 0, SCREEN_WD-1, SCREEN_HT-1);
 
     gDPPipeSync(gCurrentDP++);
@@ -240,25 +242,19 @@ void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl, v
     IO_WRITE(DPC_START_REG, OS_K0_TO_PHYSICAL(gDPCommands));
 
     flushDPCommands();
+}
 
-    gDPPipeSync(gCurrentScreenDL++);
-
-    gDPSetCycleType(gCurrentScreenDL++, G_CYC_1CYCLE);
-    gDPSetRenderMode(gCurrentScreenDL++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-    gDPSetTextureFilter(gCurrentScreenDL++, settings->smooth ? G_TF_BILERP : G_TF_POINT);
-    gDPSetTexturePersp(gCurrentScreenDL++, G_TP_NONE);
-    gDPSetTextureLUT(gCurrentScreenDL++, G_TT_RGBA16);
-
-    gDPSetCombineMode(gCurrentScreenDL++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
-    gDPSetPrimColor(gCurrentScreenDL++, 0, 0, 255, 255, 255, 255);
-    gDPLoadTLUT_pal256(gCurrentScreenDL++, gScreenPalette);
+void waitForRDP() {
+    // wait for DP to be available
+    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
 }
 
 void initGraphicsState(
     struct Memory* memory,
     struct GraphicsState* state,
     struct GameboyGraphicsSettings* settings,
-    int gbc
+    int gbc,
+    void* colorBuffer
 )
 {
     prepareSprites(memory->misc.sprites, state->sortedSprites, &state->spriteCount, !gbc);
@@ -273,7 +269,7 @@ void initGraphicsState(
     state->palleteWriteIndex = 0;
 
     prepareGraphicsPallete(state);
-    beginScreenDisplayList(&state->settings, gDrawScreen, state->colorBuffer);
+    beginScreenDisplayList(&state->settings, gDrawScreen, colorBuffer);
 }
 
 void renderScreenBlock(struct GraphicsState* state)

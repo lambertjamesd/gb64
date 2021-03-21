@@ -87,7 +87,6 @@ Gfx init_dl[] = {
  */
 Gfx clearcfb_dl[] = {
     gsDPSetCycleType(G_CYC_FILL),
-    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, rsp_cfb),
 #if 0
     gsDPSetFillColor(GPACK_RGBA5551(64,64,255,1) << 16 | 
 		     GPACK_RGBA5551(64,64,255,1)),

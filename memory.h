@@ -17,7 +17,7 @@ struct HeapSegment
     void* segmentEnd;
 };
 
-void initHeap();
+void initHeap(void* heapEnd);
 void *cacheFreePointer(void* target);
 void *malloc(unsigned int size);
 void markAllocated(void* addr, int length);

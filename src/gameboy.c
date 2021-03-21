@@ -127,7 +127,6 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
     int screenWasEnabled;
     int ly;
     u64 accumulatedTime = 0;
-    graphicsState.colorBuffer = colorBuffer;
 
     screenWasEnabled = READ_REGISTER_DIRECT(&gameboy->memory, REG_LCDC) & LCDC_LCD_E;
 
@@ -149,7 +148,7 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
             gameboy->cpu.runUntilNextFrame = 0;
         }
         
-        initGraphicsState(&gameboy->memory, &graphicsState, &gameboy->settings.graphics, gameboy->cpu.gbc);
+        initGraphicsState(&gameboy->memory, &graphicsState, &gameboy->settings.graphics, gameboy->cpu.gbc, colorBuffer);
 
         startPPUFrame(&gameboy->memory, gameboy->cpu.gbc);
 
@@ -174,6 +173,9 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun, RUN_CPU_FLAGS_RENDER);
 
         accumulatedTime += CYCLES_PER_FRAME;
+
+        // Wait for RDP to complete
+        waitForRDP();
     }
     else
     {

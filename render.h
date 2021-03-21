@@ -24,7 +24,6 @@ extern Gfx	*glistp;
  * frame buffer symbols
  */
 extern u16*	cfb;	/* RAM address */
-extern u16	rsp_cfb[];			/* segment address */
 /*
  * buffers for RSP tasks:
  * buffers used by fifo microcode only
@@ -41,6 +40,8 @@ extern int		fontcol[4];	/* color for shadowed fonts */
 #define GET_B(rgb16) ((rgb16) << 2 & 0xF8)
 
 #define	GLIST_LEN	2048
+
+#define BUFFER_COUNT 2
 
 /*
  * Layout of dynamic data.
@@ -78,6 +79,6 @@ void preRenderFrame();
 void renderDebugLog();
 void finishRenderFrame();
 u16* getColorBuffer();
-void initColorBuffers();
+void* initColorBuffers(void* memoryEnd);
 
 #endif

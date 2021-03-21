@@ -10,12 +10,12 @@ struct HeapSegment* gFirstHeapSegment;
 extern char     _codeSegmentEnd[];
 extern char    *_gEndSegments;
 
-void initHeap()
+void initHeap(void* heapEnd)
 {
     gFirstHeapSegment = (struct HeapSegment*)(((int)_codeSegmentEnd + 7) & ~0x7);
 
     gFirstHeapSegment->nextSegment = 0;
-    gFirstHeapSegment->segmentEnd = (void*)(osGetMemSize() | 0x80000000);
+    gFirstHeapSegment->segmentEnd = heapEnd;
 
     markAllocated(_codeSegmentEnd, 
         (int)_gEndSegments - (int)_codeSegmentEnd
