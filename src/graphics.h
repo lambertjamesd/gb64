@@ -62,7 +62,6 @@
 #define GBC_TO_N64_COLOR(color) (((color) << 3 & 0xF100) | ((color) >> 7 & 0x01C0 >> 7) | ((color) << 9 & 0x0600) | ((color) >> 1 & 0x003E) | 0x1)
 
 extern u16 gScreenPalette[MAX_PALLETE_SIZE];
-extern Gfx gDrawScreen[];
 
 struct GraphicsState {
     struct Sprite sortedSprites[SPRITE_COUNT];
@@ -81,7 +80,7 @@ int compareSprites(struct Sprite a, struct Sprite b);
 void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount, int sort);
 void renderSprites(struct Memory* memory, struct GraphicsState* state);
 void applyGrayscalePallete(struct GraphicsState* state);
-void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl, void* colorBuffer);
+void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colorBuffer);
 
 void initGraphicsState(
     struct Memory* memory,

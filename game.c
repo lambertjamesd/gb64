@@ -156,8 +156,6 @@ game(void)
 		// debugInfo(str);
 #endif
 		preRenderFrame();
-		
-    	// gSPDisplayList(glistp++, gDrawScreen);
 
 		renderDebugLog();
 

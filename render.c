@@ -111,61 +111,30 @@ void finishRenderFrame()
 
     font_finish( &glistp );
 
+    glistp = dynamicp->glist;
+
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
 
-    /*
-    * Build graphics task:
-    *
-    */
     theadp->t.ucode_boot = (u64 *) rspbootTextStart;
     theadp->t.ucode_boot_size = 
             (u32) rspbootTextEnd - (u32) rspbootTextStart;
 
-    /*
-        * RSP output over FIFO to RDP: 
-        */
     theadp->t.ucode = (u64 *) gspF3DEX2_fifoTextStart;
     theadp->t.ucode_data = (u64 *) gspF3DEX2_fifoDataStart;
 
-    /*
-    * initial display list: 
-    */
     theadp->t.data_ptr = (u64 *) dynamicp->glist;
     theadp->t.data_size = 
         (u32) ((glistp - dynamicp->glist) * sizeof(Gfx));
 
-    /*
-    * Write back dirty cache lines that need to be read by the RCP.
-    */
     osWritebackDCache(&dynamic, sizeof(dynamic));
-
-    /*
-    * start up the RSP task
-    */
     osSpTaskStart(theadp);
-
-    /*
-    * wait for RDP completion 
-    */
     (void)osRecvMesg(&rdpMessageQ, NULL, OS_MESG_BLOCK);
 
-    /*
-    * setup to swap buffers 
-    */
     osViSwapBuffer(getColorBuffer());
-
-    /*
-    * Make sure there isn't an old retrace in queue 
-    * (assumes queue has a depth of 1) 
-    */
     while (!MQ_IS_EMPTY(&retraceMessageQ)) {
         (void) osRecvMesg(&retraceMessageQ, NULL, OS_MESG_NOBLOCK);
     }
-
-    /*
-    * Wait for Vertical retrace to finish swap buffers 
-    */
     (void) osRecvMesg(&retraceMessageQ, NULL, OS_MESG_BLOCK);
 
     draw_buffer = (draw_buffer + 1) % BUFFER_COUNT;

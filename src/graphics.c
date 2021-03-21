@@ -9,9 +9,7 @@
 #include "../gfx_extend.h"
 
 
-Gfx* gCurrentScreenDL;
 Gfx* gCurrentDP;
-Gfx* gLastDP;
 
 // For some reason gScreenBuffer is overwritten by 8 bytes without
 // this padding
@@ -19,7 +17,6 @@ u64 gPadding;
 
 u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * (GB_SCREEN_H + 1)];
 
-Gfx gDrawScreen[0x280] = {gsSPEndDisplayList()};
 Gfx gDPCommands[0x400];
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
@@ -27,8 +24,7 @@ u16 gScreenPalette[MAX_PALLETE_SIZE];
 void prepareGraphicsPallete(struct GraphicsState* state);
 
 void flushDPCommands() {
-    osWritebackDCache(gLastDP, (gCurrentDP - gLastDP) / sizeof(Gfx));
-    gLastDP = gCurrentDP;
+    osWritebackDCache(gDPCommands, sizeof(gDPCommands));
     IO_WRITE(DPC_END_REG, OS_K0_TO_PHYSICAL(gCurrentDP));
 }
 
@@ -178,13 +174,13 @@ static long gInvScreenScales[ScreenScaleSettingCount] = {
     0x0AAAA,
 };
 
-void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, Gfx* dl, void* colorBuffer)
+void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colorBuffer)
 {
-    gCurrentScreenDL = dl;
     gCurrentDP = gDPCommands;
-    gLastDP = gCurrentDP;
 
     gDPPipeSync(gCurrentDP++);
+    gDPTileSync(gCurrentDP++);
+    gDPLoadSync(gCurrentDP++);
     gDPSetColorImage(gCurrentDP++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(colorBuffer));
     gDPPipeSync(gCurrentDP++);
     gDPSetScissor(gCurrentDP++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
@@ -269,7 +265,7 @@ void initGraphicsState(
     state->palleteWriteIndex = 0;
 
     prepareGraphicsPallete(state);
-    beginScreenDisplayList(&state->settings, gDrawScreen, colorBuffer);
+    beginScreenDisplayList(&state->settings, colorBuffer);
 }
 
 void renderScreenBlock(struct GraphicsState* state)
@@ -330,10 +326,11 @@ void finishScreen(struct GraphicsState* state)
     state->row = GB_SCREEN_H;
     renderScreenBlock(state);
 
+    gDPPipeSync(gCurrentDP++);
+    gDPTileSync(gCurrentDP++);
+    gDPLoadSync(gCurrentDP++);
     gDPFullSync(gCurrentDP++);
     flushDPCommands();
-
-    // gSPEndDisplayList(gCurrentScreenDL++);
 }
 
 void renderSprites(struct Memory* memory, struct GraphicsState* state)
@@ -639,7 +636,7 @@ void rerenderDisplayList(struct GameboyGraphicsSettings* setting, void* colorBuf
 {
     struct GraphicsState state;
     state.settings = *setting;
-    beginScreenDisplayList(&state.settings, gDrawScreen, colorBuffer);
+    beginScreenDisplayList(&state.settings, colorBuffer);
     state.palleteReadIndex = 0;
     state.palleteWriteIndex = 0;
     gPalleteDirty = 1;
