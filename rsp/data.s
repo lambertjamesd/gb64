@@ -19,6 +19,9 @@ window:
 windowAttrs:
     .space GB_TILEMAP_W
 
+tileAttrCache:
+    .space GB_MAX_VISIBLE_TILES
+
 .align 8
 tilemapTileCache:
     .space GB_TILE_SIZE * (GB_MAX_VISIBLE_TILES + GB_MAX_VISIBLE_SPRITES)
@@ -64,6 +67,8 @@ tilemapTileCacheInfo:
 
 currentTile:
     .half tilemapTileCache
+currentTileAttr:
+    .half tileAttrCache
 currentWindowY:
     .half 0
 

@@ -77,13 +77,6 @@ precacheLine:
     addi $at, $at, GraphicsMemory_tilemap0
     add a1, $at, a1 # calculate final ram address for tilemap row
     
-    # intentially fall through
-
-###############################################
-# Loads the tilemap row into memory using a ram pointer
-# a0 - target pointer into DMEM
-# a1 - source pointer from ram
-precacheLineFromPointer:
     ori a2, zero, GB_TILEMAP_W - 1 # dma length
     jal DMAproc # read tilemap row
     ori a3, zero, 0 # is read
@@ -137,6 +130,8 @@ precacheTiles:
     ori s1, a1, 0
     ori s2, a2, 0
 
+    lhu t0, currentTileAttr(zero)
+
 precacheNextTile:
     beq s2, zero, precacheTilesFinish
     add a1, s0, s1 # get the tile address
@@ -163,6 +158,7 @@ precacheNextTile:
     # calculate which tile bank to use
     #
     lbu $at, (tilemapAttrs - tilemap)(a1)
+    sb $at, 0(t0) # store current tile attribute into cache
     andi $at, $at, TILE_ATTR_VRAM_BANK
     sll $at, $at, 10 # converts 0x08 flag to 0x2000 offset
     add a0, a0, $at
@@ -170,10 +166,13 @@ precacheNextTile:
     jal requestTile
     addi s1, s1, 1
     andi s1, s1, 0x1f # wrap to 32 tiles
+    addi t0, t0, 1 # next tile attr
     j precacheNextTile
     addi s2, s2, -1
 
 precacheTilesFinish:
+    sh t0, currentTileAttr(zero)
+
     lw return, 0($sp)
     lw s0, 4($sp)
     lw s1, 8($sp)
@@ -190,6 +189,7 @@ precacheTilesFinish:
 # a3 src x
 
 copyTileLine:
+    li($at, 7)
     # convert y to pixel offset 
     # (2 bytes per row of pixels in a tile)
     sll a2, a2, 1
@@ -201,12 +201,35 @@ copyTileLine:
 
     # load pointer into tile cache
     lhu t4, currentTile(zero)
+    # load pointer into tile attribute cache
+    lhu t0, currentTileAttr(zero)
 
 copyTileLine_nextPixelRow:
-    add $at, t4, a2
+     #load tile attributes
+    lbu t7, 0(t0)
+
+    # check if tile is flipped vertically 
+    andi $at, t7, TILE_ATTR_V_FLIP
+    beq $at, zero, copyTileLine_loadPixelRow
+    ori $at, a2, 0
+
+    # flip vertically
+    li($at, 14)
+    sub $at, $at, a2
+
+copyTileLine_loadPixelRow:
+    add $at, t4, $at
 
     # load the pixel row
     lhu t6, 0($at)
+
+    # check if tile is flipped horizontally
+    andi $at, t7, TILE_ATTR_H_FLIP
+    beq $at, zero, copyTileLine_nextPixel
+    li($at, 7)
+    sub a3, $at, a3 # flip which pixel is being read from
+    li(t3, 1) # flip scan direction
+    
 
 copyTileLine_nextPixel:
     # check if finished copying pixels
@@ -227,6 +250,12 @@ copyTileLine_nextPixel:
     srl t1, t1, 8
     # combine into final pixel value
     or t1, t1, $at
+
+    # check pallete offset
+    andi $at, t7, TILE_ATTR_PALETTE
+    sll $at, $at, 4 # convert pallete index into a byte offset
+
+    add t1, t1, $at
 
     # write pixel into screen
     sb t1, scanline(a0) 
@@ -250,12 +279,16 @@ copyTileLine_skipPixel:
 
     # increment tile cache pointer
     addi t4, t4, GB_TILE_SIZE
+    addi t0, t0, 1
 
+    li(t3, -1) # next tile dir
     j copyTileLine_nextPixelRow
-    andi a3, a3, 7
+    li(a3, 7) # next start pos
 
 
 copyTileLine_finish:
+    # save current tile attribute before exiting
+    sh t0, currentTileAttr(zero)
     jr return
     # save current tile before exiting
     sh t4, currentTile(zero)

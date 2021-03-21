@@ -70,6 +70,9 @@ loadLine:
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    li($at, tileAttrCache)
+    sh $at, currentTileAttr(zero)
+
     lbu $at, (ppuTask + PPUTask_lcdc)(zero)
     andi $at, $at, LCDC_OBJ_ENABLE
     bne $at, zero, checkForSprites
@@ -167,6 +170,9 @@ beginDrawingRow:
     li($at, tilemapTileCache)
     sh $at, currentTile(zero)
 
+    li($at, tileAttrCache)
+    sh $at, currentTileAttr(zero)
+
     jal drawSprites
     nop
 
@@ -182,7 +188,7 @@ beginDrawingRow:
     
     lbu a2, (ppuTask + PPUTask_ly)(zero)
     lbu $at, (ppuTask + PPUTask_scy)(zero)
-    sub a2, a2, $at
+    add a2, a2, $at
     andi a2, a2, 0x7 # sprite y pos
 
     lbu a3, (ppuTask + PPUTask_scx)(zero)
