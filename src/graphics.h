@@ -81,6 +81,8 @@ void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, i
 void renderSprites(struct Memory* memory, struct GraphicsState* state);
 void applyGrayscalePallete(struct GraphicsState* state);
 void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colorBuffer);
+void prepareGraphicsPallete(struct GraphicsState* state);
+void renderScreenBlock(struct GraphicsState* state);
 
 void initGraphicsState(
     struct Memory* memory,

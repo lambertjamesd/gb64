@@ -1,6 +1,7 @@
 
 #include "rspppu.h"
 #include "rspppu_includes.h"
+#include "graphics.h"
 
 #include <ultra64.h>
 
@@ -85,7 +86,7 @@ void startPPUFrame(struct Memory* memory, int gbc)
     IO_WRITE(SP_STATUS_REG, SP_SET_SIG1);
 }
 
-void renderPPURow(struct Memory* memory)
+void renderPPURow(struct Memory* memory, struct GraphicsState* state)
 {
     gPPUTask.lcdc = READ_REGISTER_DIRECT(memory, REG_LCDC);
     gPPUTask.ly = READ_REGISTER_DIRECT(memory, REG_LY);
@@ -95,6 +96,13 @@ void renderPPURow(struct Memory* memory)
     gPPUTask.wx = READ_REGISTER_DIRECT(memory, REG_WX);
     osWritebackDCache(&gPPUTask, sizeof(struct PPUTask));
     osWritebackDCache(&memory->vram, sizeof(&memory->vram));
+
+    prepareGraphicsPallete(state);
+
+    if (state->row - state->lastRenderedRow >= GB_RENDER_STRIP_HEIGHT)
+    {
+        renderScreenBlock(state);
+    }
 
     // set mode 3 bit
     IO_WRITE(SP_STATUS_REG, SP_SET_SIG0);

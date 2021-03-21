@@ -208,8 +208,8 @@ drawSpriteDMGPallete:
     andi $at, t4, SPRITE_FLAGS_DMA_PALETTE
     sll t9, $at, 2
 drawSpriteCheckPriority:
+    addi t9, t9, OBJ_PALETTE_INDEX_START
     # todo mark priority flag
-    nop
 drawSpriteNextPixel:
     # check if pixel off screen to the left
     bltz t7, skipDrawSpritePixel

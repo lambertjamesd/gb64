@@ -228,7 +228,6 @@ void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colo
 
     gDPSetCombineMode(gCurrentDP++, G_CC_BLENDRGBA, G_CC_BLENDRGBA);
     gDPSetPrimColor(gCurrentDP++, 0, 0, 255, 255, 255, 255);
-    gDPLoadTLUT_pal256(gCurrentDP++, OS_K0_TO_PHYSICAL(gScreenPalette));
 
     // wait for DP to be available
     while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
@@ -264,8 +263,8 @@ void initGraphicsState(
     state->palleteReadIndex = 0;
     state->palleteWriteIndex = 0;
 
-    prepareGraphicsPallete(state);
     beginScreenDisplayList(&state->settings, colorBuffer);
+    prepareGraphicsPallete(state);
 }
 
 void renderScreenBlock(struct GraphicsState* state)
@@ -309,13 +308,10 @@ void prepareGraphicsPallete(struct GraphicsState* state)
             applyGrayscalePallete(state);
         }
 
-        if (state->palleteWriteIndex - state->palleteReadIndex >= 256)
-        {
-            state->palleteReadIndex = state->palleteWriteIndex;
-            renderScreenBlock(state);
-            gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette + state->palleteReadIndex);
-            flushDPCommands();
-        }
+        state->palleteReadIndex = state->palleteWriteIndex;
+        renderScreenBlock(state);
+        gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette + state->palleteReadIndex);
+        flushDPCommands();
 
         state->palleteWriteIndex += PALETTE_COUNT;
     }
