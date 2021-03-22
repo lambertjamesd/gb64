@@ -268,6 +268,11 @@ ENTER_MODE_0:
     # wait for the ppu running the rsp to
     # catch up
 ENTER_MODE_0_WAIT_FOR_MODE_0:
+    la TMP2, gCyclesWaitingForMode0
+    lw $at, 0(TMP2)
+    addi $at, $at, 1
+    sw $at, 0(TMP2)
+
     lw $at, SP_STATUS_REG
     andi $at, $at, MODE_3_FLAG
     bnez $at, ENTER_MODE_0_WAIT_FOR_MODE_0

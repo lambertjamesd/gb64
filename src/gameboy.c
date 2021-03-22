@@ -132,7 +132,7 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
 
     if (colorBuffer && screenWasEnabled)
     {
-
+        gCyclesWaitingForMode0 = 0;
         ly = READ_REGISTER_DIRECT(&gameboy->memory, REG_LY);
 
         if (ly != 0 || (READ_REGISTER_DIRECT(&gameboy->memory, REG_LCD_STAT) & REG_LCD_STAT_MODE) != 2)

@@ -25,6 +25,6 @@
 #define PPUTask_scx            17
 #define PPUTask_wy             18
 #define PPUTask_wx             19
-#define PPUTask_padding        20
+#define PPUTask_performance    20
 
 #define PPUTask_sizeof         24

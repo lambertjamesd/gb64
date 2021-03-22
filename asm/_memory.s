@@ -653,6 +653,9 @@ gOBP1Colors:
 .global gPalleteDirty
 gPalleteDirty:
     .word 1
+.global gCyclesWaitingForMode0
+gCyclesWaitingForMode0:
+    .word 0
     .text
 
 _GB_WRITE_BGP:

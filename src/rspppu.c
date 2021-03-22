@@ -18,6 +18,8 @@ extern OSMesg          dmaMessageBuf;
 extern OSPiHandle	   *handler;
 extern OSIoMesg        dmaIOMessageBuf;
 
+struct PPUPerformance __attribute__((aligned(8))) gPPUPerformance;
+
 struct PPUTask
 {
     u8* output;
@@ -30,7 +32,7 @@ struct PPUTask
     char scx;
     char wy;
     char wx;
-    int padding;
+    struct PPUPerformance* performanceMetrics;
 };
 
 static struct PPUTask __attribute__((aligned(8))) gPPUTask;
@@ -55,6 +57,7 @@ void startPPUFrame(struct Memory* memory, int gbc)
     gPPUTask.scx = READ_REGISTER_DIRECT(memory, REG_SCX);
     gPPUTask.wy = READ_REGISTER_DIRECT(memory, REG_WY);
     gPPUTask.wx = READ_REGISTER_DIRECT(memory, REG_WX);
+    gPPUTask.performanceMetrics = (struct PPUPerformance*)K0_TO_PHYS(&gPPUPerformance);
 
     if (gbc) {
         gPPUTask.flags |= PPU_TASK_FLAGS_COLOR;

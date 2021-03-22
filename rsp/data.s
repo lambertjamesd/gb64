@@ -86,3 +86,9 @@ startShiftXFlip:
 startDirXFlip:
     .byte -1
     .byte 1
+
+.align 8
+cyclesWaitingForMode2:
+    .word 0
+cyclesWaitingForMode3:
+    .word 0

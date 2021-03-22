@@ -14,12 +14,17 @@ ppuMain:
 
     li(s2, 0)
 
+    lw t1, cyclesWaitingForMode2(zero)
+
 loadSprites:
     mfc0 t0, SP_STATUS
     andi $at, t0, EXIT_EARLY_FLAG
     bne $at, zero, ppuExit
     andi $at, t0, MODE_2_FLAG
     beq $at, zero, loadSprites
+    addi t1, t1, 1
+
+    sw t1, cyclesWaitingForMode2(zero)
 
     li(a0, sprites) # DMEM target
     lw a1, (ppuTask + PPUTask_memorySource)(zero)
@@ -37,6 +42,8 @@ loadSprites:
     # increment current y
     addi s2, s2, 1
 
+    lw t1, cyclesWaitingForMode3(zero)
+
 loadLine:
     mfc0 t0, SP_STATUS
     andi $at, t0, EXIT_EARLY_FLAG
@@ -44,6 +51,9 @@ loadLine:
     # busy loop to wait for cpu to signal mode 3
     andi $at, t0, MODE_3_FLAG
     beq $at, zero, loadLine
+    addi t1, t1, 1
+
+    sw t1, cyclesWaitingForMode3(zero)
 
     # load PPUTask
     ori a0, zero, ppuTask
@@ -230,4 +240,13 @@ writeOutPixels:
     bne $at, zero, loadSprites
     nop
 ppuExit:
+    li(a0, cyclesWaitingForMode2)
+    lw a1, (ppuTask + PPUTask_performance)(zero)
+    li(a2, 7)
+    jal DMAproc
+    li(a3, 1)
+
+    jal DMAWait
+    nop
+
     break

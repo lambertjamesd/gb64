@@ -129,6 +129,7 @@ extern u16 gBGPColors;
 extern u16 gOBP0Colors;
 extern u16 gOBP1Colors;
 extern u32 gPalleteDirty;
+extern u32 gCyclesWaitingForMode0;
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom);
 

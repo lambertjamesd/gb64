@@ -41,6 +41,7 @@
 #include "src/debugger.h"
 #include "src/mainmenu.h"
 #include "src/faulthandler.h"
+#include "src/rspppu.h"
 
 #include "debugger/debugger.h"
 
@@ -146,13 +147,13 @@ game(void)
 		}
 
 		lastDrawTime += osGetCount();
-		// sprintf(str, "Cycles run %d\nFrame Time %d\nEmu time %d\n%X", 
-		// 	gGameboy.cpu.cyclesRun, 
-		// 	(int)OS_CYCLES_TO_USEC(frameTime) / 1000, 
-		// 	(int)OS_CYCLES_TO_USEC(lastDrawTime) / 1000,
-		// 	renderSprites
-		// );
-		// debugInfo(str);
+		clearDebugOutput();
+		sprintf(gTmpBuffer, "CPU M0 Wait %d\nPPU M2 Wait %d\nPPU M3 Wait %d\n", 
+			gCyclesWaitingForMode0,
+			gPPUPerformance.mode2StallCount,
+			gPPUPerformance.mode3StallCount
+		);
+		debugInfo(gTmpBuffer);
 #endif
 		preRenderFrame();
 

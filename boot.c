@@ -233,7 +233,7 @@ static void mainproc(void *arg)
 	}
 #endif
 
-	void* heapEnd = initColorBuffers((void*)(0x80000000 | osMemSize));
+	void* heapEnd = initColorBuffers((void*)OS_PHYSICAL_TO_K0(osMemSize));
 
 	initHeap(heapEnd);
 	
