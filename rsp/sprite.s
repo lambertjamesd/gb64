@@ -203,10 +203,10 @@ drawSpriteCheckFlipX:
     beq $at, zero, drawSpriteDMGPallete
     andi $at, t4, SPRITE_FLAGS_GBC_PALETTE
     j drawSpriteCheckPriority
-    srl t9, $at, 2
+    sll t9, $at, 2
 drawSpriteDMGPallete:
     andi $at, t4, SPRITE_FLAGS_DMA_PALETTE
-    sll t9, $at, 2
+    srl t9, $at, 2
 drawSpriteCheckPriority:
     addi t9, t9, OBJ_PALETTE_INDEX_START
     # todo mark priority flag
