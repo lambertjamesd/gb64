@@ -12,6 +12,7 @@ requestTile:
     lhu v0, currentTile(zero)
     # retrieve the current tile ID
     addi v1, v0, -tilemapTileCache
+    # convert 16 byte per tile offset to a 2 byte index
     srl v1, v1, 3
     # check if the tile id matches
     lhu $at, tilemapTileCacheInfo(v1)
@@ -89,7 +90,7 @@ precacheLine:
     addi a1, a1, GraphicsMemory_tilemapOffset # offset source from ram
 
     jal DMAproc
-    ori a0, zero, (tilemapAttrs-tilemap) # offset target into DMEM
+    addi a0, a0, (tilemapAttrs-tilemap) # offset target into DMEM
 
 skipTilemapInfo:
 
@@ -253,7 +254,7 @@ copyTileLine_nextPixel:
 
     # check pallete offset
     andi $at, t7, TILE_ATTR_PALETTE
-    sll $at, $at, 4 # convert pallete index into a byte offset
+    sll $at, $at, 2 # convert pallete index into a byte offset
 
     add t1, t1, $at
 

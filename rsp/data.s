@@ -1,19 +1,19 @@
 
-.align 8
+.align 16
 ppuTask:
     .space PPUTask_sizeof
 
-.align 8
+.align 16
 scanline:
     .space GB_SCREEN_WD
 
-.align 8
+.align 16
 tilemap:
     .space GB_TILEMAP_W
 tilemapAttrs:
     .space GB_TILEMAP_W
 
-.align 8
+.align 16
 window:
     .space GB_TILEMAP_W
 windowAttrs:
@@ -22,7 +22,7 @@ windowAttrs:
 tileAttrCache:
     .space GB_MAX_VISIBLE_TILES
 
-.align 8
+.align 16
 tilemapTileCache:
     .space GB_TILE_SIZE * (GB_MAX_VISIBLE_TILES + GB_MAX_VISIBLE_SPRITES)
 tilemapTileCacheInfo:
@@ -72,7 +72,7 @@ currentTileAttr:
 currentWindowY:
     .half 0
 
-.align 8
+.align 16
 sprites:
     .space SPRITE_SIZE * SPRITE_MAX_COUNT
 
