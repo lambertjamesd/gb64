@@ -15,8 +15,10 @@ ppuMain:
     li(s2, 0)
 
 loadSprites:
-    mfc0 $at, SP_STATUS
-    andi $at, $at, MODE_2_FLAG
+    mfc0 t0, SP_STATUS
+    andi $at, t0, EXIT_EARLY_FLAG
+    bne $at, zero, ppuExit
+    andi $at, t0, MODE_2_FLAG
     beq $at, zero, loadSprites
 
     li(a0, sprites) # DMEM target
@@ -36,9 +38,11 @@ loadSprites:
     addi s2, s2, 1
 
 loadLine:
+    mfc0 t0, SP_STATUS
+    andi $at, t0, EXIT_EARLY_FLAG
+    bne $at, zero, ppuExit
     # busy loop to wait for cpu to signal mode 3
-    mfc0 $at, SP_STATUS
-    andi $at, $at, MODE_3_FLAG
+    andi $at, t0, MODE_3_FLAG
     beq $at, zero, loadLine
 
     # load PPUTask
@@ -225,5 +229,5 @@ writeOutPixels:
     # render the next line if there is more data to render
     bne $at, zero, loadSprites
     nop
-
+ppuExit:
     break

@@ -45,3 +45,5 @@
 #define MODE_2_FLAG 0x100
 #define MODE_3_FLAG_CLR 0x0200
 #define MODE_2_FLAG_CLR 0x0800
+
+#define EXIT_EARLY_FLAG 0x200

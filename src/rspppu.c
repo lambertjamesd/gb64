@@ -84,6 +84,7 @@ void startPPUFrame(struct Memory* memory, int gbc)
     // clear mode 3 bit
     IO_WRITE(SP_STATUS_REG, SP_CLR_SIG0);
     IO_WRITE(SP_STATUS_REG, SP_SET_SIG1);
+    IO_WRITE(SP_STATUS_REG, SP_CLR_SIG2);
 }
 
 void renderPPURow(struct Memory* memory, struct GraphicsState* state)

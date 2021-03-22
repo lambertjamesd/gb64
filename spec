@@ -60,7 +60,7 @@ endseg
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/PokemonSilver.gbc"
+	include "data/Aladdin.gbc"
 endseg
 
 #endif // USE_PLACEHOLDER
