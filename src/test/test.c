@@ -1,12 +1,10 @@
 
 #include "cpu_test.h"
-#include "graphics_test.h"
 
 int runTests(char* testOutput)
 {
     if (
-        // !runCPUTests(testOutput) ||
-        !testGraphics(testOutput)
+        !runCPUTests(testOutput)
     )
     {
         return 0;

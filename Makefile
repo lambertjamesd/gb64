@@ -74,7 +74,6 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/gameboy.c                         \
        src/graphics.c                        \
        memory.c                              \
-       src/test/graphics_test.c              \
        src/test/test.c                       \
        src/debug_out.c                       \
        src/audio.c                           \

@@ -71,14 +71,10 @@ struct GraphicsState {
     u16 gbc;
     u16 row;
     u16 lastRenderedRow;
-    u16 winY;
     u16 palleteReadIndex;
     u16 palleteWriteIndex;
 };
 
-int compareSprites(struct Sprite a, struct Sprite b);
-void prepareSprites(struct Sprite* inputSprites, struct Sprite* sortedSprites, int *spriteCount, int sort);
-void renderSprites(struct Memory* memory, struct GraphicsState* state);
 void applyGrayscalePallete(struct GraphicsState* state);
 void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colorBuffer);
 void prepareGraphicsPallete(struct GraphicsState* state);
@@ -90,11 +86,6 @@ void initGraphicsState(
     struct GameboyGraphicsSettings* settings,
     int gbc,
     void* colorBuffer
-);
-
-void renderPixelRow(
-    struct Memory* memory,
-    struct GraphicsState* state
 );
 
 void finishScreen(struct GraphicsState* state);
