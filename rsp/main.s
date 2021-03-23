@@ -208,7 +208,7 @@ beginDrawingRow:
     lbu a3, (ppuTask + PPUTask_scx)(zero)
     li($at, 8)
     sub a3, $at, a3
-    jal copyTileLine
+    jal copyTileLineV
     andi a3, a3, 0x7 # sprite x pos
 
 drawWindow:
@@ -217,7 +217,7 @@ drawWindow:
     sub a1, a1, a0 # pixel count
     blez a1, writeOutPixels # check if the window is visible
     andi a2, s1, 0x7 # sprite y pos
-    jal copyTileLine
+    jal copyTileLineV
     ori a3, zero, 0 # sprite x pos
 
 writeOutPixels:

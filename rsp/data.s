@@ -1,11 +1,42 @@
+.align 16
+lsbBitMultiply:
+    .half 0x0100
+    .half 0x0200
+    .half 0x0400
+    .half 0x0800
+    .half 0x1000
+    .half 0x2000
+    .half 0x4000
+    .half 0x8000
+
+.align 16
+msbBitMultiply:
+    .half 0x0004
+    .half 0x0008
+    .half 0x0010
+    .half 0x0020
+    .half 0x0040
+    .half 0x0080
+    .half 0x0100
+    .half 0x0200
+
+.align 2
+lsbBitMask:
+    .half 0x100
+
+.align 2
+msbBitMask:
+    .half 0x200
 
 .align 16
 ppuTask:
     .space PPUTask_sizeof
 
 .align 16
+    .space 8 # instead of clipping pixels, extra memeory is used that can be overwitten without issue
 scanline:
     .space GB_SCREEN_WD
+    .space 8 # instead of clipping pixels, extra memeory is used that can be overwitten without issue
 
 .align 16
 tilemap:

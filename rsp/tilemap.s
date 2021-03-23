@@ -293,3 +293,84 @@ copyTileLine_finish:
     jr return
     # save current tile before exiting
     sh t4, currentTile(zero)
+
+###############################################
+# Tiles To Scanline
+# a0 pixel x
+# a1 pixel count
+# a2 sprite y
+# a3 src x
+
+# TODO tile flip H
+# TODO tile flip V
+# TODO tile pallete
+# TODO tile priority
+# TODO clip end of tilemap
+copyTileLineV:
+    # align to tile
+    add a1, a1, a3
+    sub a0, a0, a3
+    
+    addi a0, a0, scanline
+
+    # convert y to pixel offset 
+    # (2 bytes per row of pixels in a tile)
+    sll a2, a2, 1
+
+    # load pointer into tile cache
+    lhu t0, currentTile(zero)
+    # load pointer into tile attribute cache
+    lhu t1, currentTileAttr(zero)
+
+copyTileLineV_nextTile:
+    # calculate pixel row address
+    add $at, t0, a2
+    # load pixel row into v0
+    lsv $v0[0], 0($at)
+
+    # retrieve multiply lsb bits for each pixel
+    lqv $v1[0], lsbBitMultiply(zero)
+    # shift least significant bits into place
+    vmudm $v2, $v1, $v0[0]
+    # shift one more bit to the left
+    vadd $v2, $v2, $v2
+
+    # retrive multiply msb bits for each pixel
+    lqv $v3[0], msbBitMultiply(zero)
+    # shift most siginificat bits into place
+    vmudn $v4, $v3, $v0[0]
+
+    # mask least significat bits
+    lsv $v5[0], lsbBitMask(zero)
+    vand $v2, $v2, $v5[0]
+
+    # mast most significat bits
+    lsv $v6[0], msbBitMask(zero)
+    vand $v4, $v4, $v6[0]
+
+    # combine lsb and msb
+    vor $v2, $v2, $v4
+
+    # store the pixels
+    spv $v2[0], 0(a0)
+
+    # increment current x
+    addi a0, a0, GB_TILE_WIDTH
+    # decrement pixels remaning
+    addi a1, a1, -GB_TILE_WIDTH
+    # increment to next tile
+    addi t0, t0, GB_TILE_SIZE
+    # increment to next tile attr
+    addi t1, t1, 1
+
+    bgtz a1, copyTileLineV_nextTile
+    nop
+
+
+copyTileLineV_finish:
+    # save current tile attribute before exiting
+    sh t0, currentTileAttr(zero)
+    jr return
+    # save current tile before exiting
+    sh t4, currentTile(zero)
+

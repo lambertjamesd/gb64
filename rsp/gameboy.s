@@ -5,6 +5,7 @@
 #define GB_TILEMAP_W 32
 
 #define GB_TILE_SIZE 16
+#define GB_TILE_WIDTH 8
 
 #define GB_MAX_VISIBLE_TILES 22
 
