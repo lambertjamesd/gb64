@@ -301,8 +301,6 @@ copyTileLine_finish:
 # a2 sprite y
 # a3 src x
 
-# TODO tile pallete
-# TODO tile priority
 # TODO clip end of tilemap
 copyTileLineV:
     # align to tile
@@ -310,6 +308,15 @@ copyTileLineV:
     sub a0, a0, a3
     
     addi a0, a0, scanline
+
+    # store end of tilemap scanline
+    # used to prevent the tilemap
+    # from overwriting the window
+    add t0, a0, a1
+    lw t1, 0(t0)
+    lw t2, 4(t0)
+    sw t1, overscanBuffer(zero)
+    sw t1, (overscanBuffer + 4)(zero)
 
     # convert y to pixel offset 
     # (2 bytes per row of pixels in a tile)
@@ -370,11 +377,59 @@ copyTileLineV_skipVFlip:
     # with shift by 8 bits to upper byte
     sll t5, t5, 10 
     mtc2 t5, $v7[0]
+    # mix in pallete color
+    vadd $v3, $v2, $v7[0]
 
-    vadd $v2, $v2, $v7[0]
+    # load the previous pixels
+    lpv $v8[0], 0(a0)
+    li($at, 0x7f00)
+    mtc2 $at, $v10[0]
+    # mask out priority bit and store obj color value
+    vand $v10, $v8, $v10[0]
+
+    # create a zero vector
+    vxor $v31, $v31, $v31
+
+    #
+    # BG vs Sprite truth table
+    #
+    # OB  | BG  | PRI | Use BG
+    # ------------------------
+    #  0  |  0  |  0  |  1 
+    #  0  |  0  |  1  |  1 
+    #  0  |  1  |  0  |  1 
+    #  0  |  1  |  1  |  1 
+    #  1  |  0  |  0  |  0 
+    #  1  |  0  |  1  |  0 
+    #  1  |  1  |  0  |  0 
+    #  1  |  1  |  1  |  1 
+    #
+    # Use BG = !OB | BG && PRI
+    # PRI = OB_PRI | TILE_PRI
+    #
+
+    # check if existing pixel is 0
+    veq $v30, $v10, $v31
+    # store background into obj slot if obj is 0
+    vmrg $v10, $v3, $v10
+
+    # check if background is 0
+    veq $v30, $v2, $v31
+    # store obj into background if background is 0
+    vmrg $v3, $v10, $v3
+
+    andi $at, t4, TILE_ATTR_PRIORITY
+    mtc2 $at, $v9[0]
+    # calculate OB_PRI | TILE_PRI
+    vor $v8, $v8, $v9
+
+    # check if priority is 0
+    veq $v30, $v8, $v31
+    # store obj into background if priority is 0
+    vmrg $v3, $v3, $v10
 
     # store the pixels
-    spv $v2[0], 0(a0)
+    spv $v3[0], 0(a0)
 
     # increment current x
     addi a0, a0, GB_TILE_WIDTH
@@ -390,6 +445,16 @@ copyTileLineV_skipVFlip:
 
 
 copyTileLineV_finish:
+
+    # restore end of tilemap scanline
+    # used to prevent the tilemap
+    # from overwriting the window
+    add t0, a0, a1
+    lw t1, overscanBuffer(zero)
+    lw t1, (overscanBuffer + 4)(zero)
+    sw t1, 0(t0)
+    sw t2, 4(t0)
+    
     # save current tile attribute before exiting
     sh t1, currentTileAttr(zero)
     jr return

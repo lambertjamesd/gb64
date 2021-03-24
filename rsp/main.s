@@ -115,14 +115,11 @@ checkForWindow:
 
     # check if window x is less than the screen width
     lbu t0, (ppuTask + PPUTask_wx)(zero)
-    addi t0, t0, -WINDOW_X_OFFSET
-    addi $at, t0, -GB_SCREEN_WD
+    addi s0, t0, -WINDOW_X_OFFSET # calculate window position
+    addi $at, s0, -GB_SCREEN_WD
     bgez $at, precacheTilemap
 
     lhu s1, currentWindowY(zero) # load current window y (note delay slot)
-
-    # TODO handle negative window position
-    ori s0, t0, 0 # set new window position
 
     addi $at, s1, 1 # increment and save current window y
     sh $at, currentWindowY(zero)
@@ -206,8 +203,6 @@ beginDrawingRow:
     andi a2, a2, 0x7 # sprite y pos
 
     lbu a3, (ppuTask + PPUTask_scx)(zero)
-    li($at, 8)
-    sub a3, $at, a3
     jal copyTileLineV
     andi a3, a3, 0x7 # sprite x pos
 

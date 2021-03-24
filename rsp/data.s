@@ -59,7 +59,8 @@ ppuTask:
 scanline:
     .space GB_SCREEN_WD
     .space 8 # instead of clipping pixels, extra memeory is used that can be overwitten without issue
-
+overscanBuffer:
+    .space 8 # used to restore pixels written over by doing copies in blocks
 .align 16
 tilemap:
     .space GB_TILEMAP_W
