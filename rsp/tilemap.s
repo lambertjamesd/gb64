@@ -301,8 +301,6 @@ copyTileLine_finish:
 # a2 sprite y
 # a3 src x
 
-# TODO tile flip H
-# TODO tile flip V
 # TODO tile pallete
 # TODO tile priority
 # TODO clip end of tilemap
@@ -323,26 +321,42 @@ copyTileLineV:
     lhu t1, currentTileAttr(zero)
 
 copyTileLineV_nextTile:
+    # load tile attributes
+    lbu t4, 0(t1)
+
+    andi $at, t4, TILE_ATTR_V_FLIP
     # calculate pixel row address
-    add $at, t0, a2
+    add t3, t0, a2
+    beq $at, zero, copyTileLineV_skipVFlip
+    nop
+
+    addi t3, t0, 14
+    sub t3, t3, a2
+
+copyTileLineV_skipVFlip:
     # load pixel row into v0
-    lsv $v0[0], 0($at)
+    lsv $v0[0], 0(t3)
+
+    # load the tile flip offset
+    andi t2, t4, TILE_ATTR_H_FLIP
 
     # retrieve multiply lsb bits for each pixel
-    lqv $v1[0], lsbBitMultiply(zero)
+    lqv $v1[0], lsbBitMultiply(t2)
     # shift least significant bits into place
     vmudm $v2, $v1, $v0[0]
-    # shift one more bit to the left
-    vadd $v2, $v2, $v2
-
-    # retrive multiply msb bits for each pixel
-    lqv $v3[0], msbBitMultiply(zero)
-    # shift most siginificat bits into place
-    vmudn $v4, $v3, $v0[0]
 
     # mask least significat bits
     lsv $v5[0], lsbBitMask(zero)
     vand $v2, $v2, $v5[0]
+    
+    # shift two more bits to the left
+    vadd $v2, $v2, $v2
+    vadd $v2, $v2, $v2
+
+    # retrive multiply msb bits for each pixel
+    lqv $v3[0], msbBitMultiply(t2)
+    # shift most siginificat bits into place
+    vmudn $v4, $v3, $v0[0]
 
     # mast most significat bits
     lsv $v6[0], msbBitMask(zero)
@@ -350,6 +364,11 @@ copyTileLineV_nextTile:
 
     # combine lsb and msb
     vor $v2, $v2, $v4
+
+    andi t5, t4, TILE_ATTR_PALETTE
+    mtc2 t5, $v7[0]
+
+    vadd $v2, $v2, $v7[0]
 
     # store the pixels
     spv $v2[0], 0(a0)

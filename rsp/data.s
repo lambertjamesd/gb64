@@ -1,5 +1,6 @@
 .align 16
 lsbBitMultiply:
+    .half 0x0080
     .half 0x0100
     .half 0x0200
     .half 0x0400
@@ -7,7 +8,6 @@ lsbBitMultiply:
     .half 0x1000
     .half 0x2000
     .half 0x4000
-    .half 0x8000
 
 .align 16
 msbBitMultiply:
@@ -20,9 +20,31 @@ msbBitMultiply:
     .half 0x0100
     .half 0x0200
 
+.align 16
+lsbBitMultiplyFlipX:
+    .half 0x4000
+    .half 0x2000
+    .half 0x1000
+    .half 0x0800
+    .half 0x0400
+    .half 0x0200
+    .half 0x0100
+    .half 0x0080
+
+.align 16
+msbBitMultiplyFlipX:
+    .half 0x0200
+    .half 0x0100
+    .half 0x0080
+    .half 0x0040
+    .half 0x0020
+    .half 0x0010
+    .half 0x0008
+    .half 0x0004
+
 .align 2
 lsbBitMask:
-    .half 0x100
+    .half 0x40
 
 .align 2
 msbBitMask:

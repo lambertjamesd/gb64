@@ -148,10 +148,11 @@ game(void)
 
 		lastDrawTime += osGetCount();
 		clearDebugOutput();
-		sprintf(gTmpBuffer, "CPU M0 Wait %d\nPPU M2 Wait %d\nPPU M3 Wait %d\n", 
+		sprintf(gTmpBuffer, "CPU M0 Wait %d\nPPU M2 Wait %d\nPPU M3 Wait %d\nFrames %d\n", 
 			gCyclesWaitingForMode0,
 			gPPUPerformance.mode2StallCount,
-			gPPUPerformance.mode3StallCount
+			gPPUPerformance.mode3StallCount,
+			frames
 		);
 		debugInfo(gTmpBuffer);
 #endif
