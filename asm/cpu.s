@@ -216,20 +216,19 @@ READ_NEXT_INSTRUCTION:
     add $at, GB_PC, PC_MEMORY_BANK
     lbu $v0, 0($at)
     addi Param0, GB_PC, 1
-    andi Param0, Param0, 0xFFFF
-
     #intenionally continue into next label
 SET_GB_PC:
     xor $at, GB_PC, Param0
     andi $at, $at, 0xF000
-    bnez $at, _SET_GB_PC_CHANGE_BANK
-    nop
+    beqz $at, _SET_GB_PC_FINISH
+    andi Param0, Param0, 0xFFFF
+
     # check if PC jumped between 0xF000-0xFDFF and 0xFF80-0xFFFE
-    li $at, MEMORY_MISC_START
-    sltu TMP2, GB_PC, $at
-    sltu $at, Param0, $at
-    beq TMP2, $at, _SET_GB_PC_FINISH
-    nop
+    # li $at, MEMORY_MISC_START
+    # sltu TMP2, GB_PC, $at
+    # sltu $at, Param0, $at
+    # beq TMP2, $at, _SET_GB_PC_FINISH
+    # nop
 _SET_GB_PC_CHANGE_BANK:
     # if memory is within register memory
     la $at, MM_REGISTER_START

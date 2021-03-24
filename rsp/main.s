@@ -184,7 +184,7 @@ beginDrawingRow:
     li($at, tileAttrCache)
     sh $at, currentTileAttr(zero)
 
-    jal drawSprites
+    jal drawSpritesV
     nop
 
     # check if tilemap is visible
