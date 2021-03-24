@@ -366,6 +366,9 @@ copyTileLineV_skipVFlip:
     vor $v2, $v2, $v4
 
     andi t5, t4, TILE_ATTR_PALETTE
+    # convert pallete index into a byte offset
+    # with shift by 8 bits to upper byte
+    sll t5, t5, 10 
     mtc2 t5, $v7[0]
 
     vadd $v2, $v2, $v7[0]
@@ -388,8 +391,8 @@ copyTileLineV_skipVFlip:
 
 copyTileLineV_finish:
     # save current tile attribute before exiting
-    sh t0, currentTileAttr(zero)
+    sh t1, currentTileAttr(zero)
     jr return
     # save current tile before exiting
-    sh t4, currentTile(zero)
+    sh t0, currentTile(zero)
 
