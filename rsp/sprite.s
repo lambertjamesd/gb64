@@ -303,8 +303,6 @@ drawSpriteVCheckPriority:
     or t8, t8, $at
     addi t8, t8, (OBJ_PALETTE_INDEX_START << 8)
 
-    mtc2 $at, $v10[0]
-
     # get pointer into tile data
     sll t3, t3, 1 # convert line to pointer offset
     add t3, t3, t1

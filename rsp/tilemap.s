@@ -274,6 +274,10 @@ copyTileLineV_skipVFlip:
     # mask out priority bit and store obj color value
     vand $v10, $v8, $v10[0]
 
+    li($at, 0x8000)
+    mtc2 $at, $v11[0]
+    vand $v11, $v8, $v11[0]
+
     # create a zero vector
     vxor $v31, $v31, $v31
 
@@ -308,12 +312,12 @@ copyTileLineV_skipVFlip:
     andi $at, t4, TILE_ATTR_PRIORITY
     mtc2 $at, $v9[0]
     # calculate OB_PRI | TILE_PRI
-    vor $v8, $v8, $v9
+    vor $v11, $v11, $v9[0]
 
     # check if priority is 0
-    veq $v30, $v8, $v31
+    veq $v30, $v31, $v11
     # store obj into background if priority is 0
-    vmrg $v3, $v3, $v10
+    vmrg $v3, $v10, $v3
 
     # store the pixels
     spv $v3[0], 0(a0)
