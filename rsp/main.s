@@ -115,11 +115,13 @@ checkForWindow:
 
     # check if window x is less than the screen width
     lbu t0, (ppuTask + PPUTask_wx)(zero)
-    addi s0, t0, -WINDOW_X_OFFSET # calculate window position
-    addi $at, s0, -GB_SCREEN_WD
+    addi t0, t0, -WINDOW_X_OFFSET # calculate window position
+    addi $at, t0, -GB_SCREEN_WD
     bgez $at, precacheTilemap
-
     lhu s1, currentWindowY(zero) # load current window y (note delay slot)
+
+    # store new window position
+    ori s0, t0, 0
 
     addi $at, s1, 1 # increment and save current window y
     sh $at, currentWindowY(zero)

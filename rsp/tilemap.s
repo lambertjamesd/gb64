@@ -121,21 +121,18 @@ precacheBlankTilesFinish:
 # a2 - number of sprites to load
 
 precacheTiles:
-    addi $sp, $sp, -16
+    addi $sp, $sp, -4
     sw return, 0($sp)
-    sw s0, 4($sp)
-    sw s1, 8($sp)
-    sw s2, 12($sp)
 
-    ori s0, a0, 0
-    ori s1, a1, 0
-    ori s2, a2, 0
+    ori s5, a0, 0
+    ori s6, a1, 0
+    ori s7, a2, 0
 
     lhu t0, currentTileAttr(zero)
 
 precacheNextTile:
-    beq s2, zero, precacheTilesFinish
-    add a1, s0, s1 # get the tile address
+    beq s7, zero, precacheTilesFinish
+    add a1, s5, s6 # get the tile address
     lbu a0, 0(a1) # load the tile index
 
     # 
@@ -165,22 +162,19 @@ precacheNextTile:
     add a0, a0, $at
 
     jal requestTile
-    addi s1, s1, 1
-    andi s1, s1, 0x1f # wrap to 32 tiles
+    addi s6, s6, 1
+    andi s6, s6, 0x1f # wrap to 32 tiles
     addi t0, t0, 1 # next tile attr
     j precacheNextTile
-    addi s2, s2, -1
+    addi s7, s7, -1
 
 precacheTilesFinish:
     sh t0, currentTileAttr(zero)
 
     lw return, 0($sp)
-    lw s0, 4($sp)
-    lw s1, 8($sp)
-    lw s2, 12($sp)
 
     jr return
-    addi $sp, $sp, 16
+    addi $sp, $sp, 4
 
 ###############################################
 # Tiles To Scanline
