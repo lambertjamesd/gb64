@@ -6,6 +6,8 @@
 #include "decoder.h"
 #include "bool.h"
 #include "faulthandler.h"
+#include "./gameboy.h"
+#include "./graphics.h"
 
 u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
@@ -764,6 +766,8 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
     while (gDebugMenu.state.isDebugging)
     {
 		pad = ReadController(0);
+
+		rerenderLastFrame(&gGameboy.settings.graphics, getColorBuffer());
 
         menuStateHandleInput(&gDebugMenu.menu, pad[0]);
     
