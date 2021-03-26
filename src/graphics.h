@@ -63,6 +63,11 @@
 
 extern u16 gScreenPalette[MAX_PALLETE_SIZE];
 
+struct RenderBlockInformation {
+  u16 row;
+  u16 palleteWriteIndex;
+};
+
 struct GraphicsState {
     struct Sprite sortedSprites[SPRITE_COUNT];
     u8 spriteIndexBuffer[GB_SCREEN_W];
@@ -71,7 +76,6 @@ struct GraphicsState {
     u16 gbc;
     u16 row;
     u16 lastRenderedRow;
-    u16 palleteReadIndex;
     u16 palleteWriteIndex;
 };
 
@@ -89,7 +93,8 @@ void initGraphicsState(
 );
 
 void finishScreen(struct GraphicsState* state);
-void rerenderDisplayList(struct GameboyGraphicsSettings* setting, void* colorBuffer);
+void rerenderLastFrame();
 void waitForRDP();
+int palleteUsedCount();
 
 #endif

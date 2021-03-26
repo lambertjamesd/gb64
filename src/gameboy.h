@@ -148,6 +148,6 @@ void setButtonMapping(struct InputMapping* inputMapping, enum InputButtonIndex b
 
 int getPaletteCount();
 u16* getPalette(int index);
-void updatePaletteInfo(struct GameBoy* gameboy);
+void updatePaletteInfo(struct GameBoy* gameboy, struct GameboySettings* prevSettings);
 
 #endif

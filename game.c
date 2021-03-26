@@ -113,7 +113,13 @@ game(void)
 		
 		// clearDebugOutput();
 
-		if (!isMainMenuOpen(&gMainMenu))
+		OSTime startTime = osGetTime();
+
+		if (isMainMenuOpen(&gMainMenu))
+		{
+			rerenderLastFrame(&gGameboy.settings.graphics, getColorBuffer());
+		}
+		else
 		{		
 			accumulatedTime += frameTime;
 
@@ -146,15 +152,18 @@ game(void)
 			++frames;
 		}
 
+		OSTime totalTime = osGetTime() - startTime;
+
 		lastDrawTime += osGetCount();
-		clearDebugOutput();
-		sprintf(gTmpBuffer, "CPU M0 Wait %d\nPPU M2 Wait %d\nPPU M3 Wait %d\nFrames %d\n", 
-			gCyclesWaitingForMode0,
-			gPPUPerformance.mode2StallCount,
-			gPPUPerformance.mode3StallCount,
-			frames
-		);
-		debugInfo(gTmpBuffer);
+		// clearDebugOutput();
+		// sprintf(gTmpBuffer, "CPU M0 Wait %d\nPPU M2 Wait %d\nPPU M3 Wait %d\nFrames %d\nFrame Time %d\n", 
+		// 	gCyclesWaitingForMode0,
+		// 	gPPUPerformance.mode2StallCount,
+		// 	gPPUPerformance.mode3StallCount,
+		// 	frames,
+		// 	(int)OS_CYCLES_TO_USEC(totalTime) / 1000 
+		// );
+		// debugInfo(gTmpBuffer);
 #endif
 		preRenderFrame();
 

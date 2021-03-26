@@ -137,13 +137,13 @@ idle(void *arg)
 
 	switch (osTvType) {
 		case 0: // PAL
-			osViSetMode(&osViModeTable[OS_VI_PAL_LPF1]);
+			osViSetMode(&osViModeTable[OS_VI_PAL_HPF1]);
 			break;
 		case 1: // NTSC
-			osViSetMode(&osViModeTable[OS_VI_NTSC_LPF1]);
+			osViSetMode(&osViModeTable[OS_VI_NTSC_HPF1]);
 			break;
 		case 2: // MPAL
-			osViSetMode(&osViModeTable[OS_VI_MPAL_LPF1]);
+			osViSetMode(&osViModeTable[OS_VI_MPAL_HPF1]);
 			break;
 	}
 	osViSetSpecialFeatures(OS_VI_GAMMA_OFF |

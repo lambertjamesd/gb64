@@ -17,9 +17,12 @@ u64 gPadding;
 
 u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * (GB_SCREEN_H + 1)];
 
-Gfx gDPCommands[0x400];
+Gfx gDPCommands[0x800];
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
+
+struct RenderBlockInformation gRenderInformation[GB_SCREEN_H];
+int gRenderInformationCount;
 
 void prepareGraphicsPallete(struct GraphicsState* state);
 
@@ -62,15 +65,15 @@ void applyGrayscalePallete(struct GraphicsState* state) {
 }
 
 static long gScreenScales[ScreenScaleSettingCount] = {
-    0x10000,
-    0x14000,
-    0x18000,
+    0x20000,
+    0x28000,
+    0x30000,
 };
 
 static long gInvScreenScales[ScreenScaleSettingCount] = {
-    0x10000,
-    0x0CCCC,
-    0x0AAAA,
+    0x08000,
+    0x06666,
+    0x05555,
 };
 
 void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colorBuffer)
@@ -159,8 +162,9 @@ void initGraphicsState(
     state->gbc = gbc;
     state->row = 0;
     state->lastRenderedRow = 0;
-    state->palleteReadIndex = 0;
     state->palleteWriteIndex = 0;
+
+    gRenderInformationCount = 0;
 
     beginScreenDisplayList(&state->settings, colorBuffer);
     prepareGraphicsPallete(state);
@@ -170,6 +174,12 @@ void renderScreenBlock(struct GraphicsState* state)
 {
     if (state->lastRenderedRow != state->row)
     {
+        // Record information about this block
+        // so it can be rendered when paused
+        gRenderInformation[gRenderInformationCount].row = state->row;
+        gRenderInformation[gRenderInformationCount].palleteWriteIndex = state->palleteWriteIndex - PALETTE_COUNT;
+        ++gRenderInformationCount;
+
         COPY_SCREEN_STRIP(
             gCurrentDP++, 
             state->lastRenderedRow, 
@@ -207,9 +217,8 @@ void prepareGraphicsPallete(struct GraphicsState* state)
             applyGrayscalePallete(state);
         }
 
-        state->palleteReadIndex = state->palleteWriteIndex;
         renderScreenBlock(state);
-        gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette + state->palleteReadIndex);
+        gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette + state->palleteWriteIndex);
         flushDPCommands();
 
         state->palleteWriteIndex += PALETTE_COUNT;
@@ -228,39 +237,45 @@ void finishScreen(struct GraphicsState* state)
     flushDPCommands();
 }
 
-void rerenderDisplayList(struct GameboyGraphicsSettings* setting, void* colorBuffer)
+void rerenderLastFrame(struct GameboyGraphicsSettings* settings, void* colorBuffer)
 {
-    struct GraphicsState state;
-    state.settings = *setting;
-    beginScreenDisplayList(&state.settings, colorBuffer);
-    state.palleteReadIndex = 0;
-    state.palleteWriteIndex = 0;
-    gPalleteDirty = 1;
-    prepareGraphicsPallete(&state);
-    state.lastRenderedRow = 0;
-    state.row = GB_RENDER_STRIP_HEIGHT * 1;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 2;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 3;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 4;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 5;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 6;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 7;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 8;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 9;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 10;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 11;
-    renderScreenBlock(&state);
-    state.row = GB_RENDER_STRIP_HEIGHT * 12;
-    renderScreenBlock(&state);
-    finishScreen(&state);
+    beginScreenDisplayList(settings, colorBuffer);
+
+    int i;
+    u16 palleteWriteIndex = 0;
+    u16 lastRenderedRow = 0;
+
+    gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette);
+
+    for (i = 0; i < gRenderInformationCount; ++i) {
+        struct RenderBlockInformation* info = &gRenderInformation[i];
+        if (info->palleteWriteIndex != palleteWriteIndex) {
+            gDPLoadTLUT_pal256(gCurrentDP++, gScreenPalette + info->palleteWriteIndex);
+            palleteWriteIndex = info->palleteWriteIndex;
+        }
+        
+        COPY_SCREEN_STRIP(
+            gCurrentDP++, 
+            lastRenderedRow, 
+            info->row, 
+            gScreenScales[settings->scaleSetting], 
+            gInvScreenScales[settings->scaleSetting]
+        );
+
+        lastRenderedRow = info->row;
+    }
+
+    gDPPipeSync(gCurrentDP++);
+    gDPTileSync(gCurrentDP++);
+    gDPLoadSync(gCurrentDP++);
+    gDPFullSync(gCurrentDP++);
+    flushDPCommands();
+}
+
+int palleteUsedCount() {
+    if (gRenderInformationCount > 0) {
+        return gRenderInformation[gRenderInformationCount - 1].palleteWriteIndex / PALETTE_COUNT + 1;
+    }
+
+    return 0;
 }

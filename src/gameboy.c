@@ -76,7 +76,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     }
     else
     {
-        updatePaletteInfo(gameboy);
+        updatePaletteInfo(gameboy, 0);
     }
 
     loadBIOS(gameboy->memory.rom, gameboy->cpu.gbc);
@@ -506,7 +506,39 @@ u16* getPalette(int index)
     }
 }
 
-void updatePaletteInfo(struct GameBoy* gameboy)
+int getPalleteColor(int palleteIndex, int colorIndex) {
+    return gDMAPalettes[palleteIndex][colorIndex];
+}
+
+int lookupColorIndex(int palleteIndex, u16 color) {
+    if (gDMAPalettes[palleteIndex][0] == color) {
+        return 0;
+    } else if (gDMAPalettes[palleteIndex][1] == color) {
+        return 1;
+    } else if (gDMAPalettes[palleteIndex][2] == color) {
+        return 2;
+    } else {
+        return 3;
+    }
+}
+
+void reapplyPalleteInfo(u16* palleteStart, int palleteCount, int prevIndex, int currIndex) {
+    if (prevIndex == currIndex) {
+        return;
+    }
+
+    int i = 0;
+    int colorIndex;
+
+    for (i = 0; i < palleteCount; ++i, palleteStart += PALETTE_COUNT) {
+        palleteStart[0] = getPalleteColor(currIndex, lookupColorIndex(prevIndex, palleteStart[0]));
+        palleteStart[1] = getPalleteColor(currIndex, lookupColorIndex(prevIndex, palleteStart[1]));
+        palleteStart[2] = getPalleteColor(currIndex, lookupColorIndex(prevIndex, palleteStart[2]));
+        palleteStart[3] = getPalleteColor(currIndex, lookupColorIndex(prevIndex, palleteStart[3]));
+    } 
+}
+
+void updatePaletteInfo(struct GameBoy* gameboy, struct GameboySettings* prevSettings)
 {
     u16* src = getPalette(gameboy->settings.bgpIndex);
 
@@ -538,4 +570,11 @@ void updatePaletteInfo(struct GameBoy* gameboy)
     gameboy->memory.vram.colorPalettes[37] = (&gOBP1Colors)[obp1 >> 2 & 0x3];
     gameboy->memory.vram.colorPalettes[38] = (&gOBP1Colors)[obp1 >> 4 & 0x3];
     gameboy->memory.vram.colorPalettes[39] = (&gOBP1Colors)[obp1 >> 6 & 0x3];
+
+    if (prevSettings) {
+        int nPallettes = palleteUsedCount();
+        reapplyPalleteInfo(&gScreenPalette[0], nPallettes, prevSettings->bgpIndex, gameboy->settings.bgpIndex);
+        reapplyPalleteInfo(&gScreenPalette[32], nPallettes, prevSettings->obp0Index, gameboy->settings.obp0Index);
+        reapplyPalleteInfo(&gScreenPalette[36], nPallettes, prevSettings->obp1Index, gameboy->settings.obp1Index);
+    }
 }

@@ -29,22 +29,6 @@ static Vp vp = {
 	SCREEN_WD*2, SCREEN_HT*2, G_MAXZ/2, 0,	/* scale */
 	SCREEN_WD*2, SCREEN_HT*2, G_MAXZ/2, 0,	/* translate */
 };
-static Vp vp1 = {
-	SCREEN_WD*1, SCREEN_HT*1, G_MAXZ/2, 0,	/* scale */
-	SCREEN_WD*1, SCREEN_HT*1, G_MAXZ/2, 0,	/* translate */
-};
-static Vp vp2 = {
-	SCREEN_WD*1, SCREEN_HT*1, G_MAXZ/2, 0,	/* scale */
-	SCREEN_WD*3, SCREEN_HT*1, G_MAXZ/2, 0,	/* translate */
-};
-static Vp vp3 = {
-	SCREEN_WD*1, SCREEN_HT*1, G_MAXZ/2, 0,	/* scale */
-	SCREEN_WD*1, SCREEN_HT*3, G_MAXZ/2, 0,	/* translate */
-};
-static Vp vp4 = {
-	SCREEN_WD*1, SCREEN_HT*1, G_MAXZ/2, 0,	/* scale */
-	SCREEN_WD*3, SCREEN_HT*3, G_MAXZ/2, 0,	/* translate */
-};
 /*
  * initialize the RCP state
  */
