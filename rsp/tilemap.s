@@ -187,6 +187,9 @@ copyTileLineV:
     # align to tile
     add a1, a1, a3
     sub a0, a0, a3
+
+    # create a zero vector
+    vxor $v31, $v31, $v31
     
     addi a0, a0, scanline
 
@@ -230,50 +233,63 @@ copyTileLineV_skipVFlip:
 
     # retrieve multiply lsb bits for each pixel
     lqv $v1[0], lsbBitMultiply(t2)
-    # shift least significant bits into place
-    vmudm $v2, $v1, $v0[0]
-
-    # mask least significat bits
-    lsv $v5[0], lsbBitMask(zero)
-    vand $v2, $v2, $v5[0]
-    
-    # shift two more bits to the left
-    vadd $v2, $v2, $v2
-    vadd $v2, $v2, $v2
+    # mask out tile pallete
+    andi t5, t4, TILE_ATTR_PALETTE
 
     # retrive multiply msb bits for each pixel
     lqv $v3[0], msbBitMultiply(t2)
+    # convert pallete index into a byte offset
+    # with shift by 8 bits to upper byte
+    sll t5, t5, 10 
+
+    # load mask for least significat bits
+    lsv $v5[0], lsbBitMask(zero)
+    # move pallete into vector registers
+    mtc2 t5, $v7[0]
+
+    # load mask for most significat bits
+    lsv $v6[0], msbBitMask(zero)
+    # load mask to remove priority bit
+    li(t6, 0x7f00)
+
+    # shift least significant bits into place
+    vmudm $v2, $v1, $v0[0]
+    # transfer mask to vector register
+    mtc2 t6, $v10[0]
+
     # shift most siginificat bits into place
     vmudn $v4, $v3, $v0[0]
+    # load mask to read priority bit
+    li(t7, 0x8000)
+    
+    # mask lsb
+    vand $v2, $v2, $v5[0]
+    # move priority mask to a vector register
+    mtc2 t7, $v11[0]
 
-    # mast most significat bits
-    lsv $v6[0], msbBitMask(zero)
+    # mask msb
     vand $v4, $v4, $v6[0]
+
+    # shift one more bit
+    vadd $v2, $v2, $v2
+
+    # load the previous pixels
+    lpv $v8[0], 0(a0)
+
+    # shift one more bit
+    vadd $v2, $v2, $v2
+
+    # mask out priority bit and store obj color value
+    vand $v10, $v8, $v10[0]
 
     # combine lsb and msb
     vor $v2, $v2, $v4
 
-    andi t5, t4, TILE_ATTR_PALETTE
-    # convert pallete index into a byte offset
-    # with shift by 8 bits to upper byte
-    sll t5, t5, 10 
-    mtc2 t5, $v7[0]
-    # mix in pallete color
-    vadd $v3, $v2, $v7[0]
-
-    # load the previous pixels
-    lpv $v8[0], 0(a0)
-    li($at, 0x7f00)
-    mtc2 $at, $v10[0]
-    # mask out priority bit and store obj color value
-    vand $v10, $v8, $v10[0]
-
-    li($at, 0x8000)
-    mtc2 $at, $v11[0]
+    # mask out color information and store priority bit
     vand $v11, $v8, $v11[0]
 
-    # create a zero vector
-    vxor $v31, $v31, $v31
+    # mix in pallete color
+    vadd $v3, $v2, $v7[0]
 
     #
     # BG vs Sprite truth table
@@ -295,39 +311,37 @@ copyTileLineV_skipVFlip:
 
     # check if existing pixel is 0
     veq $v30, $v10, $v31
+    # check if the tile has priority
+    andi $at, t4, TILE_ATTR_PRIORITY
     # store background into obj slot if obj is 0
     vmrg $v10, $v3, $v10
+    # move priority bit into a vector register
+    mtc2 $at, $v9[0]
 
     # check if background is 0
     veq $v30, $v2, $v31
+    # calculate OB_PRI | TILE_PRI
+    vor $v11, $v11, $v9[0]
     # store obj into background if background is 0
     vmrg $v3, $v10, $v3
 
-    andi $at, t4, TILE_ATTR_PRIORITY
-    mtc2 $at, $v9[0]
-    # calculate OB_PRI | TILE_PRI
-    vor $v11, $v11, $v9[0]
-
     # check if priority is 0
     veq $v30, $v31, $v11
-    # store obj into background if priority is 0
-    vmrg $v3, $v10, $v3
-
-    # store the pixels
-    spv $v3[0], 0(a0)
-
-    # increment current x
-    addi a0, a0, GB_TILE_WIDTH
     # decrement pixels remaning
     addi a1, a1, -GB_TILE_WIDTH
-    # increment to next tile
-    addi t0, t0, GB_TILE_SIZE
+    # store obj into background if priority is 0
+    vmrg $v3, $v10, $v3
     # increment to next tile attr
     addi t1, t1, 1
 
-    bgtz a1, copyTileLineV_nextTile
-    nop
+    # store the pixels
+    spv $v3[0], 0(a0)
+    # increment to next tile
+    addi t0, t0, GB_TILE_SIZE
 
+    bgtz a1, copyTileLineV_nextTile
+    # increment current x
+    addi a0, a0, GB_TILE_WIDTH
 
 copyTileLineV_finish:
 
