@@ -70,9 +70,8 @@ GB_LD_A_a16:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     jal GB_DO_READ
     move ADDR, $v0
-    move GB_A, $v0
     j DECODE_NEXT
-    nop
+    move GB_A, $v0
 GB_EI:
     li $at, INTERRUPTS_ENABLED
     jal CHECK_FOR_INTERRUPT

@@ -204,17 +204,13 @@ _GB_BREAK_LOOP_SAVE_CYCLES:
 #######################
 
 READ_NEXT_INSTRUCTION_16:
-    addi $sp, $sp, -8
-    sw $ra, 0($sp)
-    jal READ_NEXT_INSTRUCTION
-    nop
-    jal READ_NEXT_INSTRUCTION
-    move $v1, $v0
+    lbu $at, 0(PC_MEM_POINTER)
+    lbu $v0, 1(PC_MEM_POINTER)
     sll $v0, $v0, 8
-    or $v0, $v0, $v1
-    lw $ra, 0($sp)
+    or $v0, $v0, $at
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 2
     jr $ra
-    addi $sp, $sp, 8
+    addi GB_PC, GB_PC, 2
 
 READ_NEXT_INSTRUCTION:
     # read at PC, increment PC, return value

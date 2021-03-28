@@ -4,12 +4,12 @@ GB_NOP: # start of jump table
     j DECODE_NEXT
     nop
 GB_LD_BC_D16:
-    jal READ_NEXT_INSTRUCTION # read immedate values
+    lbu GB_C, 0(PC_MEM_POINTER)
+    lbu GB_B, 1(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 2
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
-    jal READ_NEXT_INSTRUCTION
-    addi GB_C, $v0, 0 # store C
     j DECODE_NEXT
-    addi GB_B, $v0, 0 # store B
+    addi GB_PC, GB_PC, 2
 GB_LD_BC_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     add VAL, GB_A, 0 # write the value to store
@@ -35,10 +35,11 @@ GB_DEC_B:
     j DECODE_NEXT
     move GB_B, Param0 # move register back from call parameter
 GB_LD_B_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_B, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_B, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_RLCA:
     jal GB_RLC_IMPL # do RLC
     addi Param0, GB_A, 0 # store A into param
@@ -82,10 +83,11 @@ GB_DEC_C:
     j DECODE_NEXT
     addi GB_C, Param0, 0 # move register back from call parameter
 GB_LD_C_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_C, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_C, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_RRCA:
     jal GB_RRC_IMPL # call rotate
     addi Param0, GB_A, 0 # move register to call parameter

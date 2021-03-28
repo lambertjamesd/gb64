@@ -93,10 +93,11 @@ GB_DEC_A:
     j DECODE_NEXT
     addi GB_A, Param0, 0 # move register back from call parameter
 GB_LD_A_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_A, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_A, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_CCF:
     clear_flags N_FLAG | H_FLAG
     j DECODE_NEXT

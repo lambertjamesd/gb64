@@ -7,12 +7,12 @@ GB_JR_NZ:
     j GB_JR
     nop
 GB_LD_HL_D16:
-    jal READ_NEXT_INSTRUCTION # read immedate values
+    lbu GB_L, 0(PC_MEM_POINTER)
+    lbu GB_H, 1(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 2
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
-    jal READ_NEXT_INSTRUCTION
-    addi GB_L, $v0, 0 # store H
     j DECODE_NEXT
-    addi GB_H, $v0, 0 # store L
+    addi GB_PC, GB_PC, 2
 GB_LDI_HL_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     add VAL, GB_A, 0 # write the value to store
@@ -45,10 +45,11 @@ GB_DEC_H:
     j DECODE_NEXT
     addi GB_H, Param0, 0 # move register back from call parameter
 GB_LD_H_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_H, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_H, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_DAA:
     j _GB_DAA
     nop
@@ -94,10 +95,11 @@ GB_DEC_L:
     j DECODE_NEXT
     addi GB_L, Param0, 0 # move register back from call parameter
 GB_LD_L_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_L, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_L, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_CPL:
     xori GB_A, GB_A, 0xFF
     j DECODE_NEXT

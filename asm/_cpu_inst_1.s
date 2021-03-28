@@ -1,21 +1,21 @@
 
 #### 0x1X
 GB_STOP:
-    jal READ_NEXT_INSTRUCTION # STOP will skip the next instruction
-    nop
+    # STOP will skip the next instruction
+    addi GB_PC, GB_PC, 1
     jal CHECK_FOR_SPEED_SWITCH
-    nop
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     bnez $v0, DECODE_NEXT
     addi $at, $zero, STOP_REASON_STOP
     j GB_SIMULATE_HALTED # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
 GB_LD_DE_D16:
-    jal READ_NEXT_INSTRUCTION # read immedate values
+    lbu GB_E, 0(PC_MEM_POINTER)
+    lbu GB_D, 1(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 2
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
-    jal READ_NEXT_INSTRUCTION
-    addi GB_E, $v0, 0 # store E
     j DECODE_NEXT
-    addi GB_D, $v0, 0 # store D
+    addi GB_PC, GB_PC, 2
 GB_LD_DE_A:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     add VAL, GB_A, 0 # write the value to store
@@ -41,10 +41,11 @@ GB_DEC_D:
     j DECODE_NEXT
     addi GB_D, Param0, 0 # move register back from call parameter
 GB_LD_D_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_D, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_D, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_RLA:
     jal GB_RL_IMPL # do RLC
     addi Param0, GB_A, 0 # store A into param
@@ -91,10 +92,11 @@ GB_DEC_E:
     j DECODE_NEXT
     addi GB_E, Param0, 0 # move register back from call parameter
 GB_LD_E_D8:
-    jal READ_NEXT_INSTRUCTION # read immediate value
+    lbu GB_E, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
     j DECODE_NEXT
-    addi GB_E, $v0, 0 #store value
+    addi GB_PC, GB_PC, 1
 GB_RRA:
     jal GB_RR_IMPL
     move Param0, GB_A
