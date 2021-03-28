@@ -221,6 +221,9 @@ writeOutPixels:
     jal writeScanline
     nop
 
+    jal DMAWait
+    nop
+
     # clear the scanline buffer
     li(t0, scanline)
 clearScanlineLoop:
