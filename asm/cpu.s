@@ -18,6 +18,10 @@
 .set DEBUG_OUT, 0
 .set VALIDATE_STATE, 0
 
+.data
+.include "asm/_cpu_inst_table.s"
+.text
+
 .global runCPU 
 .balign 4 
 runCPU:
@@ -118,9 +122,10 @@ _DEBUG_SKIP:
 .endif
 
 DECODE_V0:
-    la $at, GB_NOP # load start of jump table
-    sll $v0, $v0, 5 # multiply address by 32 (4 bytes * 8 instructions)
-    add $ra, $at, $v0
+    lui $at, %hi(cpuInstructionTable)
+    sll $v0, $v0, 2 # multiply instruction value by 4
+    add $at, $v0, $at
+    lw $ra, (%lo(cpuInstructionTable))($at)
     jr $ra
     nop
     #################

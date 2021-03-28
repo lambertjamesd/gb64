@@ -6,9 +6,6 @@ GB_LDH_a8_A:
     ori ADDR, $v0, 0xFF00
     j GB_DO_WRITE_REGISTERS
     move VAL, GB_A
-    nop
-    nop
-    nop
 GB_POP_HL:
     addi ADDR, GB_SP, 0
     jal GB_DO_READ_16
@@ -24,27 +21,14 @@ GB_LDH_C_A:
     ori ADDR, ADDR, 0xFF00
     j GB_DO_WRITE_REGISTERS
     addi VAL, GB_A, 0
-    nop
-    nop
-    nop
 GB_ERROR_3:
     addi $at, $zero, STOP_REASON_ERROR
     j GB_BREAK_LOOP # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
-    nop
-    nop
-    nop
-    nop
-    nop
 GB_ERROR_4:
     addi $at, $zero, STOP_REASON_ERROR
     j GB_BREAK_LOOP # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
-    nop
-    nop
-    nop
-    nop
-    nop
 GB_PUSH_HL:
     addi GB_SP, GB_SP, -2
     andi GB_SP, GB_SP, 0xFFFF
@@ -53,7 +37,6 @@ GB_PUSH_HL:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
     j GB_DO_WRITE_16
     or VAL, VAL, GB_L
-    nop
 GB_AND_A_d8:
     jal READ_NEXT_INSTRUCTION
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
@@ -62,7 +45,6 @@ GB_AND_A_d8:
     ori GB_F, $zero, H_FLAG
     j DECODE_NEXT
     set_flags Z_FLAG
-    nop
 GB_RST_20H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
@@ -78,17 +60,11 @@ GB_ADD_SP_d8:
     sll $v0, $v0, 24 #sign extend
     j _ADD_TO_SP
     sra Param0, $v0, 24
-    nop
-    nop
-    nop
 GB_JP_HL:
     sll Param0, GB_H, 8
     jal SET_GB_PC
     or Param0, Param0, GB_L
     j DECODE_NEXT
-    nop
-    nop
-    nop
     nop
 GB_LD_a16_A:
     jal READ_NEXT_INSTRUCTION_16
@@ -96,36 +72,18 @@ GB_LD_a16_A:
     addi ADDR, $v0, 0
     j GB_DO_WRITE
     addi VAL, GB_A, 0
-    nop
-    nop
-    nop
 GB_ERROR_5:
     addi $at, $zero, STOP_REASON_ERROR
     j GB_BREAK_LOOP # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
-    nop
-    nop
-    nop
-    nop
-    nop
 GB_ERROR_6:
     addi $at, $zero, STOP_REASON_ERROR
     j GB_BREAK_LOOP # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
-    nop
-    nop
-    nop
-    nop
-    nop
 GB_ERROR_7:
     addi $at, $zero, STOP_REASON_ERROR
     j GB_BREAK_LOOP # exit early
     sb $at, CPU_STATE_STOP_REASON(CPUState)
-    nop
-    nop
-    nop
-    nop
-    nop
 GB_XOR_A_d8:
     jal READ_NEXT_INSTRUCTION
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run
@@ -134,7 +92,6 @@ GB_XOR_A_d8:
     andi GB_F, $zero, 0
     j DECODE_NEXT
     set_flags Z_FLAG
-    nop
 GB_RST_28H:
     addi GB_SP, GB_SP, -2
     andi ADDR, GB_SP, 0xFFFF
