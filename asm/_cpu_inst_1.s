@@ -53,13 +53,13 @@ GB_RLA:
     j DECODE_NEXT
     clear_flags Z_FLAG
 GB_JR:
-    jal READ_NEXT_INSTRUCTION
+    lbu $v0, 0(PC_MEM_POINTER)
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
     sll $v0, $v0, 24 # sign extend the bytes
     sra $v0, $v0, 24
     add Param0, GB_PC, $v0
     jal SET_GB_PC
-    andi Param0, Param0, 0xFFFF
+    addi Param0, Param0, 1 # increment PC from reading byte
     j DECODE_NEXT
 GB_ADD_HL_DE:
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR # update cycles run

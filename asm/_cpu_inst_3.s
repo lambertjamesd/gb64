@@ -7,10 +7,14 @@ GB_JR_NC:
     j GB_JR
     nop
 GB_LD_SP_D16:
-    jal READ_NEXT_INSTRUCTION_16 # read immedate values
+    lbu $at, 0(PC_MEM_POINTER)
+    lbu GB_SP, 1(PC_MEM_POINTER)
+    sll GB_SP, GB_SP, 8
+    or GB_SP, GB_SP, $at
     addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 2 # update cycles run
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 2
     j DECODE_NEXT
-    move GB_SP, $v0
+    addi GB_PC, GB_PC, 2
 GB_LDD_HL_A:
     add VAL, GB_A, 0 # write the value to store
     sll ADDR, GB_H, 8 # write upper address

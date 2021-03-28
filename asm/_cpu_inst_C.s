@@ -22,12 +22,13 @@ GB_JP_NZ:
     jal GB_JP
     nop
 GB_JP:
-    jal READ_NEXT_INSTRUCTION_16
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
+    lbu $at, 0(PC_MEM_POINTER)
+    lbu Param0, 1(PC_MEM_POINTER)
+    sll Param0, Param0, 8
     jal SET_GB_PC
-    move Param0, $v0
+    or Param0, Param0, $at
     j DECODE_NEXT
-    nop
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR * 3 # update cycles run
 GB_CALL_NZ:
     andi $at, GB_F, Z_FLAG
     bne $at, $zero, _SKIP_JP # if Z_FLAG != 0 skip the call
