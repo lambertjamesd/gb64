@@ -153,112 +153,6 @@ loadSpriteTilesFinish:
 ###############################################
 # draws the visible sprites to the screen
 #
-# drawSprites:
-#     # load sprites pointer
-#     li(t0, sprites)
-#     # load tile pointer
-#     lhu t1, currentTile(zero)
-#     # load current y
-#     lbu t2, (ppuTask + PPUTask_ly)(zero)
-
-# drawNextSprite:
-#     lbu t3, SPRITE_Y(t0)
-#     # check for null sprite
-#     beq t3, zero, drawSpritesFinish
-#     addi t3, t3, SPRITE_SHIFT_Y
-#     # calculate relative sprite line
-#     sub t3, t2, t3
-#     # wrap y value for 16px high sprites
-#     andi t3, t3, 0x7
-
-#     lbu t4, SPRITE_FLAGS(t0)
-#     andi $at, t4, SPRITE_FLAGS_FLIP_Y
-
-#     beq $at, zero, drawSpriteCheckFlipX
-#     li($at, 8)
-#     # flip y value
-#     sub t3, $at, t3
-
-# drawSpriteCheckFlipX:
-#     andi $at, t4, SPRITE_FLAGS_FLIP_X
-#     # shift flip x flag into first bit
-#     srl $at, $at, 5
-#     lb t5, startShiftXFlip($at)
-#     lb t6, startDirXFlip($at)
-
-#     lbu t7, SPRITE_X(t0)
-#     addi t7, t7, SPRITE_SHIFT_X
-
-#     # convert y index into a byte tile offset
-#     sll t3, t3, 1
-#     # get the index of the row of pixels
-#     add t3, t3, t1
-#     # load the pixel row
-#     lhu t3, 0(t3)
-
-#     # check for gameboy color
-#     lhu $at, (ppuTask + PPUTask_flags)(zero)
-#     andi $at, $at, PPU_TASK_FLAGS_COLOR
-
-#     beq $at, zero, drawSpriteDMGPallete
-#     andi $at, t4, SPRITE_FLAGS_GBC_PALETTE
-#     j drawSpriteCheckPriority
-#     sll t9, $at, 2
-# drawSpriteDMGPallete:
-#     andi $at, t4, SPRITE_FLAGS_DMA_PALETTE
-#     srl t9, $at, 2
-# drawSpriteCheckPriority:
-#     addi t9, t9, OBJ_PALETTE_INDEX_START
-#     # todo mark priority flag
-# drawSpriteNextPixel:
-#     # check if pixel off screen to the left
-#     bltz t7, skipDrawSpritePixel
-#     # check if pixel is off screen to the right
-#     slti $at, t7, GB_SCREEN_WD
-#     beq $at, zero, finishCurrentSprite
-#     # check if there is already a sprite drawn 
-#     # at the current pixel
-#     lbu $at, scanline(t7)
-#     bne $at, zero, skipDrawSpritePixel
-
-#     srlv t8, t3, t5
-#     # mask out upper bit
-#     andi $at, t8, 0x1
-#     # mask out lower bit
-#     andi t8, t8, 0x100
-#     sll $at, $at, 1
-#     srl t8, t8, 8
-#     or t8, t8, $at
-
-#     # don't draw transparent pixels
-#     beq t8, zero, skipDrawSpritePixel
-#     # offset pixel by pallete index
-#     add t8, t8, t9
-
-#     # write pixel to screen
-#     sb t8, scanline(t7)
-
-# skipDrawSpritePixel:
-#     # modify source pixel
-#     add t5, t5, t6
-#     # check if sprite is finished
-#     andi $at, t5, 0x8
-#     beq $at, zero, drawSpriteNextPixel
-#     # increment x value
-#     addi t7, t7, 1
-
-# finishCurrentSprite:
-#     addi t0, t0, SPRITE_SIZE
-#     j drawNextSprite
-#     addi t1, t1, GB_TILE_SIZE
-
-# drawSpritesFinish:
-#     jr return
-#     sh t1, currentTile(zero)
-
-###############################################
-# draws the visible sprites to the screen
-#
 drawSpritesV:
     # load sprites pointer
     li(t0, sprites)
@@ -267,9 +161,16 @@ drawSpritesV:
     # load current y
     lbu t2, (ppuTask + PPUTask_ly)(zero)
 
+    # create a zero vector
+    vxor $v31, $v31, $v31
     # check for gameboy color
     lhu t9, (ppuTask + PPUTask_flags)(zero)
+    # load lsb mask
+    lsv $v5[0], lsbBitMask(zero)
+    # mask out gbc bit
     andi t9, t9, PPU_TASK_FLAGS_COLOR
+    # load msb mask
+    lsv $v6[0], msbBitMask(zero)
 
 drawNextSpriteV:
     lbu t3, SPRITE_Y(t0)
@@ -297,14 +198,9 @@ drawSpriteVDMGPallete:
     andi t8, t4, SPRITE_FLAGS_DMA_PALETTE
     sll t8, t8, 6
 drawSpriteVCheckPriority:
-    andi $at, t4, SPRITE_FLAGS_PRIO
-    # shift priority flag into upper bit
-    sll $at, $at, 8
-    or t8, t8, $at
-    addi t8, t8, (OBJ_PALETTE_INDEX_START << 8)
-
-    # get pointer into tile data
-    sll t3, t3, 1 # convert line to pointer offset
+    # convert line to pointer offset
+    sll t3, t3, 1 
+    # offset into current tile
     add t3, t3, t1
 
     # load pixel row into v0
@@ -315,41 +211,58 @@ drawSpriteVCheckPriority:
 
     # retrieve multiply lsb bits for each pixel
     lqv $v1[0], lsbBitMultiply(t5)
-    # shift least significant bits into place
-    vmudm $v2, $v1, $v0[0]
-
-    # mask least significat bits
-    lsv $v5[0], lsbBitMask(zero)
-    vand $v2, $v2, $v5[0]
-    
-    # shift two more bits to the left
-    vadd $v2, $v2, $v2
-    vadd $v2, $v2, $v2
-
     # retrive multiply msb bits for each pixel
     lqv $v3[0], msbBitMultiply(t5)
+
+    # load sprite x
+    lbu t7, SPRITE_X(t0)
+    # shift least significant bits into place
+    vmudm $v2, $v1, $v0[0]
+    # offset sprite x by 8
+    addi t7, t7, SPRITE_SHIFT_X + scanline
     # shift most siginificat bits into place
     vmudn $v4, $v3, $v0[0]
 
-    # mast most significat bits
-    lsv $v6[0], msbBitMask(zero)
+    # mask lsb
+    vand $v2, $v2, $v5[0]
+
+    # load previous pixel value
+    lpv $v10[0], 0(t7)
+
+    # read sprite priority flag
+    andi $at, t4, SPRITE_FLAGS_PRIO
+    # shift lsbs once
+    vadd $v2, $v2, $v2
+
+    # shift priority flag into upper bit
+    sll $at, $at, 8
+    # mask msb
     vand $v4, $v4, $v6[0]
 
+    # combine priority flag with pallete offset
+    or t8, t8, $at
+    # shift lsbs once
+    vadd $v2, $v2, $v2
+
+    # offset pallete index into obj section
+    addi t8, t8, (OBJ_PALETTE_INDEX_START << 8)
     # combine lsb and msb
     vor $v2, $v2, $v4
 
-    # create a zero vector
-    vxor $v31, $v31, $v31
-
+    # transfer pallete offset into a vector register
     mtc2 t8, $v7[0]
     # add pallete
     vadd $v9, $v2, $v7[0]
 
-    lbu t7, SPRITE_X(t0)
-    addi t7, t7, SPRITE_SHIFT_X + scanline
+    # check if there is already a pixel value
+    veq $v30, $v10, $v31
+    # use existing value if it is present
+    vmrg $v9, $v9, $v10
 
+    # check if pixel value should be written
     veq $v30, $v2, $v31
-    vmrg $v2, $v31, $v9
+    # determine the value to write
+    vmrg $v2, $v10, $v9
 
     # write out sprite
     spv $v2[0], 0(t7)

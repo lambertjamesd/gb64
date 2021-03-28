@@ -190,6 +190,12 @@ copyTileLineV:
 
     # create a zero vector
     vxor $v31, $v31, $v31
+
+    # load mask for least significat bits
+    lsv $v5[0], lsbBitMask(zero)
+    
+    # load mask for most significat bits
+    lsv $v6[0], msbBitMask(zero)
     
     addi a0, a0, scanline
 
@@ -242,36 +248,30 @@ copyTileLineV_skipVFlip:
     # with shift by 8 bits to upper byte
     sll t5, t5, 10 
 
-    # load mask for least significat bits
-    lsv $v5[0], lsbBitMask(zero)
+    # shift least significant bits into place
+    vmudm $v2, $v1, $v0[0]
     # move pallete into vector registers
     mtc2 t5, $v7[0]
 
-    # load mask for most significat bits
-    lsv $v6[0], msbBitMask(zero)
-    # load mask to remove priority bit
-    li(t6, 0x7f00)
-
-    # shift least significant bits into place
-    vmudm $v2, $v1, $v0[0]
-    # transfer mask to vector register
-    mtc2 t6, $v10[0]
-
     # shift most siginificat bits into place
     vmudn $v4, $v3, $v0[0]
-    # load mask to read priority bit
-    li(t7, 0x8000)
+    # load mask to remove priority bit
+    li(t6, 0x7f00)
     
     # mask lsb
     vand $v2, $v2, $v5[0]
-    # move priority mask to a vector register
-    mtc2 t7, $v11[0]
+    # transfer mask to vector register
+    mtc2 t6, $v10[0]
 
     # mask msb
     vand $v4, $v4, $v6[0]
+    # load mask to read priority bit
+    li(t7, 0x8000)
 
     # shift one more bit
     vadd $v2, $v2, $v2
+    # move priority mask to a vector register
+    mtc2 t7, $v11[0]
 
     # load the previous pixels
     lpv $v8[0], 0(a0)
