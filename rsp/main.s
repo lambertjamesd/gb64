@@ -221,13 +221,13 @@ writeOutPixels:
     jal writeScanline
     nop
 
-    # reset the scanline buffer
-    ori a0, zero, scanline
-    lw a1, osTask_ucode_data($0)
-    addi a1, a1, scanline
-    ori a2, GB_SCREEN_WD-1
-    jal DMAproc
-    ori a3, zero, 0
+    # clear the scanline buffer
+    li(t0, scanline)
+clearScanlineLoop:
+    sw zero, 0(t0)
+    slti $at, t0, (scanline + GB_SCREEN_WD - 4)
+    bne $at, zero, clearScanlineLoop
+    addi t0, t0, 4
 
     # check if this is the last line
     lbu $at, (ppuTask + PPUTask_ly)(zero)
