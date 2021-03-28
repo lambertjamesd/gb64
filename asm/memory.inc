@@ -10,7 +10,7 @@
 .set GB_SP, $t0
 .set GB_PC, $t1
 .set CYCLES_RUN, $t2
-.set PC_MEMORY_BANK, $t3
+.set PC_MEM_POINTER, $t3
 
 .set ADDR, $t4
 .set VAL,  $t5

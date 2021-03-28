@@ -218,45 +218,40 @@ READ_NEXT_INSTRUCTION_16:
 
 READ_NEXT_INSTRUCTION:
     # read at PC, increment PC, return value
-    add $at, GB_PC, PC_MEMORY_BANK
-    lbu $v0, 0($at)
-    addi Param0, GB_PC, 1
-    #intenionally continue into next label
+    lbu $v0, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
+    jr $ra
+    addi GB_PC, GB_PC, 1
+
 SET_GB_PC:
-    xor $at, GB_PC, Param0
-    andi $at, $at, 0xF000
-    beqz $at, _SET_GB_PC_FINISH
-    andi Param0, Param0, 0xFFFF
+    andi GB_PC, Param0, 0xFFFF
+    andi $at, GB_PC, 0xF000
+    xori $at, $at, 0xF000
+    bnez $at, _SET_GB_PC_REGULAR_BANK
 
     # check if PC jumped between 0xF000-0xFDFF and 0xFF80-0xFFFE
-    # li $at, MEMORY_MISC_START
-    # sltu TMP2, GB_PC, $at
-    # sltu $at, Param0, $at
-    # beq TMP2, $at, _SET_GB_PC_FINISH
-    # nop
-_SET_GB_PC_CHANGE_BANK:
-    # if memory is within register memory
-    la $at, MM_REGISTER_START
-    sltu $at, Param0, $at
-    bnez $at, _SET_GB_PC_REGULAR_BANK 
+    li $at, MM_REGISTER_START
+    sltu $at, GB_PC, $at
+    beqz $at, _SET_GB_PC_MISC_MEM
     nop
-    j _SET_GB_PC_UPDATE_BANK
+    # echo memory bank
+    j _SET_GB_PC_OFFSET_POINTER
+    lw PC_MEM_POINTER, (MEMORY_ADDR_TABLE + 4 * 0xD)(Memory)
+_SET_GB_PC_MISC_MEM:
     # 0xE00 since memory is indexed relative to 0xF000 and not 0xFE00
-    addi $at, Memory, (MEMORY_MISC_START - 0xE00) 
+    j _SET_GB_PC_OFFSET_POINTER
+    addi PC_MEM_POINTER, Memory, (MEMORY_MISC_START - 0xE00)
 
 _SET_GB_PC_REGULAR_BANK:
-    srl $at, Param0, 12 # git top 4 bits
+    srl $at, GB_PC, 12 # git top 4 bits
     sll $at, $at, 2 # multiply by 4
     add $at, Memory, $at # access relative to memory map
-    lw $at, 0($at) # load bank pointer
+    lw PC_MEM_POINTER, 0($at) # load bank pointer
     
-_SET_GB_PC_UPDATE_BANK:
-    andi TMP2, Param0, 0xF000
-    sub PC_MEMORY_BANK, $at, TMP2
-    
-_SET_GB_PC_FINISH:
+_SET_GB_PC_OFFSET_POINTER:
+    andi TMP2, GB_PC, 0xFFF
     jr $ra
-    move GB_PC, Param0
+    add PC_MEM_POINTER, PC_MEM_POINTER, TMP2
 
 ######################
 # Checks to see if a timer interrupt would wake up the CPU

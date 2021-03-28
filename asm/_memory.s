@@ -755,7 +755,6 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     sw CPUState, 0x10($sp)
     sw Memory, 0x14($sp)
     sw CycleTo, 0x18($sp)
-    sw PC_MEMORY_BANK, 0x1C($sp)
     sw $ra, 0x20($sp)
     sw $fp, 0x24($sp)
 
@@ -767,16 +766,19 @@ _GB_WRITE_REG_UNLOAD_BIOS:
     move $a0, Memory
     call_c_fn unloadBIOS, 1
 
-    lhu GB_PC, 0x8($sp)
     lhu GB_SP, 0xA($sp)
 
     lw CYCLES_RUN, 0xC($sp)
     lw CPUState, 0x10($sp)
     lw Memory, 0x14($sp)
     lw CycleTo, 0x18($sp)
-    lw PC_MEMORY_BANK, 0x1C($sp)
+    
+    jal SET_GB_PC
+    lhu Param0, 0x8($sp)
+
     lw $ra, 0x20($sp)
     lw $fp, 0x24($sp)
+
 
     lbu $at, CPU_STATE_GBC(CPUState)
     bnez $at, _GB_WRITE_REG_UNLOAD_BIOS_CGB
