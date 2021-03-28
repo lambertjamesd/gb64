@@ -48,6 +48,9 @@ void loadRomSegment(void* target, void *romLocation, int bankNumber)
 
 void initRomLayout(struct ROMLayout* romLayout, void *romLocation)
 {
+    // allocate memory for the first and second bank
+    romLayout->mainBank = malloc(ROM_BANK_SIZE + sizeof(struct VirtualBank));
+
     loadRomSegment(romLayout->mainBank, romLocation, 0);
     romLayout->firstVirtualBank = 0;
     romLayout->lastVirtualBank = 0;
@@ -66,7 +69,16 @@ void finishRomLoad(struct ROMLayout* romLayout)
 
     for (bankIndex = 1; bankIndex < romLayout->romBankCount; ++bankIndex)
     {
-        currentBank = malloc(sizeof(struct VirtualBank));
+        if (bankIndex == 1) {
+            // the fist bank is a special case. As an optimization for decoding instructions
+            // a pointer is maintained pointing to the current instruction. Some games will
+            // spill over from bank 0 to bank 1. By ensuring the banks are contigious in memory
+            // these games will still work assuming the spill over doesn't happen after the bank
+            // has been switched
+            currentBank = (struct VirtualBank*)(romLayout->mainBank + ROM_BANK_SIZE);
+        } else {
+            currentBank = malloc(sizeof(struct VirtualBank));
+        }
 
         if (currentBank)
         {

@@ -29,7 +29,7 @@ struct VirtualBank
 
 struct ROMLayout
 {
-    unsigned char mainBank[ROM_BANK_SIZE];
+    unsigned char* mainBank;
     struct VirtualBank* firstVirtualBank;
     struct VirtualBank* lastVirtualBank;
     struct VirtualBank** romBankToVirtualBank;
