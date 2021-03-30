@@ -69,6 +69,8 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/test/register_test.c              \
        src/test/interrupt_test.c             \
        src/cpu.c                             \
+       src/compress.c                        \
+       src/heap.c                            \
        src/rom.c                             \
        src/memory_map.c                      \
        src/gameboy.c                         \
@@ -88,6 +90,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/clockmenu.c                       \
        src/upgrade.c                         \
        src/save.c                            \
+       src/stream.c                          \
        src/faulthandler.c                    \
        $(DEBUG_FILES)       
 
