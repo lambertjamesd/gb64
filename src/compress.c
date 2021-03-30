@@ -63,7 +63,8 @@ struct HuffmanNode* buildHuffmanTree(int* occurenceTable) {
         }
     }
 
-    while (heapNodeCount(gHeapNodes) > 1) {
+
+    while (heapValidate(gHeapNodes, 0) && heapNodeCount(gHeapNodes) > 1) {
         struct HeapNode left;
         struct HeapNode right;
         heapTake(gHeapNodes, &left, 0);
@@ -172,7 +173,29 @@ void decodeChunk(char* output, int maxOutputLength, BitStreamReader input, void*
     }
 }
 
+int measureMatchLength(char* source, int a, int b, int sourceLength) {
+    int result = 0;
+
+    while (source[a + result] == source[b + result] &&
+        a + result < sourceLength &&
+        result < BACK_REF_MAX_LENGTH) {
+        ++result;
+    }
+
+    return result;
+}
+
 int searchForBackReference(char* source, int at, int sourceLen, struct BackReference* result) {
+    // if (at > 0 && source[at] == source[at-1]) {
+    //     int matchLength = measureMatchLength(source, at, at-1, sourceLen);
+
+    //     if (matchLength >= MIN_BACK_REF_LEN) {
+    //         result->addr = at-1;
+    //         result->length = matchLength;
+    //         return 1;
+    //     }
+    // }
+
     return 0;
 }
 
@@ -208,7 +231,7 @@ void encodeChunk(char* source, int length, BitStreamWriter output, void* outputD
     for (i = 0; i < MAX_HUFFMAN_CODE_COUNT; ++i) {
         if (gOccurence[i]) {
             output(outputData, gHuffmanCodes[i].bitCount, 4);
-            output(outputData, gHuffmanCodes[i].code, gHuffmanCodes[i].bitCount);
+                output(outputData, gHuffmanCodes[i].code, gHuffmanCodes[i].bitCount);
             output(outputData, i, 5);
         }
     }
@@ -228,7 +251,7 @@ void encodeChunk(char* source, int length, BitStreamWriter output, void* outputD
             i += gBackreferences[nextBackref].length;
             ++nextBackref;
         } else {
-            output(outputData, gHuffmanCodes[i].code, gHuffmanCodes[i].bitCount);
+            output(outputData, gHuffmanCodes[source[i]].code, gHuffmanCodes[source[i]].bitCount);
             ++i;
         }
     }

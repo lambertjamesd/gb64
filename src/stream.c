@@ -37,7 +37,7 @@ unsigned int bitFromByteStreamReader(void* data, int bitCount) {
     return result;
 }
 
-void initBitFromByteStreamWriter(struct BitFromByteStreamWriter* writer, BytetreamWriter target, void* targetData) {
+void initBitFromByteStreamWriter(struct BitFromByteStreamWriter* writer, ByteStreamWriter target, void* targetData) {
     writer->target = target;
     writer->targetData = targetData;
     writer->currentByte = 0;
@@ -46,6 +46,10 @@ void initBitFromByteStreamWriter(struct BitFromByteStreamWriter* writer, Bytetre
 
 void bitFromByteStreamWriter(void* data, unsigned int value, int bitCount) {
     struct BitFromByteStreamWriter* asWriter = (struct BitFromByteStreamWriter*)data;
+
+    if (bitCount > 32) {
+        bitCount = 32;
+    }
 
     value <<= (32 - bitCount);
 
@@ -61,8 +65,13 @@ void bitFromByteStreamWriter(void* data, unsigned int value, int bitCount) {
 
         int bitChunk = value >> (32 - bitsToWrite);
         asWriter->currentByte = (asWriter->currentByte << bitsToWrite) | bitChunk;
-        asWriter->currentBitCount -= bitsToWrite;
+        value >>= bitsToWrite;
+        asWriter->currentBitCount += bitsToWrite;
         bitCount -= bitsToWrite;
+
+        if (bitCount > 32) {
+            bitCount = 32;
+        }
 
         if (asWriter->currentBitCount == 8) {
             asWriter->target(asWriter->targetData, &asWriter->currentByte, 1);
