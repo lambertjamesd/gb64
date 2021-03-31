@@ -39,6 +39,8 @@ struct GameboySettings gDefaultSettings = {
         0,
         0,
     },
+    StoredInfoTypeAll,
+    0,
 };
 
 void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
@@ -47,9 +49,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     initMemory(&gameboy->memory, rom);
     gameboy->memory.misc.biosLoaded = 1;
 
-    enum StoredInfoType saveType = getStoredInfoType(gameboy);
-
-    loadSettings(gameboy, saveType);
+    enum StoredInfoType saveType = loadSettings(gameboy);
 
     if (gameboy->settings.header != GB_SETTINGS_HEADER)
     {

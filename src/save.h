@@ -12,15 +12,6 @@ enum SaveType
     SaveTypeSRAM3X,
 };
 
-enum StoredInfoType
-{
-    StoredInfoTypeAll,
-    StoredInfoTypeSettingsRAM,
-    StoredInfoTypeRAM,
-    StoredInfoTypeSettings,
-    StoredInfoTypeNone,
-};
-
 #define SAVE_HEADER_VALUE   0x53564944
 
 struct SaveTypeSetting
@@ -33,12 +24,13 @@ extern struct SaveTypeSetting gSaveTypeSetting;
 typedef int (*SaveReadCallback)(void* target, int sramOffset, int length);
 typedef int (*SaveWriteCallback)(void *from, int sramOffset, int length);
 
-void loadSettings(struct GameBoy* gameboy, enum StoredInfoType storeType);
+enum StoredInfoType loadSettings(struct GameBoy* gameboy);
 int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType);
 void loadRAM(struct Memory* memory, enum StoredInfoType storeType);
-int saveGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType);
+enum StoredInfoType saveGameboyState(struct GameBoy* gameboy);
 int getSaveStateSize(struct GameBoy* gameboy);
 void initSaveCallbacks();
 enum StoredInfoType getStoredInfoType(struct GameBoy* gameboy);
+enum StoredInfoType getDeprecatedStoredInfoType(struct GameBoy* gameboy);
 
 #endif

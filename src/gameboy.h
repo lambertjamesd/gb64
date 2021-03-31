@@ -98,7 +98,16 @@ struct GameboyGraphicsSettings
 #define GB_SETTINGS_FLAGS_DISABLE_GBC   0x1
 
 #define GB_SETTINGS_HEADER              0x47423634
-#define GB_SETTINGS_CURRENT_VERSION     1
+#define GB_SETTINGS_CURRENT_VERSION     2
+
+enum StoredInfoType
+{
+    StoredInfoTypeAll,
+    StoredInfoTypeSettingsRAM,
+    StoredInfoTypeRAM,
+    StoredInfoTypeSettings,
+    StoredInfoTypeNone,
+};
 
 struct GameboySettings
 {
@@ -114,6 +123,8 @@ struct GameboySettings
     struct InputMapping inputMapping;
     struct GameboyGraphicsSettings graphics;
     u64 timer;
+    enum StoredInfoType storedType;
+    u32 compressedSize;
 };
 
 struct GameBoy

@@ -1,5 +1,6 @@
 
 #include "upgrade.h"
+#include "save.h"
 
 void updateToLatestVersion(struct GameBoy* gameboy)
 {
@@ -13,6 +14,10 @@ void updateToLatestVersion(struct GameBoy* gameboy)
                     gameboy->memory.misc.ramRomSelect = gameboy->memory.misc.romBankUpper;
                     gameboy->memory.misc.romBankUpper = 0;
                 }
+                break;
+            case 1:
+                gameboy->settings.compressedSize = 0;
+                gameboy->settings.storedType = getDeprecatedStoredInfoType(gameboy);
                 break;
         }
 

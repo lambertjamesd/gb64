@@ -4,6 +4,8 @@
 #include "../memory.h"
 #include "debug_out.h"
 #include "upgrade.h"
+#include "../lzfse/lzfse.h"
+#include "../lzfse/lzfse_internal.h"
 
 struct SaveTypeSetting gSaveTypeSetting = {
     SAVE_HEADER_VALUE,
@@ -22,8 +24,38 @@ extern OSIoMesg        dmaIOMessageBuf;
 #define SRAM_ADDR   0x08000000
 
 char gTmpSaveBuffer[FLASH_BLOCK_SIZE];
+char gUncompressedMemory[128 * 1024];
+char gCompressedMemory[32 * 1024];
+
+union lzfse_memory {
+    lzfse_decoder_state decoder;
+    lzfse_encoder_state encoder;
+};
+
+union lzfse_memory gLZFSEMemory;
+
 SaveReadCallback gSaveReadCallback;
 SaveWriteCallback gSaveWriteCallback;
+
+int writeToUncompressedMemory(void *from, int sramOffset, int length) {
+    memCopy(gUncompressedMemory + sramOffset, from, length);
+    return 0;
+}
+
+int readFromUncompressedData(void *target, int sramOffset, int length) {
+    memCopy(target, gUncompressedMemory + sramOffset, length);
+    return 0;
+}
+
+int compressedChecksum(int length) {
+    int result = 0;
+    int i;
+    for (i = 0; i < length; ++i) {
+        result += gCompressedMemory[i];
+    }
+
+    return result;
+}
 
 int getSaveTypeSize(enum SaveType type)
 {
@@ -231,13 +263,14 @@ void loadRAM(struct Memory* memory, enum StoredInfoType storeType)
     }
 }
 
-void loadSettings(struct GameBoy* gameboy, enum StoredInfoType storeType)
+enum StoredInfoType loadSettings(struct GameBoy* gameboy)
 {
-    if (storeType == StoredInfoTypeAll || 
-        storeType == StoredInfoTypeSettingsRAM ||
-        storeType == StoredInfoTypeSettings)
+    gSaveReadCallback(&gameboy->settings, 0, sizeof(struct GameboySettings));
+    if (gameboy->settings.header == GB_SETTINGS_HEADER)
     {
-        gSaveReadCallback(&gameboy->settings, 0, sizeof(struct GameboySettings));
+        if (gameboy->settings.version <= 1) {
+            gameboy->settings.storedType = getDeprecatedStoredInfoType(gameboy);
+        }
     }
     else
     {
@@ -252,43 +285,9 @@ struct MiscSaveStateData
     struct AudioRenderState audioState;
 };
 
-int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
+int readGameboyState(struct GameBoy* gameboy, SaveReadCallback readCallback, int offset, int gbc)
 {
-    if (storeType != StoredInfoTypeAll)
-    {
-        return -1;
-    }
-
-    bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
-        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
-
-    int offset = 0;
-    int sectionSize;
-    struct GameboySettings settings;
-    sectionSize = sizeof(struct GameboySettings);
-    if (gSaveReadCallback(&settings, offset, sectionSize))
-    {
-        DEBUG_PRINT_F("Could not load header\n");
-        return -1;
-    }
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-    if (settings.header != GB_SETTINGS_HEADER || settings.version > GB_SETTINGS_CURRENT_VERSION)
-    {
-        DEBUG_PRINT_F("Invalid header %X %X\n", settings.header, settings.version);
-        return -1;
-    }
-
-    // The first version of the emualtor 
-    // had the same save layout as the gameboy color
-    if (settings.version == 0)
-    {
-        gbc = TRUE;
-    }
-
-    gameboy->settings = settings;
-
-    sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
     if (gSaveReadCallback(gameboy->memory.cartRam, offset, sectionSize) == -1)
     {
         return -1;
@@ -334,6 +333,71 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
     gameboy->memory.audio = miscData.audioState;
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
+    return 0;
+}
+
+int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
+{
+    if (storeType != StoredInfoTypeAll)
+    {
+        return -1;
+    }
+
+    bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
+        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
+
+    int offset = 0;
+    int sectionSize;
+    struct GameboySettings settings;
+    sectionSize = sizeof(struct GameboySettings);
+    if (gSaveReadCallback(&settings, offset, sectionSize))
+    {
+        DEBUG_PRINT_F("Could not load header\n");
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    if (settings.header != GB_SETTINGS_HEADER || settings.version > GB_SETTINGS_CURRENT_VERSION)
+    {
+        DEBUG_PRINT_F("Invalid header %X %X\n", settings.header, settings.version);
+        return -1;
+    }
+
+    // The first version of the emualtor 
+    // had the same save layout as the gameboy color
+    switch (settings.version)
+    {
+        case 0:
+            gbc = TRUE;
+            // intentionally fall through
+        case 1:
+            settings.compressedSize = 0;
+    }
+
+    gameboy->settings = settings;
+
+    if (settings.compressedSize) {
+        if (gSaveReadCallback(gCompressedMemory, FLASH_BLOCK_SIZE, settings.compressedSize)) {
+            DEBUG_PRINT_F("Failed to read compressed data %d\n", settings.compressedSize);
+            return -1;
+        }
+
+        DEBUG_PRINT_F("Read %X %X\n", settings.compressedSize, compressedChecksum(gameboy->settings.compressedSize));
+
+        if (lzfse_decode_buffer(gUncompressedMemory, 128 * 1024, gCompressedMemory, 32 * 1024, &gLZFSEMemory) == 0) {
+            DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
+            return -1;
+        }
+
+        if (readGameboyState(gameboy, readFromUncompressedData, 0, gbc)) {
+            return -1;
+        }
+    } else {
+        if (readGameboyState(gameboy, gSaveReadCallback, offset, gbc)) {
+            return -1;
+        }
+    }
+
     gameboy->memory.bankSwitch(&gameboy->memory, -1, 0);
 
     if (gameboy->cpu.gbc)
@@ -354,8 +418,75 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
     return 0;
 }
 
-int saveGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
-{    
+int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType storeType) {
+    bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
+        gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
+
+    zeroMemory(gUncompressedMemory, sizeof(gUncompressedMemory));
+
+    int offset = 0;
+    int sectionSize = 0;
+
+    if (storeType == StoredInfoTypeSettings || storeType == StoredInfoTypeNone)
+    {
+        return 0;
+    }
+    
+    sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    if (writeToUncompressedMemory(gameboy->memory.cartRam, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 1 %X $X\n", offset, sectionSize);
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    if (storeType == StoredInfoTypeSettingsRAM || storeType == StoredInfoTypeRAM)
+    {
+        return 0;
+    }
+
+    sectionSize = gbc ? 0x4000 : 0x2000;
+    if (writeToUncompressedMemory(&gameboy->memory.vram, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    sectionSize = sizeof(u16) * PALETTE_COUNT;
+    if (writeToUncompressedMemory(&gameboy->memory.vram.colorPalettes, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
+    if (writeToUncompressedMemory(gameboy->memory.internalRam, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 3 %X $X\n", offset, sectionSize);
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+    
+    sectionSize = sizeof(struct MiscMemory);
+    if (writeToUncompressedMemory(&gameboy->memory.misc, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 4 %X $X\n", offset, sectionSize);
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    struct MiscSaveStateData miscData;
+    miscData.cpu = gameboy->cpu;
+    miscData.audioState = gameboy->memory.audio;
+    sectionSize = sizeof(struct MiscSaveStateData);
+    if (writeToUncompressedMemory(&miscData, offset, sectionSize)) {
+        DEBUG_PRINT_F("Save fail 5 %X $X\n", offset, sectionSize);
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    return lzfse_encode_buffer(gCompressedMemory, 32 * 1024, gUncompressedMemory, offset, &gLZFSEMemory);
+}
+
+int attemptGameboySaveState(struct GameBoy* gameboy, enum StoredInfoType storeType)
+{
     if (storeType == StoredInfoTypeNone)
     {
         return -1;
@@ -363,90 +494,46 @@ int saveGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
 
     gameboy->settings.timer = gameboy->memory.misc.time;
 
-    if (gSaveTypeSetting.saveType == SaveTypeFlash && osFlashAllErase()) {
+    if (gSaveTypeSetting.saveType == SaveTypeFlash && osFlashAllErase())
+    {
         DEBUG_PRINT_F("Save fail clear\n");
         return -1;
     }
 
-    if (storeType == StoredInfoTypeRAM)
+    gameboy->settings.version = GB_SETTINGS_CURRENT_VERSION;
+    gameboy->settings.storedType = storeType;
+    gameboy->settings.compressedSize = generateCompressedSaveState(gameboy, storeType);
+
+    DEBUG_PRINT_F("Write %X %X\n", gameboy->settings.compressedSize, compressedChecksum(gameboy->settings.compressedSize));
+
+    if (gameboy->settings.compressedSize == 0 ||
+        gameboy->settings.compressedSize > getSaveTypeSize(gSaveTypeSetting.saveType))
     {
-        int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-        if (gSaveWriteCallback(gameboy->memory.cartRam, 0, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 1 %X $X\n", 0, sectionSize);
-            return -1;
-        }
+        return -1;
     }
-    else
-    {
-        bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
-            gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
 
+    if (gSaveWriteCallback(&gameboy->settings, 0, sizeof(struct GameboySettings))) {
+        DEBUG_PRINT_F("Save fail 0 %X $X\n", 0, sizeof(struct GameboySettings));
+        return -1;
+    }
 
-        int offset = 0;
-        int sectionSize = sizeof(struct GameboySettings);
-        if (gSaveWriteCallback(&gameboy->settings, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 0 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-        if (storeType == StoredInfoTypeSettings)
-        {
-            return 0;
-        }
-        
-        sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-        if (gSaveWriteCallback(gameboy->memory.cartRam, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 1 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-        if (storeType == StoredInfoTypeSettingsRAM)
-        {
-            return 0;
-        }
-
-        sectionSize = gbc ? 0x4000 : 0x2000;
-        if (gSaveWriteCallback(&gameboy->memory.vram, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-        sectionSize = sizeof(u16) * PALETTE_COUNT;
-        if (gSaveWriteCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 2 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-        sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
-        if (gSaveWriteCallback(gameboy->memory.internalRam, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 3 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-        
-        sectionSize = sizeof(struct MiscMemory);
-        if (gSaveWriteCallback(&gameboy->memory.misc, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 4 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-        struct MiscSaveStateData miscData;
-        miscData.cpu = gameboy->cpu;
-        miscData.audioState = gameboy->memory.audio;
-        sectionSize = sizeof(struct MiscSaveStateData);
-        if (gSaveWriteCallback(&miscData, offset, sectionSize)) {
-            DEBUG_PRINT_F("Save fail 5 %X $X\n", offset, sectionSize);
-            return -1;
-        }
-        offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+    if (gSaveWriteCallback(&gCompressedMemory, FLASH_BLOCK_SIZE, gameboy->settings.compressedSize)) {
+        DEBUG_PRINT_F("Save fail data %X $X\n", FLASH_BLOCK_SIZE, gameboy->settings.compressedSize);
+        return -1;
     }
 
     return 0;
+}
+
+enum StoredInfoType saveGameboyState(struct GameBoy* gameboy)
+{
+    enum StoredInfoType storeType = StoredInfoTypeAll;
+
+    while (storeType != StoredInfoTypeNone && attemptGameboySaveState(gameboy, storeType)) {
+        ++storeType;
+    }
+
+    return storeType;
 }
 
 int getSaveStateSize(struct GameBoy* gameboy)
@@ -495,6 +582,15 @@ void initSaveCallbacks()
 }
 
 enum StoredInfoType getStoredInfoType(struct GameBoy* gameboy)
+{
+    if (gameboy->settings.version == 2) {
+        return gameboy->settings.storedType;
+    } else {
+        return getDeprecatedStoredInfoType(gameboy);
+    }
+}
+
+enum StoredInfoType getDeprecatedStoredInfoType(struct GameBoy* gameboy)
 {
     int saveTypeSize = getSaveTypeSize(gSaveTypeSetting.saveType);
     int ramSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);

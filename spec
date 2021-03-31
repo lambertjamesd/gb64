@@ -53,13 +53,13 @@ endseg
 beginseg
 	name "cgb_bios"
 	flags RAW
-	include "data/cgb_bios_placeholder.bin"
+	include "data/cgb_bios.bin"
 endseg
 
 beginseg
 	name "gbrom"
 	flags RAW
-	include "data/AdventureIslandII.gb"
+	include "data/PokemonBlue.gb"
 endseg
 
 #endif // USE_PLACEHOLDER

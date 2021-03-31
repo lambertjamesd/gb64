@@ -130,34 +130,27 @@ struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown
 
     if (!gGameboy.memory.misc.biosLoaded && (buttonsDown & INPUT_BUTTON_TO_MASK(gGameboy.settings.inputMapping.save)))
     {
-        enum StoredInfoType saveType = getStoredInfoType(&gGameboy);
+        enum StoredInfoType saveType = saveGameboyState(&gGameboy);
 
-        if (saveType == StoredInfoTypeNone)
+        switch (saveType)
         {
-            saveState->saveMessage = "Insufficient memory to save";
-        }
-        else if (saveGameboyState(&gGameboy, saveType))
-        {
+        case StoredInfoTypeAll:
+            saveState->saveMessage = "Saved state";
+            break;
+        case StoredInfoTypeSettingsRAM:
+            saveState->saveMessage = "Saved cart w settings";
+            break;
+        case StoredInfoTypeRAM:
+            saveState->saveMessage = "Saved cart";
+            break;
+        case StoredInfoTypeSettings:
+            saveState->saveMessage = "Saved settings";
+            break;
+        case StoredInfoTypeNone:
             saveState->saveMessage = "Error saving";
+            break;
         }
-        else
-        {
-            switch (saveType)
-            {
-            case StoredInfoTypeAll:
-                saveState->saveMessage = "Saved state";
-                break;
-            case StoredInfoTypeSettingsRAM:
-                saveState->saveMessage = "Saved cart w settings";
-                break;
-            case StoredInfoTypeRAM:
-                saveState->saveMessage = "Saved cart";
-                break;
-            case StoredInfoTypeSettings:
-                saveState->saveMessage = "Saved settings";
-                break;
-            }
-        }
+        
         saveState->showSaveTimer = SAVE_TIMER_FRAMES;
         
         if (!saveState->isLoading)
