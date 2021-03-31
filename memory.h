@@ -2,8 +2,7 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
-#define offsetof(st, m) \
-    ((int)&(((st *)0)->m))
+#include <stddef.h>
 
 // Aligns size to 8 bytes
 #define ALIGN_8(size) (((size) + 0x7) & ~0x7);
@@ -20,10 +19,11 @@ struct HeapSegment
 void initHeap(void* heapEnd);
 void *cacheFreePointer(void* target);
 void *malloc(unsigned int size);
+void free(void* target);
 void markAllocated(void* addr, int length);
 int calculateBytesFree();
 int calculateLargestFreeChunk();
 extern void zeroMemory(void* memory, int size);
-extern void memCopy(void* target, void* src, int size);
+extern void memCopy(void* target, const void* src, int size);
 
 #endif

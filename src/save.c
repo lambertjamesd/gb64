@@ -32,7 +32,7 @@ union lzfse_memory {
     lzfse_encoder_state encoder;
 };
 
-union lzfse_memory gLZFSEMemory;
+union lzfse_memory __attribute__((aligned(8))) gLZFSEMemory;
 
 SaveReadCallback gSaveReadCallback;
 SaveWriteCallback gSaveWriteCallback;
@@ -384,7 +384,7 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
 
         DEBUG_PRINT_F("Read %X %X\n", settings.compressedSize, compressedChecksum(gameboy->settings.compressedSize));
 
-        if (lzfse_decode_buffer(gUncompressedMemory, 128 * 1024, gCompressedMemory, 32 * 1024, &gLZFSEMemory) == 0) {
+        if (lzfse_decode_buffer(gUncompressedMemory, 128 * 1024, gCompressedMemory, settings.compressedSize, &gLZFSEMemory) == 0) {
             DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
             return -1;
         }

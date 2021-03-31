@@ -29,13 +29,13 @@ endif
 
 # FINAL = YES
 ifeq ($(FINAL), YES)
-OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu90 -Werror $(WARNING_FLAGS)
+OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
-N64LIB          = -lultra_rom
+N64LIB          = -lultra_romq
 N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared
 else
-OPTIMIZER       = $(DEBUG_FLAGS) -g -std=gnu90 -Werror $(WARNING_FLAGS)
+OPTIMIZER       = $(DEBUG_FLAGS) -g -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
 N64LIB          = -lultra_rom
@@ -45,6 +45,15 @@ endif
 APP =		bin/gb.out
 
 TARGETS =	bin/gb.n64
+
+LZFSESOURCE = lzfse/lzfse_decode_base.c \
+       lzfse/lzfse_encode_base.c \
+       lzfse/lzvn_decode_base.c \
+       lzfse/lzvn_encode_base.c \
+       lzfse/lzfse_fse.c \
+       lzfse/lzfse_decode.c \
+       lzfse/lzfse_encode.c
+
 
 HFILES =	boot.h game.h controller.h font.h font_ext.h \
 		gbfont_img.h static.h \
@@ -69,8 +78,6 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/test/register_test.c              \
        src/test/interrupt_test.c             \
        src/cpu.c                             \
-       src/compress.c                        \
-       src/heap.c                            \
        src/rom.c                             \
        src/memory_map.c                      \
        src/gameboy.c                         \
@@ -90,9 +97,9 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/clockmenu.c                       \
        src/upgrade.c                         \
        src/save.c                            \
-       src/stream.c                          \
        src/faulthandler.c                    \
-       $(DEBUG_FILES)       
+       $(DEBUG_FILES)                        \
+       $(LZFSESOURCE)
 
 S_FILES = asm/cpu.s
 

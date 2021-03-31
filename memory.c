@@ -88,6 +88,11 @@ void *malloc(unsigned int size)
     return 0;
 }
 
+
+void free(void* target) {
+    // TODO
+}
+
 void markAllocated(void* addr, int length)
 {
     struct HeapSegment* prevSegment;
@@ -207,7 +212,7 @@ void zeroMemory(void* memory, int size)
     }
 }
 
-void memCopy(void* target, void* src, int size)
+void memCopy(void* target, const void* src, int size)
 {
     unsigned char* targetAsChar;
     unsigned char* srcAsChar;
