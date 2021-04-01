@@ -14,9 +14,6 @@
 #define LCDC_WIN_TILE_MAP       0x40
 #define LCDC_LCD_E              0x80
 
-
-#define Memory_misc_sprites     0x50
-
 #define GraphicsMemory_tilemap0          0x1800
 #define GraphicsMemory_tilemapOffset     0x2000
 

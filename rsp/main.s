@@ -12,6 +12,16 @@ ppuMain:
     jal DMAproc
     ori a3, zero, 0
 
+    jal DMAWait
+    nop
+
+    # load PPUTask
+    ori a0, zero, ppuTask
+    lw a1, osTask_data_ptr($0)
+    li(a2, PPUTask_sizeof-1)
+    jal DMAproc
+    ori a3, zero, 0
+
     li(s2, 0)
 
     lw t1, cyclesWaitingForMode2(zero)
@@ -28,7 +38,7 @@ loadSprites:
 
     li(a0, sprites) # DMEM target
     lw a1, (ppuTask + PPUTask_memorySource)(zero)
-    addi a1, a1, Memory_misc_sprites # RAM source
+    addi a1, a1, MEMORY_MISC_START # RAM source
     li(a2, SPRITE_SIZE * SPRITE_MAX_COUNT - 1) # len
     jal DMAproc
     li(a3, 0) # is read

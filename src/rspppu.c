@@ -111,3 +111,7 @@ void renderPPURow(struct Memory* memory, struct GraphicsState* state)
     // set mode 3 bit
     IO_WRITE(SP_STATUS_REG, SP_SET_SIG0);
 }
+
+void enterMode2(struct Memory* memory) {
+    osWritebackDCache(&memory->misc.sprites, sizeof(memory->misc.sprites));
+}

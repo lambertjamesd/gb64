@@ -15,7 +15,6 @@
     ori GB_F, GB_F, \flags
 .endm
 
-.set DEBUG_OUT, 0
 .set VALIDATE_STATE, 0
 
 .data
@@ -77,57 +76,33 @@ _CALC_CYCLE_TO:
     bnez $at, GB_SIMULATE_HALTED
     nop
 
-.if DEBUG_OUT
-    la $at, 0x80700000 - 4
-    la TMP4, 0x80700000
-    sw TMP4, 0($at)
-.endif
-
 DECODE_NEXT:
 .if VALIDATE_STATE
     nop
     jal CHECK_FOR_INVALID_STATE
     nop
 .endif
-
+    # check if an an event has been reached
     sltu $at, CYCLES_RUN, CycleTo
-    bnez $at, _DECODE_NEXT_READ
-    nop
-    jal DEQUEUE_STOPPING_POINT
-    nop
-    j DECODE_NEXT
-    nop
-_DECODE_NEXT_READ:
-    jal READ_NEXT_INSTRUCTION # get the next instruction to decode
-    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR
-
-.if DEBUG_OUT
-DEBUG_START:
-    la $at, 0x80700000 - 4
-    lw TMP4, 0($at)
-    sw Memory, -4($at)
-    sb $v0, 0(TMP4)
-    sh GB_PC, 2(TMP4)
-    addi TMP4, TMP4, 4
-
-    la $at, 0x80800000
-    sltu $at, TMP4, $at
-    bne $at, $zero, _DEBUG_SKIP
-    nop
-    la TMP4, 0x80700000
-
-_DEBUG_SKIP:
-    la $at, 0x80700000 - 4
-    sw TMP4, 0($at)
-.endif
-
+    beqz $at, DECODE_STOPPING_POINT
+    # get the next instruction to decode
+    lbu $v0, 0(PC_MEM_POINTER)
+    addi PC_MEM_POINTER, PC_MEM_POINTER, 1
+    addi GB_PC, GB_PC, 1
 DECODE_V0:
     lui $at, %hi(cpuInstructionTable)
     sll $v0, $v0, 2 # multiply instruction value by 4
     add $at, $v0, $at
-    lw $ra, (%lo(cpuInstructionTable))($at)
-    jr $ra
+    lw TMP2, (%lo(cpuInstructionTable))($at)
+    jr TMP2
+    addi CYCLES_RUN, CYCLES_RUN, CYCLES_PER_INSTR
+
+DECODE_STOPPING_POINT:
+    jal DEQUEUE_STOPPING_POINT
     nop
+    j DECODE_NEXT
+    nop
+
     #################
     # Each entry in the jump table needs
     # to be 8 instructions apart

@@ -34,7 +34,7 @@ nextTile:
     sh $at, currentTile(zero) # save tile pointer
 
 blankTile:
-    # retrieve current ile
+    # retrieve current tile
     lhu v0, currentTile(zero)
 
     # set to blank tile
@@ -348,11 +348,11 @@ copyTileLineV_finish:
     # restore end of tilemap scanline
     # used to prevent the tilemap
     # from overwriting the window
-    add t0, a0, a1
+    add $at, a0, a1
     lw t1, overscanBuffer(zero)
     lw t1, (overscanBuffer + 4)(zero)
-    sw t1, 0(t0)
-    sw t2, 4(t0)
+    sw t1, 0($at)
+    sw t2, 4($at)
     
     # save current tile attribute before exiting
     sh t1, currentTileAttr(zero)
