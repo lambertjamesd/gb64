@@ -186,7 +186,7 @@ drawNextSpriteV:
     andi $at, t4, SPRITE_FLAGS_FLIP_Y
 
     beq $at, zero, drawSpriteVCheckPallete
-    li($at, 8)
+    li($at, 7)
     # flip y value
     sub t3, $at, t3
 drawSpriteVCheckPallete:
