@@ -186,11 +186,11 @@ FSE_INLINE void fse_out_flush64(fse_out_stream64 *s, uint8_t **pbuf) {
   *pbuf += (nbits >> 3); // bytes
 
   // Update state
-  s->accum >>= nbits; // remove nbits
+  s->accum <<= nbits; // remove nbits
   s->accum_nbits -= nbits;
 
   assert(s->accum_nbits >= 0 && s->accum_nbits <= 7);
-  assert(s->accum_nbits == 64 || (s->accum >> s->accum_nbits) == 0);
+  assert(s->accum_nbits == 64 || (s->accum << s->accum_nbits) == 0);
 }
 
 /*! @abstract Write full bytes from the accumulator to output buffer, ensuring
@@ -207,11 +207,11 @@ FSE_INLINE void fse_out_flush32(fse_out_stream32 *s, uint8_t **pbuf) {
   *pbuf += (nbits >> 3); // bytes
 
   // Update state
-  s->accum >>= nbits; // remove nbits
+  s->accum <<= nbits; // remove nbits
   s->accum_nbits -= nbits;
 
   assert(s->accum_nbits >= 0 && s->accum_nbits <= 7);
-  assert(s->accum_nbits == 32 || (s->accum >> s->accum_nbits) == 0);
+  assert(s->accum_nbits == 32 || (s->accum << s->accum_nbits) == 0);
 }
 
 /*! @abstract Write the last bytes from the accumulator to output buffer,
@@ -260,11 +260,11 @@ FSE_INLINE void fse_out_finish32(fse_out_stream32 *s, uint8_t **pbuf) {
  * overflows to more than 64 bits. */
 FSE_INLINE void fse_out_push64(fse_out_stream64 *s, fse_bit_count n,
                                uint64_t b) {
-  s->accum |= b << s->accum_nbits;
+  s->accum |= b << (64 - s->accum_nbits);
   s->accum_nbits += n;
 
   assert(s->accum_nbits >= 0 && s->accum_nbits <= 64);
-  assert(s->accum_nbits == 64 || (s->accum >> s->accum_nbits) == 0);
+  assert(s->accum_nbits == 64 || (s->accum << s->accum_nbits) == 0);
 }
 
 /*! @abstract Accumulate \c n bits \c b to output stream \c s. We \b must have:
@@ -273,21 +273,21 @@ FSE_INLINE void fse_out_push64(fse_out_stream64 *s, fse_bit_count n,
  * overflows to more than 32 bits. */
 FSE_INLINE void fse_out_push32(fse_out_stream32 *s, fse_bit_count n,
                                uint32_t b) {
-  s->accum |= b << s->accum_nbits;
+  s->accum |= b << (32 - s->accum_nbits);
   s->accum_nbits += n;
 
   assert(s->accum_nbits >= 0 && s->accum_nbits <= 32);
-  assert(s->accum_nbits == 32 || (s->accum >> s->accum_nbits) == 0);
+  assert(s->accum_nbits == 32 || (s->accum << s->accum_nbits) == 0);
 }
 
 #if FSE_IOSTREAM_64
 #define DEBUG_CHECK_INPUT_STREAM_PARAMETERS                                    \
   assert(s->accum_nbits >= 56 && s->accum_nbits < 64);                         \
-  assert((s->accum >> s->accum_nbits) == 0);
+  assert((s->accum << s->accum_nbits) == 0);
 #else
 #define DEBUG_CHECK_INPUT_STREAM_PARAMETERS                                    \
   assert(s->accum_nbits >= 24 && s->accum_nbits < 32);                         \
-  assert((s->accum >> s->accum_nbits) == 0);
+  assert((s->accum << s->accum_nbits) == 0);
 #endif
 
 /*! @abstract   Initialize the fse input stream so that accum holds between 56
@@ -310,12 +310,12 @@ FSE_INLINE int fse_in_checked_init64(fse_in_stream64 *s, fse_bit_count n,
       return -1; // out of range
     *pbuf -= 7;
     memCopy(&(s->accum), *pbuf, 7);
-    s->accum &= 0xffffffffffffff;
+    s->accum &= 0xffffffffffffff00;
     s->accum_nbits = n + 56;
   }
 
   if ((s->accum_nbits < 56 || s->accum_nbits >= 64) ||
-      ((s->accum >> s->accum_nbits) != 0)) {
+      ((s->accum << s->accum_nbits) != 0)) {
     return -1; // the incoming input is wrong (encoder should have zeroed the
                // upper bits)
   }
@@ -339,12 +339,12 @@ FSE_INLINE int fse_in_checked_init32(fse_in_stream32 *s, fse_bit_count n,
       return -1; // out of range
     *pbuf -= 3;
     memCopy(&(s->accum), *pbuf, 3);
-    s->accum &= 0xffffff;
+    s->accum &= 0xffffff00;
     s->accum_nbits = n + 24;
   }
 
   if ((s->accum_nbits < 24 || s->accum_nbits >= 32) ||
-      ((s->accum >> s->accum_nbits) != 0)) {
+      ((s->accum << s->accum_nbits) != 0)) {
     return -1; // the incoming input is wrong (encoder should have zeroed the
                // upper bits)
   }
@@ -370,7 +370,7 @@ FSE_INLINE int fse_in_checked_flush64(fse_in_stream64 *s, const uint8_t **pbuf,
   uint64_t incoming;
   memCopy(&incoming, buf, 8);
   // Update the state object and verify its validity (in DEBUG).
-  s->accum = (s->accum << nbits) | fse_mask_lsb64(incoming, nbits);
+  s->accum = (s->accum >> nbits) | (fse_mask_lsb64(incoming, nbits) << (64 - nbits));
   s->accum_nbits += nbits;
   DEBUG_CHECK_INPUT_STREAM_PARAMETERS
   return 0; // OK
@@ -392,10 +392,11 @@ FSE_INLINE int fse_in_checked_flush32(fse_in_stream32 *s, const uint8_t **pbuf,
 
     *pbuf = buf;
 
-    uint32_t incoming = *((uint32_t *)buf);
+    uint32_t incoming;
+    memCopy(&incoming, buf, 4);
 
     // Update the state object and verify its validity (in DEBUG).
-    s->accum = (s->accum << nbits) | fse_mask_lsb32(incoming, nbits);
+    s->accum = (s->accum >> nbits) | (fse_mask_lsb32(incoming, nbits) << (32 - nbits));
     s->accum_nbits += nbits;
   }
   DEBUG_CHECK_INPUT_STREAM_PARAMETERS
@@ -405,19 +406,19 @@ FSE_INLINE int fse_in_checked_flush32(fse_in_stream32 *s, const uint8_t **pbuf,
 /*! @abstract Pull n bits out of the fse stream object. */
 FSE_INLINE uint64_t fse_in_pull64(fse_in_stream64 *s, fse_bit_count n) {
   assert(n >= 0 && n <= s->accum_nbits);
+  uint64_t result = s->accum >> (64 - s->accum_nbits);
   s->accum_nbits -= n;
-  uint64_t result = s->accum >> s->accum_nbits;
-  s->accum = fse_mask_lsb64(s->accum, s->accum_nbits);
-  return result;
+  s->accum <<= n;
+  return fse_mask_lsb64(result, n);
 }
 
 /*! @abstract Pull n bits out of the fse stream object. */
 FSE_INLINE uint32_t fse_in_pull32(fse_in_stream32 *s, fse_bit_count n) {
   assert(n >= 0 && n <= s->accum_nbits);
+  uint64_t result = s->accum >> (32 - s->accum_nbits);
   s->accum_nbits -= n;
-  uint32_t result = s->accum >> s->accum_nbits;
-  s->accum = fse_mask_lsb32(s->accum, s->accum_nbits);
-  return result;
+  s->accum <<= n;
+  return fse_mask_lsb32(result, n);
 }
 
 // MARK: - Encode/Decode

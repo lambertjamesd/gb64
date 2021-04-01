@@ -6,6 +6,7 @@
 #include "upgrade.h"
 #include "../lzfse/lzfse.h"
 #include "../lzfse/lzfse_internal.h"
+#include <string.h>
 
 struct SaveTypeSetting gSaveTypeSetting = {
     SAVE_HEADER_VALUE,
