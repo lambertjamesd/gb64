@@ -157,7 +157,13 @@ precacheTilemap:
     lbu $at, (ppuTask + PPUTask_lcdc)(zero)
     andi $at, $at, LCDC_BG_ENABLE
     bne $at, zero, precacheTilemap_enabled
+
+    # LCDC_BG_ENABLE works differently in gameboy color
+    lhu $at, (ppuTask + PPUTask_flags)(zero)
+    andi $at, $at, PPU_TASK_FLAGS_COLOR
+    bne $at, zero, precacheTilemap_enabled
     nop
+
     jal precacheBlankTiles
     nop
     j precacheWindow_check

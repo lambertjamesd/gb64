@@ -217,6 +217,16 @@ copyTileLineV:
     # load pointer into tile attribute cache
     lhu t1, currentTileAttr(zero)
 
+    # check if gameboy color for global priority bit
+    lhu $at, (ppuTask + PPUTask_flags)(zero)
+    andi t7, $at, PPU_TASK_FLAGS_COLOR
+
+    # check the global priority bit
+    lbu $at, (ppuTask + PPUTask_lcdc)(zero)
+    andi $at, $at, LCDC_BG_ENABLE
+    xori $at, $at, LCDC_BG_ENABLE
+    and t7, t7, $at
+
 copyTileLineV_nextTile:
     # load tile attributes
     lbu t4, 0(t1)
@@ -315,9 +325,14 @@ copyTileLineV_skipVFlip:
     andi $at, t4, TILE_ATTR_PRIORITY
     # store background into obj slot if obj is 0
     vmrg $v10, $v3, $v10
+    # check if the global priority bit is set
+    beq t7, zero, skipSpritePriority
     # move priority bit into a vector register
     mtc2 $at, $v9[0]
 
+    # move sprite into background pixel
+    vmrg $v3, $v10, $v10
+skipSpritePriority:
     # check if background is 0
     veq $v30, $v2, $v31
     # calculate OB_PRI | TILE_PRI
