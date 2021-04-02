@@ -203,10 +203,10 @@ copyTileLineV:
     # used to prevent the tilemap
     # from overwriting the window
     add t0, a0, a1
-    lw t1, 0(t0)
+    lw t3, 0(t0)
     lw t2, 4(t0)
-    sw t1, overscanBuffer(zero)
-    sw t1, (overscanBuffer + 4)(zero)
+    sw t3, overscanBuffer(zero)
+    sw t2, (overscanBuffer + 4)(zero)
 
     # convert y to pixel offset 
     # (2 bytes per row of pixels in a tile)
@@ -350,7 +350,7 @@ copyTileLineV_finish:
     # from overwriting the window
     add $at, a0, a1
     lw t3, overscanBuffer(zero)
-    lw t3, (overscanBuffer + 4)(zero)
+    lw t2, (overscanBuffer + 4)(zero)
     sw t3, 0($at)
     sw t2, 4($at)
     
