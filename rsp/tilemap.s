@@ -349,9 +349,9 @@ copyTileLineV_finish:
     # used to prevent the tilemap
     # from overwriting the window
     add $at, a0, a1
-    lw t1, overscanBuffer(zero)
-    lw t1, (overscanBuffer + 4)(zero)
-    sw t1, 0($at)
+    lw t3, overscanBuffer(zero)
+    lw t3, (overscanBuffer + 4)(zero)
+    sw t3, 0($at)
     sw t2, 4($at)
     
     # save current tile attribute before exiting
