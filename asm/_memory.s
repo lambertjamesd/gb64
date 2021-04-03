@@ -1024,6 +1024,20 @@ GB_DO_READ_16:
 ######################
 
 GB_DO_READ:
+    # read which bank to use
+    andi $at, ADDR, 0xF000
+    # shift bank to be a memory offset
+    srl $at, $at, 10
+    # calculate read target
+    addi $at, Memory, MEMORY_READ_TABLE
+    lw $at, 0($at)
+    jr $at
+    nop
+
+
+.global GB_DO_READ_OLD
+.align 4
+GB_DO_READ_OLD:
     ori $at, $zero, MM_REGISTER_START
     sub $at, ADDR, $at
     bgez $at, GB_DO_READ_REGISTERS # if ADDR >= 0xFE00

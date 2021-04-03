@@ -204,6 +204,8 @@ struct MBCData {
 
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
+    void* cartMemoryRead[MEMORY_MAP_SIZE];
+    void* cartMemoryWrite[MEMORY_MAP_SIZE];
     ASMHook cartRamWrite;
     ASMHook cartRamRead;
     RegisterWriter bankSwitch;
@@ -229,7 +231,8 @@ struct Memory {
 #define MBC_FLAGS_TIMER     0x4
 #define MBC_FLAGS_RUMBLE    0x8
 
-
+void setMemoryBank(struct Memory* memory, int offset, void* addr, void* readCallback, void* writeCallback);
+void* getMemoryBank(struct Memory* memory, int offset);
 void initMemory(struct Memory* memory, struct ROMLayout* rom);
 
 void handleMBC3Write(struct Memory* memory, int addr, int value);

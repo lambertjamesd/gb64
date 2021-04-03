@@ -105,7 +105,7 @@ int runCPUTests(char* testOutput) {
 
     for (i = 0; i < MEMORY_MAP_SIZE; ++i)
     {
-        gGameboy.memory.memoryMap[i] = gGameboy.memory.internalRam;
+        setMemoryBank(&gGameboy.memory, i, gGameboy.memory.internalRam, 0, 0);
     }
 
     gGameboy.memory.bankSwitch = &BankSwitchingWriter;

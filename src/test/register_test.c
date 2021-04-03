@@ -83,7 +83,7 @@ int runSVBKTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     runCPU(cpu, memory, 2, 0);
 
     if (!testInt("SVBK ram bank", testOutput, 
-        (int)memory->memoryMap[MEMORY_RAM_BANK_INDEX], 
+        (int)getMemoryBank(memory, MEMORY_RAM_BANK_INDEX), 
         (int)memory->internalRam + 0x3000)
     )
     {
@@ -93,7 +93,7 @@ int runSVBKTests(struct CPUState* cpu, struct Memory* memory, char* testOutput)
     runCPU(cpu, memory, 4, 0);
 
     return testInt("SVBK ram bank 0 bank", testOutput, 
-        (int)memory->memoryMap[MEMORY_RAM_BANK_INDEX], 
+        (int)getMemoryBank(memory, MEMORY_RAM_BANK_INDEX), 
         (int)memory->internalRam + 0x1000
     );
 }

@@ -13,7 +13,7 @@ u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
     if (address < MISC_START)
     {
-        return (u8*)memory->memoryMap[address >> 12] + (address & 0xFFF);
+        return (u8*)getMemoryBank(memory, address >> 12) + (address & 0xFFF);
     }
     else
     {
