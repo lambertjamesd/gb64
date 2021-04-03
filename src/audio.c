@@ -179,7 +179,8 @@ void renderNoise(
 
 		sound->accumulator += sound->sampleStep;
 
-		while (sound->accumulator >= 0x1000000)
+		// technically this should be a while loop
+		if (sound->accumulator >= 0x1000000)
 		{
 			u16 bit = (lfsr ^ (lfsr >> 1)) & 1;
 			if (lfsrWidth == LFSRWidth15) {
@@ -188,7 +189,7 @@ void renderNoise(
 				lfsr = ((lfsr >> 1) & ~0x40) | (bit << 6);
 			}
 
-			sound->accumulator -= 0x1000000;
+			sound->accumulator &= 0xFFFFFF;
 		}
 	}
 	sound->lfsr = lfsr;

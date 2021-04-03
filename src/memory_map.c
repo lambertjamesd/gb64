@@ -14,7 +14,10 @@ u16 paletteColors[] = {
 
 u32 gGeneratedReads[8 * MEMORY_MAP_SIZE];
 
-void generateDirectRead(int bank, void* baseAddr)
+void setRomMemoryBank(struct Memory* memory, int offset, void* addr);
+void setRamMemoryBank(struct Memory* memory, int offset, void* addr);
+
+void* generateDirectRead(int bank, void* baseAddr)
 {
     u32 loAddr = (u32)baseAddr & 0xFFFF;
     u32 hiAddr = ((u32)baseAddr >> 16) + (loAddr & 0x8000) ? 1 : 0;
@@ -32,6 +35,8 @@ void generateDirectRead(int bank, void* baseAddr)
     bankRead[4] = 0x91820000 | loAddr;
     osWritebackDCache(bankRead, 8 * sizeof(u32));
     osInvalICache(bankRead, 8 * sizeof(u32));
+
+    return bankRead;
 }
 
 // background color? 0xCADC9F
@@ -77,13 +82,13 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     }
     romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
 
-    setMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
-    setMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2, 0, 0);
-    setMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3, 0, 0);
+    setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
+    setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    setMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
 }
 
 extern void mbc2ReadRam();
@@ -105,10 +110,10 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
 
     romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
 
-    setMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
-    setMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2, 0, 0);
-    setMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3, 0, 0);
+    setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
+    setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
 
     memory->cartRamRead = mbc2ReadRam;
 }
@@ -192,13 +197,13 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
 
     char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1);
 
-    setMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
-    setMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2, 0, 0);
-    setMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3, 0, 0);
+    setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
+    setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    setMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
 }
 
 
@@ -222,13 +227,13 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0xF) * MEMORY_MAP_SEGMENT_SIZE * 2;
     char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | (memory->misc.romBankUpper << 8 & 0x100));
 
-    setMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
-    setMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2, 0, 0);
-    setMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3, 0, 0);
+    setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
+    setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    setMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
 }
 
 void defaultRegisterWrite(struct Memory* memory, int addr, int value)
@@ -279,6 +284,14 @@ void setMemoryBank(struct Memory* memory, int offset, void* addr, void* readCall
     memory->cartMemoryWrite[offset] = 0;
 }
 
+void setRomMemoryBank(struct Memory* memory, int offset, void* addr) {
+    setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), 0);
+}
+
+void setRamMemoryBank(struct Memory* memory, int offset, void* addr) {
+    setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), 0);
+}
+
 void* getMemoryBank(struct Memory* memory, int offset)
 {
     return memory->memoryMap[offset];
@@ -318,29 +331,29 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     
     finishRomLoad(rom);
 
-    setMemoryBank(memory, 0x0, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x1, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
-    setMemoryBank(memory, 0x2, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 2, 0, 0);
-    setMemoryBank(memory, 0x3, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 3, 0, 0);
+    setRomMemoryBank(memory, 0x0, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRomMemoryBank(memory, 0x1, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    setRomMemoryBank(memory, 0x2, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 2);
+    setRomMemoryBank(memory, 0x3, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
     memoryBank = getROMBank(rom, 1);
     
-    setMemoryBank(memory, 0x4, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x5, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
-    setMemoryBank(memory, 0x6, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 2, 0, 0);
-    setMemoryBank(memory, 0x7, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 3, 0, 0);
+    setRomMemoryBank(memory, 0x4, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRomMemoryBank(memory, 0x5, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    setRomMemoryBank(memory, 0x6, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 2);
+    setRomMemoryBank(memory, 0x7, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    setMemoryBank(memory, 0x8, memory->vramBytes + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0x9, memory->vramBytes + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0x8, memory->vramBytes + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRamMemoryBank(memory, 0x9, memory->vramBytes + MEMORY_MAP_SEGMENT_SIZE * 1);
 
-    setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRamMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1);
     
-    setMemoryBank(memory, 0xC, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0xD, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0xC, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setRamMemoryBank(memory, 0xD, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1);
     
-    setMemoryBank(memory, 0xE, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 0, 0, 0);
-    setMemoryBank(memory, 0xF, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1, 0, 0);
+    setRamMemoryBank(memory, 0xE, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 0);
+    setMemoryBank(memory, 0xF, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_OLD, 0);
 
     WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
     WRITE_REGISTER_DIRECT(memory, REG_NR52, 0xF0);
