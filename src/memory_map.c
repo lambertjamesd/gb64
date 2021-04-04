@@ -23,17 +23,17 @@ void* generateDirectRead(int bank, void* baseAddr)
     u32 hiAddr = ((u32)baseAddr >> 16) + (loAddr & 0x8000) ? 1 : 0;
 
     u32* bankRead = gGeneratedReads + 8 * bank;
+    u32* bankNoCache = (u32*)K0_TO_K1(bankRead);
     // andi $t4, $t4, 0xFFF
-    bankRead[0] = 0x318C0FFF;
+    bankNoCache[0] = 0x318C0FFF;
     // lui $at, %hi(baseAddr)
-    bankRead[1] = 0x3C010000 | hiAddr;
+    bankNoCache[1] = 0x3C010000 | hiAddr;
     // add $t4, $t4, $at
-    bankRead[2] = 0x01816020;
+    bankNoCache[2] = 0x01816020;
     // jr $ra
-    bankRead[3] = 0x03E00008;
+    bankNoCache[3] = 0x03E00008;
     // lbu $v0, %lo(baseAddr)($t4)
-    bankRead[4] = 0x91820000 | loAddr;
-    osWritebackDCache(bankRead, 8 * sizeof(u32));
+    bankNoCache[4] = 0x91820000 | loAddr;
     osInvalICache(bankRead, 8 * sizeof(u32));
 
     return bankRead;
@@ -290,6 +290,29 @@ void setRomMemoryBank(struct Memory* memory, int offset, void* addr) {
 
 void setRamMemoryBank(struct Memory* memory, int offset, void* addr) {
     setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), 0);
+}
+
+void setVRAMBank(struct Memory* memory, int value) {
+    int bankOffset = (int)memory->vramBytes;
+
+    if (value == 1) {
+        bankOffset += MEMORY_MAP_SEGMENT_SIZE * 2;
+    }
+
+    setRamMemoryBank(memory, 0x8, (void*)(bankOffset + MEMORY_MAP_SEGMENT_SIZE * 0));
+    setRamMemoryBank(memory, 0x9, (void*)(bankOffset + MEMORY_MAP_SEGMENT_SIZE * 1));
+}
+
+void setInternalRamBank(struct Memory* memory, int value) {
+    if (value < 1) {
+        value = 1;
+    } else if (value > 7) {
+        value = 7;
+    }
+
+    int bankOffset = (int)memory->vramBytes + value * MEMORY_MAP_SEGMENT_SIZE;
+    setRamMemoryBank(memory, 0xD, (void*)bankOffset);
+    setMemoryBank(memory, 0xF, (void*)bankOffset, &GB_DO_READ_OLD, 0);
 }
 
 void* getMemoryBank(struct Memory* memory, int offset)
