@@ -233,17 +233,17 @@
 
                     if (dmgIndex == -1)
                     {
-                        reportError("Could location DMG_BOOT location");
+                        reportError("Could not find DMG_BOOT location");
                     }
 
                     if (cgbIndex == -1)
                     {
-                        reportError("Could location CGB_BIOS location");
+                        reportError("Could not find CGB_BIOS location");
                     }
 
                     if (saveTypeIndex == -1)
                     {
-                        reportError("Could location SVID location");
+                        reportError("Could not find SVID location");
                     }
     
                     if (dmgBoot && dmgIndex != -1)
@@ -259,6 +259,9 @@
                     if (saveTypeIndex != -1)
                     {
                         result[saveTypeIndex + 7] = saveType;
+                        result[0x3C] = 'E'.charCodeAt(0);
+                        result[0x3D] = 'D'.charCodeAt(0);
+                        result[0x3F] = edSavetypes[saveType];
                     }
 
                     copyInto(result, romIndex, rom);
