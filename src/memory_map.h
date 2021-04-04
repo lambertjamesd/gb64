@@ -235,6 +235,9 @@ void setMemoryBank(struct Memory* memory, int offset, void* addr, void* readCall
 void* getMemoryBank(struct Memory* memory, int offset);
 void initMemory(struct Memory* memory, struct ROMLayout* rom);
 
+void setVRAMBank(struct Memory* memory, int value);
+void setInternalRamBank(struct Memory* memory, int value);
+
 void handleMBC3Write(struct Memory* memory, int addr, int value);
 void writeMBC3ClockRegisters(u64 time, u8* target);
 u64 readMBC3ClockRegisters(u8* source);

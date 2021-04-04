@@ -20,7 +20,7 @@ void setRamMemoryBank(struct Memory* memory, int offset, void* addr);
 void* generateDirectRead(int bank, void* baseAddr)
 {
     u32 loAddr = (u32)baseAddr & 0xFFFF;
-    u32 hiAddr = ((u32)baseAddr >> 16) + (loAddr & 0x8000) ? 1 : 0;
+    u32 hiAddr = ((u32)baseAddr >> 16) + ((loAddr & 0x8000) ? 1 : 0);
 
     u32* bankRead = gGeneratedReads + 8 * bank;
     u32* bankNoCache = (u32*)K0_TO_K1(bankRead);
@@ -280,7 +280,7 @@ void GB_DO_READ_OLD();
 void setMemoryBank(struct Memory* memory, int offset, void* addr, void* readCallback, void* writeCallback) 
 {
     memory->memoryMap[offset] = addr;
-    memory->cartMemoryRead[offset] = &GB_DO_READ_OLD;
+    memory->cartMemoryRead[offset] = readCallback;
     memory->cartMemoryWrite[offset] = 0;
 }
 
@@ -310,7 +310,7 @@ void setInternalRamBank(struct Memory* memory, int value) {
         value = 7;
     }
 
-    int bankOffset = (int)memory->vramBytes + value * MEMORY_MAP_SEGMENT_SIZE;
+    int bankOffset = (int)memory->internalRam + value * MEMORY_MAP_SEGMENT_SIZE;
     setRamMemoryBank(memory, 0xD, (void*)bankOffset);
     setMemoryBank(memory, 0xF, (void*)bankOffset, &GB_DO_READ_OLD, 0);
 }

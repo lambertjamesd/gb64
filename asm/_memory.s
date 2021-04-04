@@ -484,14 +484,25 @@ _GB_WRITE_REG_4X_TABLE:
     # VBK
     andi VAL, VAL, 0x1
     write_register_direct VAL, REG_VBK
-    sll VAL, VAL, 13 # mulitply by 0x2000 (VRAM bank size)
-    li $at, MEMORY_VRAM
-    add $at, $at, Memory
-    add $at, $at, VAL
-    sw $at, (MEMORY_ADDR_TABLE + 4 * MEMORY_VRAM_BANK_INDEX)(Memory)
-    addi $at, $at, 0x1000
+    
+    save_state_on_stack
+
+.if DEBUG
+    addi $sp, $sp, -8
+.endif
+
+    move $a0, Memory
+    move $a1, VAL
+    call_c_fn setVRAMBank, 2
+    move $a2, VAL
+
+.if DEBUG
+    addi $sp, $sp, 8
+.endif
+
+    restore_state_from_stack
     jr $ra
-    sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_VRAM_BANK_INDEX + 1))(Memory)
+    nop
 
 _GB_WRITE_REG_LCDC:
     read_register_direct $at, REG_LCDC
@@ -981,16 +992,21 @@ _GB_WRITE_REG_7X:
     bne ADDR, $at, _GB_WRITE_REG_7X_SKIP
     andi VAL, VAL, 0x7
     write_register_direct VAL, REG_SVBK
-    bnez VAL, _GB_WRITE_REG_7X_CHANGE_BANK
-    nop
-    ori VAL, VAL, 0x1
-_GB_WRITE_REG_7X_CHANGE_BANK:
-    sll $at, VAL, 12 # 
-    add $at, $at, Memory
-    addi $at, $at, MEMORY_RAM_START
-    sw $at, (MEMORY_ADDR_TABLE + 4 * MEMORY_RAM_BANK_INDEX)(Memory)
-    jr $ra
-    sw $at, (MEMORY_ADDR_TABLE + 4 * (MEMORY_RAM_BANK_INDEX + 2))(Memory)
+
+    save_state_on_stack
+.if DEBUG
+    addi $sp, $sp, -8
+.endif
+
+    move $a0, Memory
+    move $a1, VAL
+    call_c_fn setInternalRamBank, 2
+
+.if DEBUG
+    addi $sp, $sp, 8
+.endif
+
+    restore_state_from_stack
 _GB_WRITE_REG_7X_SKIP:
     jr $ra
     nop
@@ -1030,7 +1046,9 @@ GB_DO_READ:
     srl $at, $at, 10
     # calculate read target
     addi $at, Memory, MEMORY_READ_TABLE
+    # load jump target
     lw $at, 0($at)
+    # jump to address
     jr $at
     nop
 

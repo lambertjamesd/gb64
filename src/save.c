@@ -403,15 +403,8 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
 
     if (gameboy->cpu.gbc)
     {
-        int bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_VBK) & REG_VBK_MASK;
-        setMemoryBank(&gameboy->memory, 0x8, gameboy->memory.vramBytes + (bank ? MEMORY_MAP_SEGMENT_SIZE * 2 : 0), 0, 0);
-        setMemoryBank(&gameboy->memory, 0x9, getMemoryBank(&gameboy->memory, 0x8) + MEMORY_MAP_SEGMENT_SIZE, 0, 0);
-
-        bank = READ_REGISTER_DIRECT(&gameboy->memory, REG_SVBK) & REG_SVBK_MASK;
-        setMemoryBank(&gameboy->memory, 0xD, bank ?
-            gameboy->memory.internalRam + bank * MEMORY_MAP_SEGMENT_SIZE :
-            gameboy->memory.internalRam + MEMORY_MAP_SEGMENT_SIZE, 0, 0);
-        setMemoryBank(&gameboy->memory, 0xF, getMemoryBank(&gameboy->memory, 0xD), 0, 0);
+        setVRAMBank(&gameboy->memory, READ_REGISTER_DIRECT(&gameboy->memory, REG_VBK) & REG_VBK_MASK);
+        setInternalRamBank(&gameboy->memory, READ_REGISTER_DIRECT(&gameboy->memory, REG_SVBK) & REG_SVBK_MASK);
     }
 
     updateToLatestVersion(gameboy);
