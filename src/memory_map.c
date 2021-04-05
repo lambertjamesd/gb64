@@ -19,21 +19,23 @@ void setRamMemoryBank(struct Memory* memory, int offset, void* addr);
 
 void* generateDirectRead(int bank, void* baseAddr)
 {
+    // offset pointer so adding a GB address points
+    // to the correct place in memory
+    baseAddr = (char*)baseAddr - bank * 0x1000;
+
     u32 loAddr = (u32)baseAddr & 0xFFFF;
     u32 hiAddr = ((u32)baseAddr >> 16) + ((loAddr & 0x8000) ? 1 : 0);
 
     u32* bankRead = gGeneratedReads + 8 * bank;
     u32* bankNoCache = (u32*)K0_TO_K1(bankRead);
-    // andi $t4, $t4, 0xFFF
-    bankNoCache[0] = 0x318C0FFF;
     // lui $at, %hi(baseAddr)
-    bankNoCache[1] = 0x3C010000 | hiAddr;
-    // add $t4, $t4, $at
-    bankNoCache[2] = 0x01816020;
+    bankNoCache[0] = 0x3C010000 | hiAddr;
+    // add $at, $t4, $at
+    bankNoCache[1] = 0x01810820;
     // jr $ra
-    bankNoCache[3] = 0x03E00008;
-    // lbu $v0, %lo(baseAddr)($t4)
-    bankNoCache[4] = 0x91820000 | loAddr;
+    bankNoCache[2] = 0x03E00008;
+    // lbu $v0, %lo(baseAddr)($at)
+    bankNoCache[3] = 0x90220000 | loAddr;
     osInvalICache(bankRead, 8 * sizeof(u32));
 
     return bankRead;

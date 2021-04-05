@@ -1045,13 +1045,12 @@ GB_DO_READ:
     # shift bank to be a memory offset
     srl $at, $at, 10
     # calculate read target
-    addi $at, Memory, MEMORY_READ_TABLE
+    add $at, $at, Memory
     # load jump target
-    lw $at, 0($at)
+    lw $at, MEMORY_READ_TABLE($at)
     # jump to address
     jr $at
     nop
-
 
 .global GB_DO_READ_OLD
 .align 4
