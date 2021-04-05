@@ -44,16 +44,24 @@ GB_DO_WRITE_16_CALL:
 GB_DO_WRITE:
     la $ra, DECODE_NEXT
 GB_DO_WRITE_CALL:
+    # read which bank to use
+    andi $at, ADDR, 0xF000
+    # shift bank to be a memory offset
+    srl $at, $at, 10
+    # calculate read target
+    add $at, $at, Memory
+    # load jump target
+    lw $at, MEMORY_WRITE_TABLE($at)
+    # jump to address
+    jr $at
+    nop
+
+.global GB_DO_WRITE_FF
+.align 4
+GB_DO_WRITE_FF:
     ori $at, $zero, MM_REGISTER_START
     sub $at, ADDR, $at 
     bgez $at, GB_DO_WRITE_REGISTERS_CALL # if ADDR >= 0xFE00 do register logic
-
-    ori $at, $zero, 0x8000
-    sub $at, ADDR, $at
-    bgez $at, _GB_DO_WRITE # if ADDR >= 0x8000 just write
-    nop 
-    j _GB_CALL_WRITE_CALLBACK # call bank switching callback
-    lw Param0, MEMORY_BANK_SWITCHING(Memory)
 _GB_DO_WRITE:
     srl $at, ADDR, 12 # load bank in $at
 
@@ -79,7 +87,10 @@ _GB_DO_WRITE_RAM:
 
 .eqv _WRITE_CALLBACK_FRAME_SIZE, 0x28
 
-_GB_CALL_WRITE_CALLBACK:
+.global GB_WRITE_ROM_BANK
+.align 4
+GB_WRITE_ROM_BANK:
+    lw Param0, MEMORY_BANK_SWITCHING(Memory)
     save_state_on_stack
 
 .if DEBUG
@@ -1052,27 +1063,18 @@ GB_DO_READ:
     jr $at
     nop
 
-.global GB_DO_READ_OLD
+.global GB_DO_READ_FF
 .align 4
-GB_DO_READ_OLD:
+
+######################
+# Reads the last bank of memory 0xF000-0xFFFF
+######################
+GB_DO_READ_FF:
     ori $at, $zero, MM_REGISTER_START
     sub $at, ADDR, $at
     bgez $at, GB_DO_READ_REGISTERS # if ADDR >= 0xFE00
 
     srl $at, ADDR, 12 # load bank in $at
-
-    # check if $at is A or B
-    xori $v0, $at, 0xA
-    andi $v0, $v0, 0xE
-    bnez $v0, _GB_DO_READ_RAM
-    sll $at, $at, 2 # word align the memory map offset
-
-    lw $v0, MEMORY_CART_READ(Memory)
-    beqz $v0, _GB_DO_READ_RAM
-    nop
-    jr $v0
-    nop
-
 _GB_DO_READ_RAM:
     add $at, $at, Memory # lookup start of bank in array at Memory
     lw $at, 0($at) # load start of memory bank

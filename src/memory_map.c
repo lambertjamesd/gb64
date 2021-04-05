@@ -13,9 +13,14 @@ u16 paletteColors[] = {
 };
 
 u32 gGeneratedReads[8 * MEMORY_MAP_SIZE];
+u32 gGeneratedWrites[8 * MEMORY_MAP_SIZE];
 
 void setRomMemoryBank(struct Memory* memory, int offset, void* addr);
 void setRamMemoryBank(struct Memory* memory, int offset, void* addr);
+
+void GB_DO_READ_FF();
+void GB_DO_WRITE_FF();
+void GB_WRITE_ROM_BANK();
 
 void* generateDirectRead(int bank, void* baseAddr)
 {
@@ -36,6 +41,57 @@ void* generateDirectRead(int bank, void* baseAddr)
     bankNoCache[2] = 0x03E00008;
     // lbu $v0, %lo(baseAddr)($at)
     bankNoCache[3] = 0x90220000 | loAddr;
+    osInvalICache(bankRead, 8 * sizeof(u32));
+
+    return bankRead;
+}
+
+void* generateNibbleRead(int bank, void* baseAddr)
+{
+    // offset pointer so adding a GB address points
+    // to the correct place in memory
+    baseAddr = (char*)baseAddr - bank * 0x1000;
+
+    u32 loAddr = (u32)baseAddr & 0xFFFF;
+    u32 hiAddr = ((u32)baseAddr >> 16) + ((loAddr & 0x8000) ? 1 : 0);
+
+    u32* bankRead = gGeneratedReads + 8 * bank;
+    u32* bankNoCache = (u32*)K0_TO_K1(bankRead);
+    // lui $at, %hi(baseAddr)
+    bankNoCache[0] = 0x3C010000 | hiAddr;
+    // add $at, $t4, $at
+    bankNoCache[1] = 0x01810820;
+    // lbu $v0, %lo(baseAddr)($at)
+    bankNoCache[2] = 0x90220000 | loAddr;
+    // jr $ra
+    bankNoCache[3] = 0x03E00008;
+    // ori $v0, $v0, 0xF0
+    bankNoCache[4] = 0x344200F0;
+
+    osInvalICache(bankRead, 8 * sizeof(u32));
+
+    return bankRead;
+}
+
+void* generateDirectWrite(int bank, void* baseAddr)
+{
+    // offset pointer so adding a GB address points
+    // to the correct place in memory
+    baseAddr = (char*)baseAddr - bank * 0x1000;
+
+    u32 loAddr = (u32)baseAddr & 0xFFFF;
+    u32 hiAddr = ((u32)baseAddr >> 16) + ((loAddr & 0x8000) ? 1 : 0);
+
+    u32* bankRead = gGeneratedWrites + 8 * bank;
+    u32* bankNoCache = (u32*)K0_TO_K1(bankRead);
+    // lui $at, %hi(baseAddr)
+    bankNoCache[0] = 0x3C010000 | hiAddr;
+    // add $at, $t4, $at
+    bankNoCache[1] = 0x01810820;
+    // jr $ra
+    bankNoCache[2] = 0x03E00008;
+    // sb $v0, %lo(baseAddr)($at)
+    bankNoCache[3] = 0xA02D0000 | loAddr;
     osInvalICache(bankRead, 8 * sizeof(u32));
 
     return bankRead;
@@ -117,7 +173,7 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
     setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
 
-    memory->cartRamRead = mbc2ReadRam;
+    setMemoryBank(memory, 0xA, memory->cartRam, generateNibbleRead(0xA, memory->cartRam), generateDirectWrite(0xA, memory->cartRam));
 }
 
 
@@ -186,15 +242,14 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         memory->misc.romBankUpper = value;
     }
 
-    char* ramBank;
     if (memory->misc.ramRomSelect < 4) {
-        ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
-        memory->cartRamRead = NULL;
-        memory->cartRamWrite = NULL;
+        char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
+        setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+        setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
     } else {
-        ramBank = memory->cartRam;
-        memory->cartRamRead = mbc3ReadTimer;
-        memory->cartRamWrite = mbc3WriteTimer;
+        char* ramBank = memory->cartRam;
+        setMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0, mbc3ReadTimer, mbc3WriteTimer);
+        setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, mbc3ReadTimer, mbc3WriteTimer);
     }
 
     char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1);
@@ -203,9 +258,6 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
     setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
     setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
-    
-    setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
-    setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
 }
 
 
@@ -277,21 +329,19 @@ struct MBCData mbcTypes[] = {
 
 #define MBC_TYPES_LENGTH (sizeof(mbcTypes) / sizeof(mbcTypes[0]))
 
-void GB_DO_READ_OLD();
-
 void setMemoryBank(struct Memory* memory, int offset, void* addr, void* readCallback, void* writeCallback) 
 {
     memory->memoryMap[offset] = addr;
     memory->cartMemoryRead[offset] = readCallback;
-    memory->cartMemoryWrite[offset] = 0;
+    memory->cartMemoryWrite[offset] = writeCallback;
 }
 
 void setRomMemoryBank(struct Memory* memory, int offset, void* addr) {
-    setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), 0);
+    setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), &GB_WRITE_ROM_BANK);
 }
 
 void setRamMemoryBank(struct Memory* memory, int offset, void* addr) {
-    setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), 0);
+    setMemoryBank(memory, offset, addr, generateDirectRead(offset, addr), generateDirectWrite(offset, addr));
 }
 
 void setVRAMBank(struct Memory* memory, int value) {
@@ -314,7 +364,7 @@ void setInternalRamBank(struct Memory* memory, int value) {
 
     int bankOffset = (int)memory->internalRam + value * MEMORY_MAP_SEGMENT_SIZE;
     setRamMemoryBank(memory, 0xD, (void*)bankOffset);
-    setMemoryBank(memory, 0xF, (void*)bankOffset, &GB_DO_READ_OLD, 0);
+    setMemoryBank(memory, 0xF, (void*)bankOffset, &GB_DO_READ_FF, &GB_DO_WRITE_FF);
 }
 
 void* getMemoryBank(struct Memory* memory, int offset)
@@ -378,7 +428,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     setRamMemoryBank(memory, 0xD, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1);
     
     setRamMemoryBank(memory, 0xE, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 0);
-    setMemoryBank(memory, 0xF, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_OLD, 0);
+    setMemoryBank(memory, 0xF, memory->internalRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_FF, &GB_DO_WRITE_FF);
 
     WRITE_REGISTER_DIRECT(memory, REG_INT_REQUESTED, 0xE0);
     WRITE_REGISTER_DIRECT(memory, REG_NR52, 0xF0);
