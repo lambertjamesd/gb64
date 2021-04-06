@@ -55,6 +55,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 //  some simpler algorithms. To maintain reasonable compression for these
 //  cases, we transition to use LZVN instead if the size of the source buffer
 //  is below this threshold.
-#define LZFSE_ENCODE_LZVN_THRESHOLD 4096
+#define LZFSE_ENCODE_LZVN_THRESHOLD 0
 
 #endif // LZFSE_TUNABLES_H

@@ -4,8 +4,6 @@
 #include "../memory.h"
 #include "debug_out.h"
 #include "upgrade.h"
-#include "../lzfse/lzfse.h"
-#include "../lzfse/lzfse_internal.h"
 #include <string.h>
 
 struct SaveTypeSetting gSaveTypeSetting = {
@@ -28,12 +26,12 @@ char gTmpSaveBuffer[FLASH_BLOCK_SIZE];
 char gUncompressedMemory[128 * 1024];
 char gCompressedMemory[32 * 1024];
 
-union lzfse_memory {
-    lzfse_decoder_state decoder;
-    lzfse_encoder_state encoder;
-};
+// union lzfse_memory {
+//     lzfse_decoder_state decoder;
+//     lzfse_encoder_state encoder;
+// };
 
-union lzfse_memory __attribute__((aligned(8))) gLZFSEMemory;
+// union lzfse_memory __attribute__((aligned(8))) gLZFSEMemory;
 
 SaveReadCallback gSaveReadCallback;
 SaveWriteCallback gSaveWriteCallback;
@@ -385,10 +383,12 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
 
         DEBUG_PRINT_F("Read %X %X\n", settings.compressedSize, compressedChecksum(gameboy->settings.compressedSize));
 
-        if (lzfse_decode_buffer(gUncompressedMemory, 128 * 1024, gCompressedMemory, settings.compressedSize, &gLZFSEMemory) == 0) {
-            DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
-            return -1;
-        }
+        // if (lzfse_decode_buffer(gUncompressedMemory, 128 * 1024, gCompressedMemory, settings.compressedSize, &gLZFSEMemory) == 0) {
+        //     DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
+        //     return -1;
+        // }
+
+        return -1;
 
         if (readGameboyState(gameboy, readFromUncompressedData, 0, gbc)) {
             return -1;
@@ -476,7 +476,8 @@ int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType sto
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-    return lzfse_encode_buffer(gCompressedMemory, 32 * 1024, gUncompressedMemory, offset, &gLZFSEMemory);
+    // return lzfse_encode_buffer(gCompressedMemory, 32 * 1024, gUncompressedMemory, offset, &gLZFSEMemory);
+    return 0;
 }
 
 int attemptGameboySaveState(struct GameBoy* gameboy, enum StoredInfoType storeType)

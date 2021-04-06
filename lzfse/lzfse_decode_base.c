@@ -33,7 +33,7 @@ static inline int lzfse_decode_v1_freq_value(uint32_t bits, int *nbits) {
       0, 2, 1, 4, 0, 3, 1, -1, 0, 2, 1, 5, 0, 3, 1, -1,
       0, 2, 1, 6, 0, 3, 1, -1, 0, 2, 1, 7, 0, 3, 1, -1};
 
-  uint32_t b = bits & 31; // lower 5 bits
+  uint32_t b = bits >> 27; // lower 5 bits
   int n = lzfse_freq_nbits_table[b];
   *nbits = n;
 
@@ -120,7 +120,7 @@ static inline int lzfse_decode_v1(lzfse_compressed_block_header_v1 *out,
     // Refill accum, one byte at a time, until we reach end of header, or accum
     // is full
     while (src < src_end && accum_nbits + 8 <= 32) {
-      accum |= (uint32_t)(*src) << accum_nbits;
+      accum |= (uint32_t)(*src) << (32 - accum_nbits);
       accum_nbits += 8;
       src++;
     }
@@ -133,7 +133,7 @@ static inline int lzfse_decode_v1(lzfse_compressed_block_header_v1 *out,
       return -1; // failed
 
     // Consume nbits bits
-    accum >>= nbits;
+    accum <<= nbits;
     accum_nbits -= nbits;
   }
 

@@ -15,6 +15,9 @@ struct ROMLayout gGBRom;
 #define EXTENDED_BANK_OFFSET    0x9
 #define EXTENDED_BANK_ID        0x52
 
+// preserve 256k of ram
+#define RESERVE_RAM             256 * 1024
+
 int _romBankSizes[] = {
     2,
     4,
@@ -76,8 +79,10 @@ void finishRomLoad(struct ROMLayout* romLayout)
             // these games will still work assuming the spill over doesn't happen after the bank
             // has been switched
             currentBank = (struct VirtualBank*)(romLayout->mainBank + ROM_BANK_SIZE);
-        } else {
+        } else if (calculateBytesFree() - sizeof(struct VirtualBank) > RESERVE_RAM) {
             currentBank = malloc(sizeof(struct VirtualBank));
+        } else {
+            currentBank = 0;
         }
 
         if (currentBank)

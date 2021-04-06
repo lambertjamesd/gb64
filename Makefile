@@ -46,14 +46,22 @@ APP =		bin/gb.out
 
 TARGETS =	bin/gb.n64
 
-LZFSESOURCE = lzfse/lzfse_decode_base.c \
-       lzfse/lzfse_encode_base.c \
-       lzfse/lzvn_decode_base.c \
-       lzfse/lzvn_encode_base.c \
-       lzfse/lzfse_fse.c \
-       lzfse/lzfse_decode.c \
-       lzfse/lzfse_encode.c
+# COMPSOURCE = lzfse/lzfse_decode_base.c \
+#        lzfse/lzfse_encode_base.c \
+#        lzfse/lzvn_decode_base.c \
+#        lzfse/lzvn_encode_base.c \
+#        lzfse/lzfse_fse.c \
+#        lzfse/lzfse_decode.c \
+#        lzfse/lzfse_encode.c
 
+COMPSOURCE = gzip/adler32.c \
+       gzip/crc32.c \
+       lzfse/lzvn_decode_base.c \
+       gzip/defl_static.c \
+       gzip/genlz77.c \
+       gzip/tinfgzip.c \
+       gzip/tinflate.c \
+       gzip/tinfzlib.c
 
 HFILES =	boot.h game.h controller.h font.h font_ext.h \
 		gbfont_img.h static.h \
@@ -99,7 +107,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/save.c                            \
        src/faulthandler.c                    \
        $(DEBUG_FILES)                        \
-       $(LZFSESOURCE)
+       $(COMPSOURCE)
 
 S_FILES = asm/cpu.s
 

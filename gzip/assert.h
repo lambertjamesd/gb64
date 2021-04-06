@@ -1,0 +1,2 @@
+
+#define assert(param)
