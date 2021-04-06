@@ -70,7 +70,7 @@ void insertHeapSegment(struct HeapSegment* at, struct HeapSegment* segment)
     if (at)
     {
         nextSegment = at->nextSegment;
-        prevSegment = at->prevSegment;
+        prevSegment = at;
     }
     else
     {
@@ -116,7 +116,7 @@ void *malloc(unsigned int size)
         if (segmentSize >= size)
         {
             void *newEnd;
-            if (segmentSize >= size)
+            if (segmentSize >= size + MIN_HEAP_BLOCK_SIZE)
             {
                 struct HeapSegment* newSegment = (struct HeapSegment*)((char*)currentSegment + size);
 
@@ -218,8 +218,8 @@ void *realloc(void* target, unsigned int size)
 
                 if (((char*)nextSegment->segmentEnd - (char*)newBlockEnd) >= MIN_HEAP_BLOCK_SIZE) {
                     nextSegment = (struct HeapSegment*)newBlockEnd;
-                    initBlock((struct HeapSegment*)segment, newBlockEnd, MALLOC_USED_BLOCK);
                     initBlock(nextSegment, nextSegment->segmentEnd, MALLOC_FREE_BLOCK);
+                    initBlock((struct HeapSegment*)segment, newBlockEnd, MALLOC_USED_BLOCK);
 
                     insertHeapSegment(prevFreeSegment, nextSegment);
                 } else {
@@ -266,7 +266,7 @@ void free(void* target)
     }
 
     initBlock((struct HeapSegment*)segment, segmentEnd, MALLOC_FREE_BLOCK);
-    insertHeapSegment((struct HeapSegment*)segment, (struct HeapSegment*)segment);
+    insertHeapSegment(0, (struct HeapSegment*)segment);
 }
 
 int calculateBytesFree()
