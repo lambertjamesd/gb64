@@ -96,54 +96,6 @@ void insertHeapSegment(struct HeapSegment* at, struct HeapSegment* segment)
     }
 }
 
-void *malloc(unsigned int size)
-{
-    void *result;
-    struct HeapSegment* currentSegment;
-    int segmentSize;
-    // 8 byte align for DMA
-    size = (size + 7) & (~0x7);
-
-    size += sizeof(struct HeapUsedSegment);
-    size += sizeof(struct HeapSegmentFooter);
-
-    currentSegment = gFirstFreeSegment;
-
-    while (currentSegment)
-    {
-        segmentSize = (int)currentSegment->segmentEnd - (int)currentSegment;
-
-        if (segmentSize >= size)
-        {
-            void *newEnd;
-            if (segmentSize >= size + MIN_HEAP_BLOCK_SIZE)
-            {
-                struct HeapSegment* newSegment = (struct HeapSegment*)((char*)currentSegment + size);
-
-                initBlock(newSegment, currentSegment->segmentEnd, MALLOC_FREE_BLOCK);
-                insertHeapSegment(currentSegment, newSegment);
-                removeHeapSegment(currentSegment);
-                
-                newEnd = newSegment;
-            }
-            else
-            {
-                removeHeapSegment(currentSegment);
-
-                newEnd = currentSegment->segmentEnd;
-            }
-
-            initBlock(currentSegment, newEnd, MALLOC_USED_BLOCK);
-
-            return (struct HeapSegment*)currentSegment + 1;
-        }
-
-        currentSegment = currentSegment->nextSegment;
-    }
-    
-    return 0;
-}
-
 struct HeapSegment* getPrevBlock(struct HeapSegment* at, int type)
 {
     struct HeapSegmentFooter* prevFooter = (struct HeapSegmentFooter*)at - 1;
@@ -176,6 +128,57 @@ struct HeapSegment* getNextBlock(struct HeapSegment* at, int type)
     }
 
     return (struct HeapSegment*)nextHeader;
+}
+
+void *malloc(unsigned int size)
+{
+    void *result;
+    struct HeapSegment* currentSegment;
+    int segmentSize;
+    // 8 byte align for DMA
+    size = (size + 7) & (~0x7);
+
+    size += sizeof(struct HeapUsedSegment);
+    size += sizeof(struct HeapSegmentFooter);
+
+    currentSegment = gFirstFreeSegment;
+
+    while (currentSegment)
+    {
+        segmentSize = (int)currentSegment->segmentEnd - (int)currentSegment;
+
+        if (segmentSize >= size)
+        {
+            void *newEnd = currentSegment->segmentEnd;
+            struct HeapUsedSegment* newSegment;
+            if (segmentSize >= size + MIN_HEAP_BLOCK_SIZE)
+            {
+                newSegment = (struct HeapUsedSegment*)((char*)currentSegment->segmentEnd - size);
+                newEnd = newSegment;
+
+                struct HeapSegment* prevSeg = currentSegment->prevSegment;
+
+                removeHeapSegment(currentSegment);
+                initBlock(currentSegment, newSegment, MALLOC_FREE_BLOCK);
+                insertHeapSegment(prevSeg, currentSegment);
+            }
+            else
+            {
+                removeHeapSegment(currentSegment);
+
+                newSegment = (struct HeapUsedSegment*)currentSegment;
+                newEnd = currentSegment->segmentEnd;
+            }
+
+            initBlock((struct HeapSegment*)newSegment, newEnd, MALLOC_USED_BLOCK);
+
+            return newSegment + 1;
+        }
+
+        currentSegment = currentSegment->nextSegment;
+    }
+    
+    return 0;
 }
 
 void *realloc(void* target, unsigned int size)
@@ -217,13 +220,13 @@ void *realloc(void* target, unsigned int size)
                 removeHeapSegment(nextSegment);
 
                 if (((char*)nextSegment->segmentEnd - (char*)newBlockEnd) >= MIN_HEAP_BLOCK_SIZE) {
-                    nextSegment = (struct HeapSegment*)newBlockEnd;
-                    initBlock(nextSegment, nextSegment->segmentEnd, MALLOC_FREE_BLOCK);
+                    struct HeapSegment* newSegment = (struct HeapSegment*)newBlockEnd;
+                    initBlock(newSegment, nextSegment->segmentEnd, MALLOC_FREE_BLOCK);
                     initBlock((struct HeapSegment*)segment, newBlockEnd, MALLOC_USED_BLOCK);
 
-                    insertHeapSegment(prevFreeSegment, nextSegment);
+                    insertHeapSegment(prevFreeSegment, newSegment);
                 } else {
-                    initBlock((struct HeapSegment*)segment, newBlockEnd, MALLOC_USED_BLOCK);
+                    initBlock((struct HeapSegment*)segment, nextSegment->segmentEnd, MALLOC_USED_BLOCK);
                 }
 
                 return target;
