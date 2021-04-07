@@ -70,6 +70,7 @@ HFILES =	boot.h game.h controller.h font.h font_ext.h \
 		src/memory_map.h
 
 CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
+       src/assert.c                          \
        src/test/cpu_test.c                   \
        src/test/cpu_tests_0.c                \
        src/test/cpu_tests_1.c                \
@@ -91,6 +92,7 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/gameboy.c                         \
        src/graphics.c                        \
        memory.c                              \
+       memory_test.c                         \
        src/test/test.c                       \
        src/debug_out.c                       \
        src/audio.c                           \

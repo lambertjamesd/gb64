@@ -47,6 +47,8 @@
 
 #define RUN_TESTS 0
 
+extern void test_malloc();
+
 char gTmpBuffer[512];
 
 /*
@@ -74,6 +76,8 @@ game(void)
 	runTests(str);
 	debugInfo(str);
 #endif
+
+	test_malloc();
 
 	initGameboy(&gGameboy, &gGBRom);
 	
