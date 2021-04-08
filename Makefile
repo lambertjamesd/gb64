@@ -48,7 +48,6 @@ TARGETS =	bin/gb.n64
 
 COMPSOURCE = gzip/adler32.c \
        gzip/crc32.c \
-       lzfse/lzvn_decode_base.c \
        gzip/defl_static.c \
        gzip/genlz77.c \
        gzip/tinfgzip.c \

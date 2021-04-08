@@ -281,35 +281,35 @@ struct MiscSaveStateData
 int readGameboyState(struct GameBoy* gameboy, SaveReadCallback readCallback, int offset, int gbc)
 {
     int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-    if (gSaveReadCallback(gameboy->memory.cartRam, offset, sectionSize) == -1)
+    if (readCallback(gameboy->memory.cartRam, offset, sectionSize) == -1)
     {
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = gbc ? 0x4000 : 0x2000;
-    if (gSaveReadCallback(&gameboy->memory.vram, offset, sectionSize) == -1)
+    if (readCallback(&gameboy->memory.vram, offset, sectionSize) == -1)
     {
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = sizeof(u16) * PALETTE_COUNT;
-    if (gSaveReadCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize) == -1)
+    if (readCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize) == -1)
     {
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
     sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
-    if (gSaveReadCallback(gameboy->memory.internalRam, offset, sectionSize) == -1)
+    if (readCallback(gameboy->memory.internalRam, offset, sectionSize) == -1)
     {
         return -1;
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
     
     sectionSize = sizeof(struct MiscMemory);
-    if (gSaveReadCallback(&gameboy->memory.misc, offset, sectionSize) == -1)
+    if (readCallback(&gameboy->memory.misc, offset, sectionSize) == -1)
     {
         return -1;
     }
@@ -317,7 +317,7 @@ int readGameboyState(struct GameBoy* gameboy, SaveReadCallback readCallback, int
 
     struct MiscSaveStateData miscData;
     sectionSize = sizeof(struct MiscSaveStateData);
-    if (gSaveReadCallback(&miscData, offset, sectionSize) == -1)
+    if (readCallback(&miscData, offset, sectionSize) == -1)
     {
         return -1;
     }
@@ -468,16 +468,12 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
             return -1;
         }
 
-        DEBUG_PRINT_F("ReadC %X %X\n", settings.compressedSize, compressedChecksum(gCompressedMemory, gameboy->settings.compressedSize));
-
         int decompressedLength = decompressMemory(gUncompressedMemory, sizeof(gUncompressedMemory), gCompressedMemory, settings.compressedSize);
 
         if (decompressedLength == -1) {
             DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
             return -1;
         }
-
-        DEBUG_PRINT_F("ReadU %X %X\n", decompressedLength, compressedChecksum(gUncompressedMemory, decompressedLength));
 
         if (readGameboyState(gameboy, readFromUncompressedData, 0, gbc)) {
             return -1;
@@ -565,8 +561,6 @@ int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType sto
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-    DEBUG_PRINT_F("WriteU %X %X\n", offset, compressedChecksum(gUncompressedMemory, offset));
-
     return compressMemory(gCompressedMemory, sizeof(gCompressedMemory), gUncompressedMemory, offset);
 }
 
@@ -588,8 +582,6 @@ int attemptGameboySaveState(struct GameBoy* gameboy, enum StoredInfoType storeTy
     gameboy->settings.version = GB_SETTINGS_CURRENT_VERSION;
     gameboy->settings.storedType = storeType;
     gameboy->settings.compressedSize = generateCompressedSaveState(gameboy, storeType);
-
-    DEBUG_PRINT_F("WriteC %X %X\n", gameboy->settings.compressedSize, compressedChecksum(gCompressedMemory, gameboy->settings.compressedSize));
 
     if (gameboy->settings.compressedSize == 0 ||
         gameboy->settings.compressedSize > getSaveTypeSize(gSaveTypeSetting.saveType))
