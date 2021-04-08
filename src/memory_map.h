@@ -164,7 +164,8 @@ struct MiscMemory {
     int ramRomSelect;
     int biosLoaded;
     u64 time;
-    unsigned char unused[0x48];
+    int ramDisabled;
+    unsigned char unused[0x44];
     unsigned char controlRegisters[0x80];
     unsigned char fastRam[128]; // last byte is actually interrupt register
 };

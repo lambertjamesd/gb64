@@ -21,6 +21,9 @@ void setRamMemoryBank(struct Memory* memory, int offset, void* addr);
 void GB_DO_READ_FF();
 void GB_DO_WRITE_FF();
 void GB_WRITE_ROM_BANK();
+void GB_DO_WRITE_NOP();
+void GB_DO_READ_NOP();
+void GB_DO_READ_MBC2();
 
 void* generateDirectRead(int bank, void* baseAddr)
 {
@@ -41,33 +44,6 @@ void* generateDirectRead(int bank, void* baseAddr)
     bankNoCache[2] = 0x03E00008;
     // lbu $v0, %lo(baseAddr)($at)
     bankNoCache[3] = 0x90220000 | loAddr;
-    osInvalICache(bankRead, 8 * sizeof(u32));
-
-    return bankRead;
-}
-
-void* generateNibbleRead(int bank, void* baseAddr)
-{
-    // offset pointer so adding a GB address points
-    // to the correct place in memory
-    baseAddr = (char*)baseAddr - bank * 0x1000;
-
-    u32 loAddr = (u32)baseAddr & 0xFFFF;
-    u32 hiAddr = ((u32)baseAddr >> 16) + ((loAddr & 0x8000) ? 1 : 0);
-
-    u32* bankRead = gGeneratedReads + 8 * bank;
-    u32* bankNoCache = (u32*)K0_TO_K1(bankRead);
-    // lui $at, %hi(baseAddr)
-    bankNoCache[0] = 0x3C010000 | hiAddr;
-    // add $at, $t4, $at
-    bankNoCache[1] = 0x01810820;
-    // lbu $v0, %lo(baseAddr)($at)
-    bankNoCache[2] = 0x90220000 | loAddr;
-    // jr $ra
-    bankNoCache[3] = 0x03E00008;
-    // ori $v0, $v0, 0xF0
-    bankNoCache[4] = 0x344200F0;
-
     osInvalICache(bankRead, 8 * sizeof(u32));
 
     return bankRead;
@@ -109,7 +85,7 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 13;
     if (writeRange == 0)
     {
-        // RAM Enable, do nothing for now
+        memory->misc.ramDisabled = (value & 0xA) != 0xA;
     }
     else if (writeRange == 1)
     {  
@@ -145,8 +121,16 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
     setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
-    setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    if (memory->misc.ramDisabled)
+    {
+        setMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
+    else
+    {
+        setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+        setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    }
 }
 
 extern void mbc2ReadRam();
@@ -156,7 +140,7 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 13;
     if (writeRange == 0)
     {
-        // RAM Enable, do nothing for now
+        memory->misc.ramDisabled = (value & 0xA) != 0xA;
     }
     else if (writeRange == 1)
     {  
@@ -173,7 +157,16 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
     setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
 
-    setMemoryBank(memory, 0xA, memory->cartRam, generateNibbleRead(0xA, memory->cartRam), generateDirectWrite(0xA, memory->cartRam));
+    if (memory->misc.ramDisabled)
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
+    else
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam, &GB_DO_READ_MBC2, generateDirectWrite(0xA, memory->cartRam));
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
 }
 
 
@@ -222,7 +215,7 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 13;
     if (writeRange == 0)
     {
-        // Do nothing
+        memory->misc.ramDisabled = (value & 0xA) != 0xA;
     }
     else if (writeRange == 1)
     {  
@@ -242,11 +235,19 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         memory->misc.romBankUpper = value;
     }
 
-    if (memory->misc.ramRomSelect < 4) {
+    if (memory->misc.ramDisabled)
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
+    else if (memory->misc.ramRomSelect < 4)
+    {
         char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
         setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
         setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
-    } else {
+    } 
+    else
+    {
         char* ramBank = memory->cartRam;
         setMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0, mbc3ReadTimer, mbc3WriteTimer);
         setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, mbc3ReadTimer, mbc3WriteTimer);
@@ -266,6 +267,7 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 12;
     switch (addr >> 12) {
         case 0: case 1:
+            memory->misc.ramDisabled = (value & 0xA) != 0xA;
             break;
         case 2:
             memory->misc.romBankLower = value;
@@ -286,8 +288,16 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     setRomMemoryBank(memory, 0x6, romBank + MEMORY_MAP_SEGMENT_SIZE * 2);
     setRomMemoryBank(memory, 0x7, romBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
-    setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    if (memory->misc.ramDisabled)
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
+    else
+    {
+        setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+        setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    }
 }
 
 void defaultRegisterWrite(struct Memory* memory, int addr, int value)
@@ -403,6 +413,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     }
 
 	memory->audio.noiseSound.lfsr = 0x7FFF;
+    memory->misc.ramDisabled = 1;
     
     finishRomLoad(rom);
 

@@ -56,6 +56,13 @@ GB_DO_WRITE_CALL:
     jr $at
     nop
 
+
+.global GB_DO_WRITE_NOP
+.align 4
+GB_DO_WRITE_NOP:
+    jr $ra
+    nop
+
 .global GB_DO_WRITE_FF
 .align 4
 GB_DO_WRITE_FF:
@@ -1063,12 +1070,33 @@ GB_DO_READ:
     jr $at
     nop
 
-.global GB_DO_READ_FF
+.global GB_DO_READ_NOP
 .align 4
+GB_DO_READ_NOP:
+    jr $ra
+    li $v0, 0xFF
+
+.global GB_DO_READ_MBC2
+.align 4
+GB_DO_READ_MBC2:
+    andi $v0, ADDR, 0xFFF
+    slti $at, $v0, 0x200
+    # check if in the range of RAM
+    # that exists for MBC2
+    beqz $at, GB_DO_READ_NOP
+    lw $at, (MEMORY_ADDR_TABLE + 0xA * 4)(Memory)
+    add $at, $at, $v0
+    lbu $v0, 0($at)
+    jr $ra
+    # mask out upper nibble
+    ori $v0, $v0, 0xF0
+    
 
 ######################
 # Reads the last bank of memory 0xF000-0xFFFF
 ######################
+.global GB_DO_READ_FF
+.align 4
 GB_DO_READ_FF:
     ori $at, $zero, MM_REGISTER_START
     sub $at, ADDR, $at
