@@ -46,14 +46,6 @@ APP =		bin/gb.out
 
 TARGETS =	bin/gb.n64
 
-# COMPSOURCE = lzfse/lzfse_decode_base.c \
-#        lzfse/lzfse_encode_base.c \
-#        lzfse/lzvn_decode_base.c \
-#        lzfse/lzvn_encode_base.c \
-#        lzfse/lzfse_fse.c \
-#        lzfse/lzfse_decode.c \
-#        lzfse/lzfse_encode.c
-
 COMPSOURCE = gzip/adler32.c \
        gzip/crc32.c \
        lzfse/lzvn_decode_base.c \

@@ -5,6 +5,7 @@
 #include "debug_out.h"
 #include "upgrade.h"
 #include <string.h>
+#include "../gzip/uzlib.h"
 
 struct SaveTypeSetting gSaveTypeSetting = {
     SAVE_HEADER_VALUE,
@@ -26,13 +27,6 @@ char gTmpSaveBuffer[FLASH_BLOCK_SIZE];
 char gUncompressedMemory[128 * 1024];
 char gCompressedMemory[32 * 1024];
 
-// union lzfse_memory {
-//     lzfse_decoder_state decoder;
-//     lzfse_encoder_state encoder;
-// };
-
-// union lzfse_memory __attribute__((aligned(8))) gLZFSEMemory;
-
 SaveReadCallback gSaveReadCallback;
 SaveWriteCallback gSaveWriteCallback;
 
@@ -46,11 +40,11 @@ int readFromUncompressedData(void *target, int sramOffset, int length) {
     return 0;
 }
 
-int compressedChecksum(int length) {
+int compressedChecksum(char* ptr, int length) {
     int result = 0;
     int i;
     for (i = 0; i < length; ++i) {
-        result += gCompressedMemory[i];
+        result += ptr[i];
     }
 
     return result;
@@ -335,6 +329,99 @@ int readGameboyState(struct GameBoy* gameboy, SaveReadCallback readCallback, int
     return 0;
 }
 
+#define OUT_CHUNK_SIZE 256
+
+int decompressMemory(char* dst, int dstLength, const unsigned char* src, int srcLength)
+{
+    struct uzlib_uncomp d;
+    uzlib_uncompress_init(&d, 0, 0);
+
+    d.source = src;
+    d.source_limit = src + srcLength - 4;
+    d.source_read_cb = 0;
+
+    int res = uzlib_gzip_parse_header(&d);
+
+    if (res != TINF_OK)
+    {
+        return -1;
+    }
+
+    int dlen = src[srcLength - 1];
+    dlen = 256*dlen + src[srcLength - 2];
+    dlen = 256*dlen + src[srcLength - 3];
+    dlen = 256*dlen + src[srcLength - 4];
+
+    d.dest_start = dst;
+    d.dest_limit = dst + dstLength;
+    d.dest = dst;
+
+    int bytesLeft = dlen;
+
+    while (bytesLeft) {
+        unsigned int chunk_len = bytesLeft < OUT_CHUNK_SIZE ? bytesLeft : OUT_CHUNK_SIZE;
+        d.dest_limit = d.dest + chunk_len;
+        res = uzlib_uncompress_chksum(&d);
+        bytesLeft -= chunk_len;
+        if (res != TINF_OK)
+        {
+            break;
+        }
+    }
+
+    if (res != TINF_OK) {
+        return -1;
+    }
+
+    return dlen;
+}
+
+#define WRITE_UZLIB_BYTE(comp, value) ((comp).out.outbuf[(comp).out.outlen++] = (value))
+
+int compressMemory(char* dst, int dstLength, const char* src, int srcLength)
+{
+    struct uzlib_comp comp = {0};
+    comp.dict_size = 32768;
+    comp.hash_bits = 12;
+    size_t hash_size = sizeof(uzlib_hash_entry_t) * (1 << comp.hash_bits);
+    comp.hash_table = malloc(hash_size);
+    comp.out.outbuf = dst;
+    comp.out.outsize = dstLength;
+
+    WRITE_UZLIB_BYTE(comp, 0x1f);
+    WRITE_UZLIB_BYTE(comp, 0x8b);
+    WRITE_UZLIB_BYTE(comp, 0x08);
+    WRITE_UZLIB_BYTE(comp, 0x00);
+
+    WRITE_UZLIB_BYTE(comp, 0x00);
+    WRITE_UZLIB_BYTE(comp, 0x00);
+    WRITE_UZLIB_BYTE(comp, 0x00);
+    WRITE_UZLIB_BYTE(comp, 0x00);
+
+    WRITE_UZLIB_BYTE(comp, 0x04);
+    WRITE_UZLIB_BYTE(comp, 0x03);
+
+    zeroMemory(comp.hash_table, hash_size);
+    zlib_start_block(&comp.out);
+    uzlib_compress(&comp, src, srcLength);
+    zlib_finish_block(&comp.out);
+
+    unsigned crc = ~uzlib_crc32(src, srcLength, ~0);
+    WRITE_UZLIB_BYTE(comp, (crc >> 0) & 0xFF);
+    WRITE_UZLIB_BYTE(comp, (crc >> 8) & 0xFF);
+    WRITE_UZLIB_BYTE(comp, (crc >> 16) & 0xFF);
+    WRITE_UZLIB_BYTE(comp, (crc >> 24) & 0xFF);
+
+    WRITE_UZLIB_BYTE(comp, (srcLength >> 0) & 0xFF);
+    WRITE_UZLIB_BYTE(comp, (srcLength >> 8) & 0xFF);
+    WRITE_UZLIB_BYTE(comp, (srcLength >> 16) & 0xFF);
+    WRITE_UZLIB_BYTE(comp, (srcLength >> 24) & 0xFF);
+
+    free(comp.hash_table);
+
+    return comp.out.outlen;
+}
+
 int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
 {
     if (storeType != StoredInfoTypeAll)
@@ -381,14 +468,16 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
             return -1;
         }
 
-        DEBUG_PRINT_F("Read %X %X\n", settings.compressedSize, compressedChecksum(gameboy->settings.compressedSize));
+        DEBUG_PRINT_F("ReadC %X %X\n", settings.compressedSize, compressedChecksum(gCompressedMemory, gameboy->settings.compressedSize));
 
-        // if (lzfse_decode_buffer(gUncompressedMemory, 128 * 1024, gCompressedMemory, settings.compressedSize, &gLZFSEMemory) == 0) {
-        //     DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
-        //     return -1;
-        // }
+        int decompressedLength = decompressMemory(gUncompressedMemory, sizeof(gUncompressedMemory), gCompressedMemory, settings.compressedSize);
 
-        return -1;
+        if (decompressedLength == -1) {
+            DEBUG_PRINT_F("Failed to decompress data %d\n", settings.compressedSize);
+            return -1;
+        }
+
+        DEBUG_PRINT_F("ReadU %X %X\n", decompressedLength, compressedChecksum(gUncompressedMemory, decompressedLength));
 
         if (readGameboyState(gameboy, readFromUncompressedData, 0, gbc)) {
             return -1;
@@ -476,8 +565,9 @@ int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType sto
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
-    // return lzfse_encode_buffer(gCompressedMemory, 32 * 1024, gUncompressedMemory, offset, &gLZFSEMemory);
-    return 0;
+    DEBUG_PRINT_F("WriteU %X %X\n", offset, compressedChecksum(gUncompressedMemory, offset));
+
+    return compressMemory(gCompressedMemory, sizeof(gCompressedMemory), gUncompressedMemory, offset);
 }
 
 int attemptGameboySaveState(struct GameBoy* gameboy, enum StoredInfoType storeType)
@@ -499,7 +589,7 @@ int attemptGameboySaveState(struct GameBoy* gameboy, enum StoredInfoType storeTy
     gameboy->settings.storedType = storeType;
     gameboy->settings.compressedSize = generateCompressedSaveState(gameboy, storeType);
 
-    DEBUG_PRINT_F("Write %X %X\n", gameboy->settings.compressedSize, compressedChecksum(gameboy->settings.compressedSize));
+    DEBUG_PRINT_F("WriteC %X %X\n", gameboy->settings.compressedSize, compressedChecksum(gCompressedMemory, gameboy->settings.compressedSize));
 
     if (gameboy->settings.compressedSize == 0 ||
         gameboy->settings.compressedSize > getSaveTypeSize(gSaveTypeSetting.saveType))

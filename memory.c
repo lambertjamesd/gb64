@@ -181,10 +181,10 @@ void *malloc(unsigned int size)
 
 void *realloc(void* target, unsigned int size)
 {
-    // if (!target)
-    // {
-    //     return malloc(size);
-    // }
+    if (!target)
+    {
+        return malloc(size);
+    }
 
     // struct HeapUsedSegment* segment = (struct HeapUsedSegment*)target - 1;
 

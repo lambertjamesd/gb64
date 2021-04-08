@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <stdint.h>
-#include "assert.h"
+#include "../src/assert.h"
 #include "defl_static.h"
 #include "../memory.h"
 
@@ -65,10 +65,7 @@ void outbits(struct Outbuf *out, unsigned long bits, int nbits)
     out->outbits |= bits << out->noutbits;
     out->noutbits += nbits;
     while (out->noutbits >= 8) {
-        if (out->outlen >= out->outsize) {
-            out->outsize = out->outlen + 64;
-            out->outbuf = sresize(out->outbuf, out->outsize, unsigned char);
-        }
+        assert(out->outlen < out->outsize);
         out->outbuf[out->outlen++] = (unsigned char) (out->outbits & 0xFF);
         out->outbits >>= 8;
         out->noutbits -= 8;
