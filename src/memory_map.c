@@ -100,21 +100,23 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
         memory->misc.ramRomSelect = value;
     }
 
-    char* ramBank;
     char* romBank;
     int bankIndex;
+    int ramBankIndex;
     
     if (memory->misc.ramRomSelect)
     {
         bankIndex = memory->misc.romBankLower & 0x1F;
-        ramBank = memory->cartRam + (memory->misc.romBankUpper & 0x3) * MEMORY_MAP_SEGMENT_SIZE * 2;
+        ramBankIndex = memory->misc.romBankUpper & 0x3;
     }
     else
     {
         bankIndex = (memory->misc.romBankLower & 0x1F) | ((memory->misc.romBankUpper & 0x3) << 5);
-        ramBank = memory->cartRam;
+        ramBankIndex = 0;
     }
     romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
+    ramBankIndex = ramBankIndex & (getRAMBankCount(memory->rom) - 1);
+    char* ramBank = memory->cartRam + ramBankIndex * MEMORY_MAP_SEGMENT_SIZE * 2;
 
     setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
     setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
