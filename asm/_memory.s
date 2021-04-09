@@ -101,7 +101,7 @@ GB_WRITE_ROM_BANK:
     save_state_on_stack
 
 .if DEBUG
-    addi $sp, $sp, -12
+    addi $sp, $sp, -16
 .endif
 
     move $a0, Memory
@@ -110,7 +110,7 @@ GB_WRITE_ROM_BANK:
     move $a2, VAL
 
 .if DEBUG
-    addi $sp, $sp, 12
+    addi $sp, $sp, 16
 .endif
 
     restore_state_from_stack

@@ -189,8 +189,8 @@
     addiu $at, $at, %lo(\name)
     jalr $ra, $at
 .if DEBUG
-    addi $sp, $sp, -4 * (\paramCount)
-    addi $sp, $sp, 4 * (\paramCount)
+    addi $sp, $sp, (-4 * (\paramCount) + 7) & ~7
+    addi $sp, $sp, (4 * (\paramCount) + 7) & ~7
 .else
     nop
 .endif

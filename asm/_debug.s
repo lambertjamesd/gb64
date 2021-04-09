@@ -50,7 +50,7 @@ OPEN_DEBUGGER:
     save_state_on_stack
 
     jal CALCULATE_DIV_VALUE
-    addi GB_PC, GB_PC, -1 # back PC back to the begginning of current instruction
+    addi GB_PC, GB_PC, -1 # PC back to the begginning of current instruction
     andi GB_PC, GB_PC, 0xFFFF
     jal CALCULATE_TIMA_VALUE
     sh GB_PC, CPU_STATE_PC(CPUState)
@@ -62,8 +62,11 @@ OPEN_DEBUGGER:
     call_c_fn useDebugger, 2
 
     restore_state_from_stack
+
+    lhu Param0, CPU_STATE_PC(CPUState)
+    jal SET_GB_PC
+    addi Param0, Param0, 1
     
-    addi GB_PC, GB_PC, 1 # back PC back to the begginning of current instruction
     j DECODE_V0
-    andi GB_PC, GB_PC, 0xFFFF
+    nop
 
