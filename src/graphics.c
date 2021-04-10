@@ -270,6 +270,8 @@ void rerenderLastFrame(struct GameboyGraphicsSettings* settings, void* colorBuff
     gDPLoadSync(gCurrentDP++);
     gDPFullSync(gCurrentDP++);
     flushDPCommands();
+
+    waitForRDP();
 }
 
 int palleteUsedCount() {

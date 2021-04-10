@@ -2,6 +2,7 @@
 #include "static.h"
 #include "src/debug_out.h"
 #include "memory.h"
+#include "src/assert.h"
 
 /*
  * Task header.
@@ -113,6 +114,8 @@ void finishRenderFrame()
 
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
+
+    assert(glistp <= dynamicp->glist + GLIST_LEN);
 
     theadp->t.ucode_boot = (u64 *) rspbootTextStart;
     theadp->t.ucode_boot_size = 

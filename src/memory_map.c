@@ -114,7 +114,7 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
         bankIndex = (memory->misc.romBankLower & 0x1F) | ((memory->misc.romBankUpper & 0x3) << 5);
         ramBankIndex = 0;
     }
-    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
+    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1, 1);
     ramBankIndex = ramBankIndex & (getRAMBankCount(memory->rom) - 1);
     char* ramBank = memory->cartRam + ramBankIndex * MEMORY_MAP_SEGMENT_SIZE * 2;
 
@@ -152,7 +152,7 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     char* romBank;
     int bankIndex = memory->misc.romBankLower & 0xF;
 
-    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1);
+    romBank = getROMBank(memory->rom, bankIndex ? bankIndex : 1, 0);
 
     setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
     setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
@@ -255,7 +255,7 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, mbc3ReadTimer, mbc3WriteTimer);
     }
 
-    char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1);
+    char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1, 0);
 
     setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
     setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
@@ -283,7 +283,7 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     }
 
     char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0xF) * MEMORY_MAP_SEGMENT_SIZE * 2;
-    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | (memory->misc.romBankUpper << 8 & 0x100));
+    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | (memory->misc.romBankUpper << 8 & 0x100), 0);
 
     setRomMemoryBank(memory, 0x4, romBank + MEMORY_MAP_SEGMENT_SIZE * 0);
     setRomMemoryBank(memory, 0x5, romBank + MEMORY_MAP_SEGMENT_SIZE * 1);
@@ -402,7 +402,6 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     memory->mbc = mbc;
     memory->rom = rom;
     memory->cartRam = malloc(RAM_BANK_SIZE * getRAMBankCount(rom));
-
     
     if (!mbc) {
         DEBUG_PRINT_F("Bad MBC %X\n", rom->mainBank[GB_ROM_H_CART_TYPE]);
@@ -424,7 +423,7 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     setRomMemoryBank(memory, 0x2, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 2);
     setRomMemoryBank(memory, 0x3, rom->mainBank + MEMORY_MAP_SEGMENT_SIZE * 3);
     
-    memoryBank = getROMBank(rom, 1);
+    memoryBank = getROMBank(rom, 1, 0);
     
     setRomMemoryBank(memory, 0x4, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 0);
     setRomMemoryBank(memory, 0x5, memoryBank + MEMORY_MAP_SEGMENT_SIZE * 1);

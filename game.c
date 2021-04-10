@@ -87,6 +87,8 @@ game(void)
 
 	initMainMenu(&gMainMenu);
 
+	addBreakpoint(&gGameboy.memory, 0x100, BreakpointTypeUser);
+
 	int frames = 0;
 
     /*

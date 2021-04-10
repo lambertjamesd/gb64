@@ -767,7 +767,7 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
     {
 		pad = ReadController(0);
 
-		rerenderLastFrame(&gGameboy.settings.graphics, getColorBuffer());
+		// rerenderLastFrame(&gGameboy.settings.graphics, getColorBuffer());
 
         menuStateHandleInput(&gDebugMenu.menu, pad[0]);
     
