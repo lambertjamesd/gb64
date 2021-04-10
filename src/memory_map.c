@@ -83,9 +83,10 @@ void nopBankSwitch(struct Memory* memory, int addr, int value)
 void handleMBC1Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
+
     if (writeRange == 0)
     {
-        memory->misc.ramDisabled = (value & 0xA) != 0xA;
+        memory->misc.ramDisabled = (value & 0xF) != 0xA;
     }
     else if (writeRange == 1)
     {  
@@ -142,7 +143,7 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 13;
     if (writeRange == 0)
     {
-        memory->misc.ramDisabled = (value & 0xA) != 0xA;
+        memory->misc.ramDisabled = (value & 0xF) != 0xA;
     }
     else if (writeRange == 1)
     {  
@@ -217,7 +218,7 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 13;
     if (writeRange == 0)
     {
-        memory->misc.ramDisabled = (value & 0xA) != 0xA;
+        memory->misc.ramDisabled = (value & 0xF) != 0xA;
     }
     else if (writeRange == 1)
     {  
@@ -269,7 +270,7 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     int writeRange = addr >> 12;
     switch (addr >> 12) {
         case 0: case 1:
-            memory->misc.ramDisabled = (value & 0xA) != 0xA;
+            memory->misc.ramDisabled = (value & 0xF) != 0xA;
             break;
         case 2:
             memory->misc.romBankLower = value;
