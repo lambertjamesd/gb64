@@ -123,16 +123,11 @@ void finishRomLoad(struct ROMLayout* romLayout)
     }
 }
 
-char* getROMBank(struct ROMLayout* romLayout, int bankIndex, int zeroIndex)
+char* getROMBank(struct ROMLayout* romLayout, int bankIndex)
 {
     struct VirtualBank *useBank;
 
     bankIndex &= romLayout->romBankCount - 1;
-
-    if (bankIndex == 0)
-    {
-        bankIndex = zeroIndex;
-    }
 
     if (bankIndex == 0)
     {

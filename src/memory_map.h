@@ -243,4 +243,6 @@ void handleMBC3Write(struct Memory* memory, int addr, int value);
 void writeMBC3ClockRegisters(u64 time, u8* target);
 u64 readMBC3ClockRegisters(u8* source);
 
+char* getRAMBank(struct Memory* memory, int bankIndex);
+
 #endif

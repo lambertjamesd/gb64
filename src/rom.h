@@ -43,7 +43,7 @@ void initRomLayout(struct ROMLayout* romLayout, void *romLocation);
 
 void finishRomLoad(struct ROMLayout* romLayout);
 
-char* getROMBank(struct ROMLayout* romLayout, int bankIndex, int zeroIndex);
+char* getROMBank(struct ROMLayout* romLayout, int bankIndex);
 
 int getROMBankCount(struct ROMLayout* romLayout);
 int getRAMBankCount(struct ROMLayout* romLayout);
