@@ -63,6 +63,15 @@ GB_DO_WRITE_NOP:
     jr $ra
     nop
 
+.global GB_DO_WRITE_MBC2
+.align 4
+GB_DO_WRITE_MBC2:
+    andi $v0, ADDR, 0x1FF
+    lw $at, (MEMORY_ADDR_TABLE + 0xA * 4)(Memory)
+    add $at, $at, $v0
+    jr $ra
+    sb VAL, 0($at)
+
 .global GB_DO_WRITE_FF
 .align 4
 GB_DO_WRITE_FF:
@@ -1079,11 +1088,7 @@ GB_DO_READ_NOP:
 .global GB_DO_READ_MBC2
 .align 4
 GB_DO_READ_MBC2:
-    andi $v0, ADDR, 0xFFF
-    slti $at, $v0, 0x200
-    # check if in the range of RAM
-    # that exists for MBC2
-    beqz $at, GB_DO_READ_NOP
+    andi $v0, ADDR, 0x1FF
     lw $at, (MEMORY_ADDR_TABLE + 0xA * 4)(Memory)
     add $at, $at, $v0
     lbu $v0, 0($at)

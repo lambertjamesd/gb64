@@ -24,6 +24,7 @@ void GB_WRITE_ROM_BANK();
 void GB_DO_WRITE_NOP();
 void GB_DO_READ_NOP();
 void GB_DO_READ_MBC2();
+void GB_DO_WRITE_MBC2();
 
 void* generateDirectRead(int bank, void* baseAddr)
 {
@@ -160,13 +161,17 @@ extern void mbc2ReadRam();
 void handleMBC2Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
-    if (writeRange == 0)
+
+    if (addr >= 0 && addr < 0x4000)
     {
-        memory->misc.ramDisabled = (value & 0xF) != 0xA;
-    }
-    else if (writeRange == 1)
-    {  
-        memory->misc.romBankLower = value;
+        if (addr & 0x100)
+        {
+            memory->misc.romBankLower = value;
+        } 
+        else 
+        {
+            memory->misc.ramDisabled = (value & 0xF) != 0xA;
+        }
     }
 
     char* romBank;
@@ -182,8 +187,8 @@ void handleMBC2Write(struct Memory* memory, int addr, int value)
     }
     else
     {
-        setMemoryBank(memory, 0xA, memory->cartRam, &GB_DO_READ_MBC2, generateDirectWrite(0xA, memory->cartRam));
-        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xA, memory->cartRam, &GB_DO_READ_MBC2, &GB_DO_WRITE_MBC2);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_MBC2, &GB_DO_WRITE_MBC2);
     }
 }
 
