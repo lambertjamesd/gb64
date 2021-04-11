@@ -276,9 +276,8 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
         setMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1, mbc3ReadTimer, mbc3WriteTimer);
     }
 
-    char* romBank = getROMBank(memory->rom, (memory->misc.romBankLower & 0x7F) ? memory->misc.romBankLower & 0x7F : 1);
-
-    setFullRomBank(memory, 0x4, romBank);
+    int bankIndex = memory->misc.romBankLower & 0x7F;
+    setFullRomBank(memory, 0x4, getROMBank(memory->rom, bankIndex ? bankIndex : 1));
 }
 
 
