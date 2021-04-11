@@ -25,6 +25,8 @@ void GB_DO_WRITE_NOP();
 void GB_DO_READ_NOP();
 void GB_DO_READ_MBC2();
 void GB_DO_WRITE_MBC2();
+void GB_DO_READ_MBC7();
+void GB_DO_WRITE_MBC7();
 
 void* generateDirectRead(int bank, void* baseAddr)
 {
@@ -313,6 +315,37 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     {
         setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
         setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    }
+}
+
+void handleMBC7Write(struct Memory* memory, int addr, int value)
+{
+    int writeRange = addr >> 13;
+    switch (addr >> 12) {
+        case 0:
+            memory->misc.ramDisabled = (value & 0xF) != 0xA;
+            break;
+        case 1:
+            memory->misc.romBankLower = value;
+            break;
+        case 2:
+            memory->misc.ramRomSelect = value == 0x40;
+            break;
+    }
+
+    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower ? memory->misc.romBankLower : 1);
+
+    setFullRomBank(memory, 0x4, romBank);
+    
+    if (memory->misc.ramDisabled || !memory->misc.ramRomSelect)
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
+    else
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam, &GB_DO_READ_MBC7, &GB_DO_WRITE_MBC7);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
     }
 }
 

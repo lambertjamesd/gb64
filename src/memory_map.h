@@ -203,6 +203,18 @@ struct MBCData {
     u16 flags;
 };
 
+struct MBC7RamLayout {
+    u8 eeprom[256];
+    int accelDataErased;
+    short accelX;
+    short accelY;
+    short sensorAccelX;
+    short sensorAccelY;
+    int eepromDataIn;
+    int eepromDataOut;
+    int eepromDataCount;
+};
+
 struct Memory {
     void* memoryMap[MEMORY_MAP_SIZE];
     void* cartMemoryRead[MEMORY_MAP_SIZE];
@@ -231,6 +243,7 @@ struct Memory {
 #define MBC_FLAGS_BATTERY   0x2
 #define MBC_FLAGS_TIMER     0x4
 #define MBC_FLAGS_RUMBLE    0x8
+#define MBC_FLAGS_ACCEL     0x10
 
 #define MBC_FLAGS_MULTICART 0x100
 
