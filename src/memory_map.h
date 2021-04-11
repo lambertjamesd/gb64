@@ -232,6 +232,8 @@ struct Memory {
 #define MBC_FLAGS_TIMER     0x4
 #define MBC_FLAGS_RUMBLE    0x8
 
+#define MBC_FLAGS_MULTICART 0x100
+
 void setMemoryBank(struct Memory* memory, int offset, void* addr, void* readCallback, void* writeCallback);
 void* getMemoryBank(struct Memory* memory, int offset);
 void initMemory(struct Memory* memory, struct ROMLayout* rom);

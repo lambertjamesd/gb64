@@ -80,7 +80,7 @@ void nopBankSwitch(struct Memory* memory, int addr, int value)
 
 }
 
-void handleMBC1Write(struct Memory* memory, int addr, int value, int isMulticart)
+void handleMBC1WriteWithMulticart(struct Memory* memory, int addr, int value, int isMulticart)
 {
     int writeRange = addr >> 13;
 
@@ -129,7 +129,7 @@ void handleMBC1Write(struct Memory* memory, int addr, int value, int isMulticart
         ramBankIndex = 0;
     }
 
-    if (0 == lowerBits)
+    if (0 == memory->misc.romBankLower)
     {
         lowerBits++;
     }
@@ -150,9 +150,9 @@ void handleMBC1Write(struct Memory* memory, int addr, int value, int isMulticart
     }
 }
 
-void handleMBC1WriteSingleCart(struct Memory* memory, int addr, int value)
+void handleMBC1Write(struct Memory* memory, int addr, int value)
 {
-    handleMBC1Write(memory, addr, value, 0);
+    handleMBC1WriteWithMulticart(memory, addr, value, memory->mbc->flags & MBC_FLAGS_MULTICART);
 }
 
 extern void mbc2ReadRam();
@@ -319,9 +319,9 @@ void defaultRegisterWrite(struct Memory* memory, int addr, int value)
 
 struct MBCData mbcTypes[] = {
     {nopBankSwitch, 0x00, 0},
-    {handleMBC1WriteSingleCart, 0x01, 0},
-    {handleMBC1WriteSingleCart, 0x02, MBC_FLAGS_RAM},
-    {handleMBC1WriteSingleCart, 0x03, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
+    {handleMBC1Write, 0x01, 0},
+    {handleMBC1Write, 0x02, MBC_FLAGS_RAM},
+    {handleMBC1Write, 0x03, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
     {handleMBC2Write, 0x05, 0},
     {handleMBC2Write, 0x06, MBC_FLAGS_BATTERY},
     {nopBankSwitch, 0x08, MBC_FLAGS_RAM},
@@ -411,6 +411,41 @@ char* getRAMBank(struct Memory* memory, int bankIndex)
     return memory->cartRam + (bankIndex & (getRAMBankCount(memory->rom) - 1)) * MEMORY_MAP_SEGMENT_SIZE * 2;
 }
 
+int isMBC1Multicart(struct Memory* memory)
+{
+    if (memory->mbc->bankSwitch != handleMBC1Write ||
+        getROMBankCount(memory->rom) != 64) {
+        return 0;
+    }
+
+    char* mainBank = getROMBank(memory->rom, 0);
+
+    int bankCheck;
+
+    for (bankCheck = 1; bankCheck < 4; ++bankCheck)
+    {
+        char* bank = getROMBank(memory->rom, bankCheck * 16);
+
+        int logoCheck;
+        int couldMatch = 1;
+
+        for (logoCheck = 0x0104; couldMatch && logoCheck < 0x0134; ++logoCheck)
+        {
+            if (bank[logoCheck] != mainBank[logoCheck])
+            {
+                couldMatch = 0;
+            }
+        }
+
+        if (couldMatch)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void initMemory(struct Memory* memory, struct ROMLayout* rom)
 {
     char *memoryBank;
@@ -446,6 +481,11 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     finishRomLoad(rom);
 
     setFullRomBank(memory, 0x0, rom->mainBank);
+
+    if (isMBC1Multicart(memory))
+    {
+        memory->mbc->flags |= MBC_FLAGS_MULTICART;
+    }
     
     memoryBank = getROMBank(rom, 1);
     
