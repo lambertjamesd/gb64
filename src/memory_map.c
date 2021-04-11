@@ -301,7 +301,7 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
     }
 
     char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0xF) * MEMORY_MAP_SEGMENT_SIZE * 2;
-    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | (memory->misc.romBankUpper << 8 & 0x100));
+    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | ((memory->misc.romBankUpper << 8) & 0x100));
 
     setFullRomBank(memory, 0x4, romBank);
     
