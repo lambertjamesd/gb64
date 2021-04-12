@@ -148,6 +148,7 @@ asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \
        asm/_memory.s \
        asm/_debug.s \
        asm/_mbc.s \
+       asm/_mbc7.s \
        asm/_cpu_inst_0.s asm/_cpu_inst_1.s asm/_cpu_inst_2.s asm/_cpu_inst_3.s \
        asm/_cpu_inst_4.s asm/_cpu_inst_5.s asm/_cpu_inst_6.s asm/_cpu_inst_7.s \
        asm/_cpu_inst_8.s asm/_cpu_inst_9.s asm/_cpu_inst_A.s asm/_cpu_inst_B.s \

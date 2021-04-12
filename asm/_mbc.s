@@ -62,17 +62,3 @@ mbc3ReadTimer:
 mbc3ReadTimer_error:
     jr $ra
     li $v0, 0xFF
-
-.global mbc2ReadRam
-.align 4
-mbc2ReadRam:
-    addi $sp, $sp, -8
-    jal _GB_DO_READ_RAM
-    sw $ra, 0($sp)
-
-    ori $v0, $v0, 0xF0
-
-    lw $ra, 0($sp)
-    jr $ra
-    addi $sp, $sp, 8
-    

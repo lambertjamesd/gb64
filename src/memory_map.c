@@ -158,8 +158,6 @@ void handleMBC1Write(struct Memory* memory, int addr, int value)
     handleMBC1WriteWithMulticart(memory, addr, value, memory->mbc->flags & MBC_FLAGS_MULTICART);
 }
 
-extern void mbc2ReadRam();
-
 void handleMBC2Write(struct Memory* memory, int addr, int value)
 {
     int writeRange = addr >> 13;
@@ -285,7 +283,6 @@ void handleMBC3Write(struct Memory* memory, int addr, int value)
 
 void handleMBC5Write(struct Memory* memory, int addr, int value)
 {
-    int writeRange = addr >> 12;
     switch (addr >> 12) {
         case 0: case 1:
             memory->misc.ramDisabled = (value & 0xF) != 0xA;
@@ -320,8 +317,7 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
 
 void handleMBC7Write(struct Memory* memory, int addr, int value)
 {
-    int writeRange = addr >> 13;
-    switch (addr >> 12) {
+    switch (addr >> 13) {
         case 0:
             memory->misc.ramDisabled = (value & 0xF) != 0xA;
             break;
@@ -380,6 +376,7 @@ struct MBCData mbcTypes[] = {
     {handleMBC5Write, 0x1C, MBC_FLAGS_RUMBLE},
     {handleMBC5Write, 0x1D, MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM},
     {handleMBC5Write, 0x1E, MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
+    {handleMBC7Write, 0x22, MBC_FLAGS_ACCEL | MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
     {NULL, 0xFC, 0},
     {NULL, 0xFD, 0},
     {NULL, 0xFE, 0},

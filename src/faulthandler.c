@@ -75,7 +75,7 @@ static void faultHandlerProc(void* arg)
             dumpThreadInfo(targetThread);
         }
 
-		preRenderFrame();
+		preRenderFrame(1);
 		renderDebugLog();
 		finishRenderFrame();
     }

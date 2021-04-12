@@ -197,6 +197,19 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
     }
 }
 
+u16 remapAcclerometer(s8 input)
+{
+    return (u16)((s16)input << 7) + 0x8000;
+}
+
+void handleAccelerometer(struct GameBoy* gameboy, OSContPad* pad)
+{
+    struct MBC7RamLayout* mbc7Data =  (struct MBC7RamLayout*)gameboy->memory.cartRam;
+
+    mbc7Data->sensorAccelX = remapAcclerometer(pad->stick_x);
+    mbc7Data->sensorAccelY = remapAcclerometer(pad->stick_y);
+}
+
 void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)
 {
     int button;
@@ -204,6 +217,13 @@ void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)
     int nextJoy;
 
     button = 0xFF;
+
+    int hasAccel = gameboy->memory.mbc->flags & MBC_FLAGS_ACCEL;
+
+    if (hasAccel)
+    {
+        handleAccelerometer(gameboy, pad);
+    }
 
     if (pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.a))
         button &= ~GB_BUTTON_A;
@@ -217,16 +237,16 @@ void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)
     if (pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.select))
         button &= ~GB_BUTTON_SELECT;
 
-    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.up)) || pad->stick_y > 0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.up)) || !hasAccel && pad->stick_y > 0x40)
         button &= ~GB_BUTTON_UP;
     
-    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.left)) || pad->stick_x < -0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.left)) || !hasAccel && pad->stick_x < -0x40)
         button &= ~GB_BUTTON_LEFT;
     
-    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.right)) || pad->stick_x > 0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.right)) || !hasAccel && pad->stick_x > 0x40)
         button &= ~GB_BUTTON_RIGHT;
     
-    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.down)) || pad->stick_y < -0x40)
+    if ((pad->button & INPUT_BUTTON_TO_MASK(gameboy->settings.inputMapping.down)) || !hasAccel && pad->stick_y < -0x40)
         button &= ~GB_BUTTON_DOWN;
 
     WRITE_REGISTER_DIRECT(&gameboy->memory, _REG_JOYSTATE, button);

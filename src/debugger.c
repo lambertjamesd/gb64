@@ -9,6 +9,8 @@
 #include "./gameboy.h"
 #include "./graphics.h"
 
+u8 READ_FROM_C(struct Memory* memory, u16 address);
+
 u8* getMemoryAddress(struct Memory* memory, u16 address)
 {
     if (address < MISC_START)
@@ -328,7 +330,16 @@ void memoryValuesCheckReread(struct MemoryValueMenuItem* values)
         int index;
         for (index = 0; index < MEMORY_BLOCK_ROWS * MEMORY_BLOCK_COLS; ++index)
         {
-            values->values[index] = readMemoryDirect(values->memory, values->addressStart + index);
+            u16 addr = values->addressStart + index;
+
+            if (addr < MISC_START)
+            {
+                values->values[index] = READ_FROM_C(values->memory, values->addressStart + index);
+            }
+            else
+            {
+                values->values[index] = READ_REGISTER_DIRECT(values->memory, addr);
+            }
         }
     }
 }
@@ -771,7 +782,7 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 
         menuStateHandleInput(&gDebugMenu.menu, pad[0]);
     
-		preRenderFrame();
+		preRenderFrame(1);
 		renderDebugLog();
 
         menuStateRender(&gDebugMenu.menu);

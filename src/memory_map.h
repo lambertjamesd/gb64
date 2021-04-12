@@ -205,11 +205,11 @@ struct MBCData {
 
 struct MBC7RamLayout {
     u8 eeprom[256];
-    int accelDataErased;
-    short accelX;
-    short accelY;
-    short sensorAccelX;
-    short sensorAccelY;
+    int hasAccelData;
+    u16 accelX;
+    u16 accelY;
+    u16 sensorAccelX;
+    u16 sensorAccelY;
     int eepromDataIn;
     int eepromDataOut;
     int eepromDataCount;

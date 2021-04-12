@@ -72,12 +72,6 @@ GB_DO_WRITE_MBC2:
     jr $ra
     sb VAL, 0($at)
 
-.global GB_DO_WRITE_MBC7
-.align 4
-GB_DO_WRITE_MBC7:
-    jr $ra
-    nop
-
 .global GB_DO_WRITE_FF
 .align 4
 GB_DO_WRITE_FF:
@@ -1101,12 +1095,6 @@ GB_DO_READ_MBC2:
     jr $ra
     # mask out upper nibble
     ori $v0, $v0, 0xF0
-
-.global GB_DO_READ_MBC7
-.align 4
-GB_DO_READ_MBC7:
-    jr $ra
-    li $v0, 0xFF
 
 ######################
 # Reads the last bank of memory 0xF000-0xFFFF

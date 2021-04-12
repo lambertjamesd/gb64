@@ -87,7 +87,7 @@ game(void)
 
 	initMainMenu(&gMainMenu);
 
-	addBreakpoint(&gGameboy.memory, 0x100, BreakpointTypeUser);
+	// addBreakpoint(&gGameboy.memory, 0x100, BreakpointTypeUser);
 
 	int frames = 0;
 
@@ -171,7 +171,7 @@ game(void)
 		// );
 		// debugInfo(gTmpBuffer);
 #endif
-		preRenderFrame();
+		preRenderFrame(0);
 
 		renderDebugLog();
 

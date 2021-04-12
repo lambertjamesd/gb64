@@ -254,4 +254,5 @@ _GB_CALC_UNSCALED_CLOCKS_NORMAL_SPEED:
 .include "asm/_math.s"
 .include "asm/_cpu_inst_prefix.s"
 .include "asm/_memory.s"
+.include "asm/_mbc7.s"
 .include "asm/_mbc.s"

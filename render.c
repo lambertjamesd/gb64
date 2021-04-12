@@ -37,7 +37,7 @@ int		fontcol[4];	/* color for shadowed fonts */
 Dynamic     *dynamicp;
 u16* cfb;
 
-void preRenderFrame()
+void preRenderFrame(int clear)
 {
     /*
     * pointers to build the display list.
@@ -52,6 +52,13 @@ void preRenderFrame()
     gSPSegment(glistp++, STATIC_SEGMENT, OS_K0_TO_PHYSICAL(staticSegment));
 
     gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(getColorBuffer()));
+
+    if (clear)
+    {
+        gDPSetFillColor(glistp++, GPACK_RGBA5551(1, 1, 1, 1) << 16 | GPACK_RGBA5551(1, 1, 1, 1));
+        gDPSetCycleType(glistp++, G_CYC_FILL);
+        gDPFillRectangle(glistp++, 0, 0, SCREEN_WD-1, SCREEN_HT-1);
+    }
 
     /*
     * Initialize RCP state.
