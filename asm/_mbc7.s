@@ -131,7 +131,7 @@ _GB_WRITE_MBC7_EEPROM:
     srl $at, TMP3, 3 
     andi $at, $at, 0xFF
     add $at, $at, TMP2
-    lbu $at, 0($at)
+    lbu $at, MBC7_RAM_EEPROM($at)
 
     # get the bit index in the byte
     andi TMP5, TMP3, 0x7
@@ -219,8 +219,9 @@ _GB_WRITE_MBC7_CHECK_26_BITS:
 _GB_WRITE_MBC7_READ:
     # calculate read address
     andi $at, TMP5, 0x7F
-    sll $at, $at, 1
-    j _GB_WRITE_MBC7_EEPROM_RESET
+    # convert short address to bit address
+    sll $at, $at, 4
+    j _GB_WRITE_MBC7_FINISH
     sw $at, MBC7_RAM_DATA_OUT(TMP2)
 
 _GB_WRITE_MBC7_ERASE:
@@ -297,8 +298,9 @@ _GB_WRITE_MBC7_WRITE:
     
 
 _GB_WRITE_MBC7_CHECK_START:
-    andi $at, TMP4, MBC7_EEPROM_CS
-    beqz $at, _GB_WRITE_MBC7_FINISH
+    andi $at, TMP4, MBC7_EEPROM_CS | MBC7_EEPROM_DI
+    xori $at, $at, MBC7_EEPROM_CS | MBC7_EEPROM_DI
+    bnez $at, _GB_WRITE_MBC7_FINISH
     nop
     j _GB_WRITE_MBC7_FINISH
     sw $zero, MBC7_RAM_DATA_COUNT(TMP2)
