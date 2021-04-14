@@ -253,6 +253,28 @@ void loadRAM(struct Memory* memory, enum StoredInfoType storeType)
                 );
                 break;
         }
+
+
+        if (memory->mbc->flags & MBC_FLAGS_ACCEL)
+        {
+            struct MBC7RamLayout* mbc7Data =  (struct MBC7RamLayout*)memory->cartRam;
+            mbc7Data->accelX  = 0x8000;
+            mbc7Data->accelY = 0x8000;
+            mbc7Data->sensorAccelX  = 0x8000;
+            mbc7Data->sensorAccelY = 0x8000;
+
+            mbc7Data->currentValue = 0x1;
+            mbc7Data->eepromOutIndex = ~0;
+            mbc7Data->eepromDataIn = 0;
+            mbc7Data->eepromDataCount = ~0;
+            mbc7Data->writeEnable = 0;
+            memset(mbc7Data->eeprom, 0, 256);
+
+            if (mbc7Data->dataCheck != GB_SETTINGS_HEADER)
+            {
+                mbc7Data->dataCheck = GB_SETTINGS_HEADER;
+            }
+        }
     }
 }
 

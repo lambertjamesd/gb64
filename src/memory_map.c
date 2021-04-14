@@ -4,6 +4,7 @@
 #include "debug_out.h"
 #include "gameboy.h"
 #include "memory_map_offsets.h"
+#include "assert.h"
 
 u16 paletteColors[] = {
     0x09C2,
@@ -520,6 +521,8 @@ void initMemory(struct Memory* memory, struct ROMLayout* rom)
     {
         memory->mbc->flags |= MBC_FLAGS_MULTICART;
     }
+
+    // setWatchPoint(memory->cartRam, 1, 1);
     
     memoryBank = getROMBank(rom, 1);
     

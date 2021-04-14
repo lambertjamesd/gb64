@@ -8,4 +8,8 @@
     #define assert(assertion)
 #endif
 
+void* getWatchPoint();
+void setWatchPoint(void* addr, int read, int write);
+void gdbClearWatchPoint();
+
 #endif

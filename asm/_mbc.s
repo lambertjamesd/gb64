@@ -62,3 +62,4 @@ mbc3ReadTimer:
 mbc3ReadTimer_error:
     jr $ra
     li $v0, 0xFF
+    

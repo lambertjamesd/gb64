@@ -206,8 +206,8 @@ void handleAccelerometer(struct GameBoy* gameboy, OSContPad* pad)
 {
     struct MBC7RamLayout* mbc7Data =  (struct MBC7RamLayout*)gameboy->memory.cartRam;
 
-    mbc7Data->sensorAccelX = remapAcclerometer(pad->stick_x);
-    mbc7Data->sensorAccelY = remapAcclerometer(pad->stick_y);
+    // mbc7Data->sensorAccelX = remapAcclerometer(pad->stick_x);
+    // mbc7Data->sensorAccelY = remapAcclerometer(pad->stick_y);
 }
 
 void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)

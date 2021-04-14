@@ -211,8 +211,11 @@ struct MBC7RamLayout {
     u16 sensorAccelX;
     u16 sensorAccelY;
     int eepromDataIn;
-    int eepromDataOut;
+    int eepromOutIndex;
     int eepromDataCount;
+    char currentValue;
+    char writeEnable;
+    int dataCheck;
 };
 
 struct Memory {

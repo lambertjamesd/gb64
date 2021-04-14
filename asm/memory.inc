@@ -17,6 +17,7 @@
 .set TMP2,  $t6
 .set TMP3,  $t7
 .set TMP4,  $t8
+.set TMP5,  $t9
 
 .set CPUState, $a0
 .set Memory, $a1

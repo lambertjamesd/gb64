@@ -77,3 +77,4 @@ READ_FROM_C:
     move ADDR, $a1
     j GB_DO_READ
     move Memory, $a0
+    
