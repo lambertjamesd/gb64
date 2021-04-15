@@ -63,3 +63,8 @@ mbc3ReadTimer_error:
     jr $ra
     li $v0, 0xFF
     
+.global HUC1_READ_IR
+.align 4
+HUC1_READ_IR:
+    jr $ra
+    li $v0, 0xC0

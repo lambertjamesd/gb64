@@ -28,6 +28,7 @@ void GB_DO_READ_MBC2();
 void GB_DO_WRITE_MBC2();
 void GB_DO_READ_MBC7();
 void GB_DO_WRITE_MBC7();
+void HUC1_READ_IR();
 
 void* generateDirectRead(int bank, void* baseAddr)
 {
@@ -299,7 +300,7 @@ void handleMBC5Write(struct Memory* memory, int addr, int value)
             break;
     }
 
-    char* ramBank = memory->cartRam + (memory->misc.ramRomSelect & 0xF) * MEMORY_MAP_SEGMENT_SIZE * 2;
+    char* ramBank = getRAMBank(memory, memory->misc.ramRomSelect & 0xF);
     char* romBank = getROMBank(memory->rom, memory->misc.romBankLower | ((memory->misc.romBankUpper << 8) & 0x100));
 
     setFullRomBank(memory, 0x4, romBank);
@@ -346,6 +347,71 @@ void handleMBC7Write(struct Memory* memory, int addr, int value)
     }
 }
 
+void handleHuC1Write(struct Memory* memory, int addr, int value)
+{
+    switch (addr >> 13) {
+        case 0:
+            memory->misc.ramDisabled = (value & 0xF) == 0xE;
+            break;
+        case 1:
+            memory->misc.romBankLower = value & 0x3f;
+            break;
+        case 2:
+            memory->misc.romBankUpper = value & 0x3;
+            break;
+    }
+
+    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower ? memory->misc.romBankLower : 1);
+
+    setFullRomBank(memory, 0x4, romBank);
+    
+    if (memory->misc.ramDisabled)
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, &HUC1_READ_IR, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &HUC1_READ_IR, &GB_DO_WRITE_NOP);
+    }
+    else
+    {
+        char* ramBank = getRAMBank(memory, memory->misc.romBankUpper);
+        setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+        setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    }
+}
+
+void handleHuC3Write(struct Memory* memory, int addr, int value)
+{
+    switch (addr >> 13) {
+        case 0:
+            memory->misc.ramDisabled = (value & 0xF) != 0xA;
+            break;
+        case 1:
+            memory->misc.romBankLower = value & 0x3f;
+            break;
+        case 2:
+            memory->misc.romBankUpper = value & 0x3;
+            break;
+        default:
+            memory->misc.ramRomSelect = 0;
+            break;
+    }
+
+    char* romBank = getROMBank(memory->rom, memory->misc.romBankLower ? memory->misc.romBankLower : 1);
+
+    setFullRomBank(memory, 0x4, romBank);
+    
+    if (memory->misc.ramDisabled)
+    {
+        setMemoryBank(memory, 0xA, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 0, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+        setMemoryBank(memory, 0xB, memory->cartRam + MEMORY_MAP_SEGMENT_SIZE * 1, &GB_DO_READ_NOP, &GB_DO_WRITE_NOP);
+    }
+    else
+    {
+        char* ramBank = getRAMBank(memory, memory->misc.romBankUpper);
+        setRamMemoryBank(memory, 0xA, ramBank + MEMORY_MAP_SEGMENT_SIZE * 0);
+        setRamMemoryBank(memory, 0xB, ramBank + MEMORY_MAP_SEGMENT_SIZE * 1);
+    }
+}
+
 void defaultRegisterWrite(struct Memory* memory, int addr, int value)
 {
     WRITE_REGISTER_DIRECT(memory, addr, value);
@@ -380,8 +446,8 @@ struct MBCData mbcTypes[] = {
     {handleMBC7Write, 0x22, MBC_FLAGS_ACCEL | MBC_FLAGS_RUMBLE | MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
     {NULL, 0xFC, 0},
     {NULL, 0xFD, 0},
-    {NULL, 0xFE, 0},
-    {NULL, 0xFF, 0},
+    {handleHuC3Write, 0xFE, 0},
+    {handleHuC1Write, 0xFF, MBC_FLAGS_RAM | MBC_FLAGS_BATTERY},
 };
 
 #define MBC_TYPES_LENGTH (sizeof(mbcTypes) / sizeof(mbcTypes[0]))
