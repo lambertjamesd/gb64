@@ -134,14 +134,22 @@ GB_WRITE_ROM_BANK:
 GB_DO_WRITE_REGISTERS:
     la $ra, DECODE_NEXT
 GB_DO_WRITE_REGISTERS_CALL:
-    li $at, -0xFF00
-    add $at, $at, ADDR # ADDR relative to MISC memory
-    bltz $at, _GB_BASIC_REGISTER_WRITE # just write the sprite memory bank
-    addi $at, $at, -0x80
-    bgez $at, _GB_BASIC_REGISTER_WRITE # just write memory above interrupt table
+    andi TMP2, ADDR, 0xFFF
 
-    addi $at, $at, 0x80 # move $at back into range 0x00 - 0x80
-    andi $at, $at, 0xF0
+    # check for sprites
+    slti $at, TMP2, 0xEA0 
+    bnez $at, _GB_BASIC_REGISTER_WRITE
+
+    # check for unwritable region
+    slti $at, TMP2, 0xF00
+    bnez $at, GB_DO_WRITE_NOP 
+
+    # check for register ram
+    slti $at, TMP2, 0xF80
+    beqz $at, _GB_BASIC_REGISTER_WRITE 
+
+    # mask $at into the range 00 - 80
+    andi $at, ADDR, 0xF0
     srl $at, $at, 1 # get the upper nibble and multiply it by 8
 
     la TMP2, _GB_WRITE_JUMP_TABLE
