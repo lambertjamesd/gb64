@@ -197,17 +197,12 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
     }
 }
 
-u16 remapAcclerometer(s8 input)
-{
-    return (u16)((s16)input << 7) + 0x8000;
-}
-
 void handleAccelerometer(struct GameBoy* gameboy, OSContPad* pad)
 {
     struct MBC7RamLayout* mbc7Data =  (struct MBC7RamLayout*)gameboy->memory.cartRam;
 
-    // mbc7Data->sensorAccelX = remapAcclerometer(pad->stick_x);
-    // mbc7Data->sensorAccelY = remapAcclerometer(pad->stick_y);
+    mbc7Data->sensorAccelX = 0x800 - pad->stick_x;
+    mbc7Data->sensorAccelY = 0x800 + pad->stick_y;
 }
 
 void handleGameboyInput(struct GameBoy* gameboy, OSContPad* pad)

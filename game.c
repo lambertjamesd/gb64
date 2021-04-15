@@ -77,7 +77,7 @@ game(void)
 	debugInfo(str);
 #endif
 
-	test_malloc();
+	// test_malloc();
 
 	initGameboy(&gGameboy, &gGBRom);
 	

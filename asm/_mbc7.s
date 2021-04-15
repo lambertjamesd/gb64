@@ -98,11 +98,11 @@ _GB_WRITE_MBC7_LATCH:
     bne $at, $zero, GB_DO_WRITE_NOP
 
     sw VAL, MBC7_RAM_HAS_DATA(TMP2)
-    lw $at, MBC7_RAM_SENSOR_X(TMP2)
-    sw $at, MBC7_RAM_ACCEL_X(TMP2)
-    lw $at, MBC7_RAM_SENSOR_Y(TMP2)
+    lhu $at, MBC7_RAM_SENSOR_X(TMP2)
+    sh $at, MBC7_RAM_ACCEL_X(TMP2)
+    lhu $at, MBC7_RAM_SENSOR_Y(TMP2)
     jr $ra
-    sw $at, MBC7_RAM_ACCEL_Y(TMP2)
+    sh $at, MBC7_RAM_ACCEL_Y(TMP2)
 
 _GB_WRITE_MBC7_EEPROM:
     lw TMP2, (MEMORY_ADDR_TABLE + 4 * 0xA)(Memory)
@@ -174,19 +174,20 @@ _GB_WRITE_MBC7_CHECK_INPUT:
     beq $at, TMP3, _GB_WRITE_MBC7_CHECK_10_BITS
     li $at, 26
     beq $at, TMP3, _GB_WRITE_MBC7_CHECK_26_BITS
+    nop
 
 _GB_WRITE_MBC7_FINISH:
     jr $ra
     nop
 
 _GB_WRITE_MBC7_CHECK_10_BITS:
-    andi TMP3, TMP5, 0xF00
+    andi TMP3, TMP5, 0x300
     li $at, 0x200
     beq $at, TMP3, _GB_WRITE_MBC7_READ
     li $at, 0x300
     beq $at, TMP3, _GB_WRITE_MBC7_ERASE
 
-    andi TMP3, TMP5, 0xFC0
+    andi TMP3, TMP5, 0x3C0
     li $at, 0x0C0
     beq $at, TMP3, _GB_WRITE_MBC7_EWEN
     li $at, 0x080
@@ -200,11 +201,11 @@ _GB_WRITE_MBC7_CHECK_10_BITS:
 
 _GB_WRITE_MBC7_CHECK_26_BITS:
     srl TMP3, TMP5, 16
-    andi TMP3, TMP3, 0xFC0
+    andi TMP3, TMP3, 0x3C0
     li $at, 0x040
     beq $at, TMP3, _GB_WRITE_MBC7_WRAL
 
-    andi TMP3, TMP3, 0xF00
+    andi TMP3, TMP3, 0x300
     li $at, 0x100
     beq $at, TMP3, _GB_WRITE_MBC7_WRITE
     nop
@@ -221,8 +222,12 @@ _GB_WRITE_MBC7_READ:
     andi $at, TMP5, 0x7F
     # convert short address to bit address
     sll $at, $at, 4
-    j _GB_WRITE_MBC7_FINISH
     sw $at, MBC7_RAM_DATA_OUT(TMP2)
+
+    sw $zero, MBC7_RAM_DATA_IN(TMP2)
+    addi $at, $zero, -1
+    j _GB_WRITE_MBC7_FINISH
+    sw $at, MBC7_RAM_DATA_COUNT(TMP2)
 
 _GB_WRITE_MBC7_ERASE:
     # check if writing is enabled
@@ -308,6 +313,7 @@ _GB_WRITE_MBC7_CHECK_START:
 _GB_WRITE_MBC7_EEPROM_RESET:
     addi $at, $zero, -1
     sw $at, MBC7_RAM_DATA_OUT(TMP2)
+    sw $zero, MBC7_RAM_DATA_IN(TMP2)
     jr $ra
     sw $at, MBC7_RAM_DATA_COUNT(TMP2)
 

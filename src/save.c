@@ -268,12 +268,16 @@ void loadRAM(struct Memory* memory, enum StoredInfoType storeType)
             mbc7Data->eepromDataIn = 0;
             mbc7Data->eepromDataCount = ~0;
             mbc7Data->writeEnable = 0;
-            memset(mbc7Data->eeprom, 1, 256);
+            memset(mbc7Data->eeprom, 0, 256);
 
             mbc7Data->eeprom[0] = 0x54;
             mbc7Data->eeprom[1] = 0x41;
             mbc7Data->eeprom[2] = 0x4D;
             mbc7Data->eeprom[3] = 0x41;
+            mbc7Data->eeprom[4] = 0x7A;
+            mbc7Data->eeprom[5] = 0xA0;
+            mbc7Data->eeprom[6] = 0x87;
+            mbc7Data->eeprom[7] = 0x70;
 
             if (mbc7Data->dataCheck != GB_SETTINGS_HEADER)
             {
