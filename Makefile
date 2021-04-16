@@ -98,7 +98,10 @@ CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
        src/clockmenu.c                       \
        src/upgrade.c                         \
        src/save.c                            \
+       src/sprite.c                          \
+       src/spritefont.c                      \
        src/faulthandler.c                    \
+       tex/textures.c                        \
        $(DEBUG_FILES)                        \
        $(COMPSOURCE)
 
@@ -168,8 +171,6 @@ $(TARGETS) $(APP):      spec $(OBJECTS)
 	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec 
 	makemask $(TARGETS)
 endif
-
-font.o:		./gbfont_img.h
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)

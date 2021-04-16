@@ -7,7 +7,7 @@
 #include "font.h"
 #include "font_ext.h"
 
-#include "gbfont_img.h"
+#include "tex/textures.h"
 
 static char gbfont_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.?!,@[]'\"\\+-=/()";
 

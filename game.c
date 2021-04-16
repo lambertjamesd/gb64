@@ -42,6 +42,8 @@
 #include "src/mainmenu.h"
 #include "src/faulthandler.h"
 #include "src/rspppu.h"
+#include "src/spritefont.h"
+#include "src/sprite.h"
 
 #include "debugger/debugger.h"
 
@@ -86,6 +88,8 @@ game(void)
 	initDebugMenu(&gDebugMenu, &gGameboy.cpu, &gGameboy.memory);
 
 	initMainMenu(&gMainMenu);
+
+	initGBFont();
 
 	// addBreakpoint(&gGameboy.memory, 0x100, BreakpointTypeUser);
 
@@ -177,6 +181,10 @@ game(void)
 
 		updateMainMenu(&gMainMenu, pad[0]);
 		renderMainMenu(&gMainMenu);
+
+    	drawSprite(SPRITE_FONT_LAYER, 320, 64, 32, 32, 32, 32, 16, 16);
+
+		renderText(&gGBFont, "Hello World!", 64, 64);
 
 		finishRenderFrame();
 

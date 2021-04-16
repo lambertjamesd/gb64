@@ -3,11 +3,7 @@
 #include "../memory.h"
 #include "debug_out.h"
 #include "../render.h"
-#include "../tex/cbuttons.h"
-#include "../tex/dpad.h"
-#include "../tex/facebuttons.h"
-#include "../tex/guiitems.h"
-#include "../tex/triggers.h"
+#include "../tex/textures.h"
 #include "gameboy.h"
 
 #define BUTTON_ICON_COUNT   10
@@ -424,7 +420,7 @@ void renderMenuBorder()
 {
     renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 12, 1);
     renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 96, 40, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 96, 48, 1, 18);
+    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 96, 48, 1, 48);
     renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 96, 192, 1, 1);
     renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 12, 1);
     renderSprite(&gGUIItemTemplates[GUIItemIconBlack], 0, 48, 12, 18);

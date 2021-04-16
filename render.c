@@ -3,6 +3,8 @@
 #include "src/debug_out.h"
 #include "memory.h"
 #include "src/assert.h"
+#include "tex/textures.h"
+#include "src/sprite.h"
 
 /*
  * Task header.
@@ -60,6 +62,8 @@ void preRenderFrame(int clear)
         gDPFillRectangle(glistp++, 0, 0, SCREEN_WD-1, SCREEN_HT-1);
     }
 
+    gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
+
     /*
     * Initialize RCP state.
     */
@@ -67,6 +71,9 @@ void preRenderFrame(int clear)
 
     gDPPipeSync(glistp++);
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
+
+    initSprites();
+    setLayerGraphics(SPRITE_FONT_LAYER, gUseFontTexture);
 }
 
 void renderDebugLog()
@@ -74,11 +81,6 @@ void renderDebugLog()
 	int x, y;
 	x = 18;
     y = 18;
-    
-    /* 
-    * neccessary after lines
-    */
-    gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
 
     font_init( &glistp );
     
@@ -118,6 +120,10 @@ void finishRenderFrame()
     dynamicp = &dynamic;
 
     font_finish( &glistp );
+
+    finishSprites(&glistp);
+
+    gSPTextureRectangle(glistp++, 0, 0, 64 << 2, 64 << 2, 0, 32, 32, 0x400, 0x400);
 
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
