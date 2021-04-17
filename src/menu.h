@@ -3,6 +3,7 @@
 #define _MENU_H
 
 #include <ultra64.h>
+#include "sprite.h"
 
 #define INITIAL_TIME_DELAY 500
 #define REPEAT_TIME_DELAY 200
@@ -42,8 +43,6 @@ struct CursorMenuItem;
 typedef struct MenuItem* (*InputCursorMenuItem)(struct CursorMenuItem* menuItem, int buttonDown);
 typedef void (*RenderCursorMenuItem)(struct CursorMenuItem* menuItem, int x, int y, int selected);
 
-extern Sprite gButtonSprite;
-
 struct CursorMenuItem {
     struct MenuItem* toMenu;
     char* label;
@@ -54,8 +53,9 @@ struct CursorMenuItem {
     u16 flags;
 };
 
-extern Bitmap gButtonIconTemplates[];
-extern Bitmap gGUIItemTemplates[];
+extern struct SpriteTile gButtonIconTile[];
+extern char gButtonIconLayer[];
+extern struct SpriteTile gGUIItemTiles[];
 
 enum GUIItemIcon
 {
@@ -111,7 +111,6 @@ void renderSelectCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, i
 struct MenuItem* inputSelectCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown);
 
 void renderSprite(Bitmap* bitmap, s32 x, s32 y, s32 w, s32 h);
-void setSpriteColor(u8 r, u8 g, u8 b);
 void renderMenuBorder();
 
 #endif

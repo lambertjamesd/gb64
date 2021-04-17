@@ -4,7 +4,6 @@
 
 #include <ultra64.h> 
 #include "boot.h"
-#include "font_ext.h"
 
 /*
  * Message queues
@@ -56,24 +55,6 @@ typedef struct {
 } Dynamic;
 
 extern Dynamic	dynamic;
-
-/*
- * macros 
- */
-#define FONTCOL(r,g,b,a)        {fontcol[0]=r;  \
-                                fontcol[1]=g;   \
-                                fontcol[2]=b;   \
-                                fontcol[3]=a;}
-#define FONTCOLM(c)             FONTCOL(c)
-#define SHOWFONT(glp,str,x,y)   {                                             \
-                font_set_color( 0,0,0,255);                                   \
-                font_set_pos( (x)+(1), (y)+(0) );                             \
-                font_show_string( glp, str );                                 \
-                font_set_pos( (x)+(0), (y)+(1) );                             \
-                font_show_string( glp, str );                                 \
-                font_set_color( fontcol[0],fontcol[1],fontcol[2],fontcol[3]); \
-                font_set_pos( x, y );                                         \
-                font_show_string( glp, str );}
 
 void preRenderFrame(int clear);
 void renderDebugLog();

@@ -32,7 +32,6 @@
 #include "game.h"
 #include "static.h"
 #include "controller.h"
-#include "font_ext.h"
 #include "src/gameboy.h"
 #include "src/graphics.h"
 #include "src/test/test.h"
@@ -44,6 +43,7 @@
 #include "src/rspppu.h"
 #include "src/spritefont.h"
 #include "src/sprite.h"
+#include "tex/textures.h"
 
 #include "debugger/debugger.h"
 
@@ -95,11 +95,19 @@ game(void)
 
 	int frames = 0;
 
+	setLayerGraphics(SPRITE_BORDER_LAYER, gUseGUIItems);
+	setLayerGraphics(SPRITE_CBUTTONS_LAYER, gUseCButtons);
+	setLayerGraphics(SPRITE_TRIGGERS_LAYER, gUseTriggers);
+	setLayerGraphics(SPRITE_DPAD_LAYER, gUseDPad);
+	setLayerGraphics(SPRITE_FACE_LAYER, gUseFaceButtons);
+    setLayerGraphics(SPRITE_FONT_LAYER, gUseFontTexture);
+
     /*
      * Main game loop
      */
     /*osSyncPrintf("Use the L button and crosshair for menu options.\n");*/
     while (1) {
+    	initSprites();
 		lastButton = ReadLastButton(0);
 		pad = ReadController(0);
 
@@ -181,10 +189,6 @@ game(void)
 
 		updateMainMenu(&gMainMenu, pad[0]);
 		renderMainMenu(&gMainMenu);
-
-    	drawSprite(SPRITE_FONT_LAYER, 320, 64, 32, 32, 32, 32, 16, 16);
-
-		renderText(&gGBFont, "Hello World!", 64, 64);
 
 		finishRenderFrame();
 

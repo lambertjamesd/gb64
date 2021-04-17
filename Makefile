@@ -60,7 +60,7 @@ HFILES =	boot.h game.h controller.h font.h font_ext.h \
 		src/cpu.h              \
 		src/memory_map.h
 
-CODEFILES   =	boot.c game.c controller.c font.c dram_stack.c \
+CODEFILES   =	boot.c game.c controller.c dram_stack.c \
        src/assert.c                          \
        src/test/cpu_test.c                   \
        src/test/cpu_tests_0.c                \

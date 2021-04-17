@@ -4,13 +4,14 @@
 #include "debug_out.h"
 #include "save.h"
 #include "version.h"
+#include "spritefont.h"
+#include "sprite.h"
 
 ///////////////////////////////////
 
 void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     int buttonAlpha = 0;
-    gButtonSprite.nbitmaps = 0;
 
     struct SaveState* saveState = (struct SaveState*)menuItem->data;
 
@@ -46,21 +47,23 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
     if (saveState->showLoadTimer)
     {
         buttonAlpha = 255 * saveState->showLoadTimer / LOAD_TIMER_FRAMES;
-        FONTCOL(255, 255, 255, buttonAlpha);
-        SHOWFONT(&glistp, saveState->loadMessage, 32, 16);
-        gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.load];
+        spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, buttonAlpha);
+        renderText(&gGBFont, saveState->loadMessage, 32, 16, 0);
+        char layer = gButtonIconLayer[gGameboy.settings.inputMapping.load];
+        spriteSetColor(layer, 255, 255, 255, buttonAlpha);
+        spriteDrawTile(layer, 8, 12, 16, 16, gButtonIconTile[gGameboy.settings.inputMapping.load]);
     }
     else if (saveState->showSaveTimer)
     {
         if (saveState->showSaveTimer > SAVE_TIMER_FADE_TIME)
         {
             buttonAlpha = 255;
-            FONTCOL(40, 255, 0, 255);
+            spriteSetColor(gGBFont.spriteLayer, 40, 255, 0, 255);
         }
         else
         {
             buttonAlpha = 255 * saveState->showSaveTimer / SAVE_TIMER_FADE_TIME;
-            FONTCOL(
+            spriteSetColor(gGBFont.spriteLayer, 
                 40,
                 255,
                 0,
@@ -68,20 +71,23 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
             );
         }
 
-        SHOWFONT(&glistp, saveState->saveMessage, 32, 16);
-        gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.save];
+        renderText(&gGBFont, saveState->saveMessage, 32, 16, 0);
+
+        char layer = gButtonIconLayer[gGameboy.settings.inputMapping.save];
+        spriteSetColor(layer, 255, 255, 255, buttonAlpha);
+        spriteDrawTile(layer, 8, 12, 16, 16, gButtonIconTile[gGameboy.settings.inputMapping.save]);
     }
     else if (saveState->showFastTimer > 0)
     {
         if (saveState->showFastTimer > SAVE_TIMER_FADE_TIME)
         {
             buttonAlpha = 255;
-            FONTCOL(40, 255, 0, 255);
+            spriteSetColor(gGBFont.spriteLayer, 40, 255, 0, 255);
         }
         else
         {
             buttonAlpha = 255 * saveState->showFastTimer / SAVE_TIMER_FADE_TIME;
-            FONTCOL(
+            spriteSetColor(gGBFont.spriteLayer, 
                 40,
                 255,
                 0,
@@ -89,18 +95,11 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
             );
         }
 
-        SHOWFONT(&glistp, "FAST FORWARD", 32, 16);
-        gButtonSprite.bitmap[gButtonSprite.nbitmaps++] = gButtonIconTemplates[gGameboy.settings.inputMapping.fastForward];
+        renderText(&gGBFont, "FAST FORWARD", 32, 16, 0);
+        char layer = gButtonIconLayer[gGameboy.settings.inputMapping.fastForward];
+        spriteSetColor(layer, 255, 255, 255, buttonAlpha);
+        spriteDrawTile(layer, 8, 12, 16, 16, gButtonIconTile[gGameboy.settings.inputMapping.fastForward]);
     }
-
-    Gfx *gxp, *dl;
-    gxp = glistp;
-    gButtonSprite.alpha = buttonAlpha;
-    spMove(&gButtonSprite, 8, 12);
-    spScale(&gButtonSprite, 1, 1);
-    dl = spDraw(&gButtonSprite);
-    gSPDisplayList(gxp++, dl);
-    glistp = gxp;
 }
 
 struct MenuItem* saveStateHandleInput(struct MenuItem* menuItem, int buttonsDown, int buttonsState)
@@ -199,14 +198,12 @@ void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
     
     if (menuItem == highlightedItem)
     {
-        gButtonSprite.alpha = 255;
-
         renderMenuBorder();
-        FONTCOL(255, 255, 255, 255);
+        spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
 
         renderCursorMenu(&mainMenuState->cursorMenu, 20, 56, 160);
 
-        SHOWFONT(&glistp, EMU_VERSION, 16, 216);
+        renderText(&gGBFont, EMU_VERSION, 16, 216, 0);
     }
 }
 
@@ -343,8 +340,6 @@ void updateMainMenu(struct MainMenu* mainMenu, OSContPad* pad)
 
 void renderMainMenu(struct MainMenu* mainMenu)
 {
-    gButtonSprite.rsp_dl_next = gButtonSprite.rsp_dl;
-    gButtonSprite.nbitmaps = 0;
     menuStateRender(&mainMenu->menu);
 }
 

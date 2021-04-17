@@ -4,6 +4,8 @@
 #include "gameboy.h"
 #include "graphics.h"
 #include "debug_out.h"
+#include "spritefont.h"
+#include "sprite.h"
 
 static char* gScaleLabels[ScreenScaleSettingCount] = {
     "1",
@@ -18,28 +20,28 @@ static char* gPixelLabels[ScreenScaleSettingCount] = {
 
 void renderPaletteItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
 {
-    FONTCOL(255, 255, 255, 255);
-    SHOWFONT(&glistp, menuItem->label, x, y);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+    renderText(&gGBFont, menuItem->label, x, y, 0);
 
     u16* paletteIndexPtr = (u16*)menuItem->data;
     u16* palette = getPalette(*paletteIndexPtr);
 
     if (selected)
     {
-        renderSprite(&gGUIItemTemplates[GUIItemIconLeft], x, y + 12, 1, 1);
-        renderSprite(&gGUIItemTemplates[GUIItemIconRight], x + 60, y + 12, 1, 1);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x, y + 12, 8, 8, gGUIItemTiles[GUIItemIconLeft]);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x + 60, y + 12, 8, 8, gGUIItemTiles[GUIItemIconRight]);
     }
 
-    setSpriteColor(GET_R(palette[0]), GET_G(palette[0]), GET_B(palette[0]));
-    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 12, y + 12, 1, 1);
-    setSpriteColor(GET_R(palette[1]), GET_G(palette[1]), GET_B(palette[1]));
-    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 24, y + 12, 1, 1);
-    setSpriteColor(GET_R(palette[2]), GET_G(palette[2]), GET_B(palette[2]));
-    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 36, y + 12, 1, 1);
-    setSpriteColor(GET_R(palette[3]), GET_G(palette[3]), GET_B(palette[3]));
-    renderSprite(&gGUIItemTemplates[GUIItemIconWhite], x + 48, y + 12, 1, 1);
+    spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[0]), GET_G(palette[0]), GET_B(palette[0]), 255);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 12, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[1]), GET_G(palette[1]), GET_B(palette[1]), 255);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 24, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[2]), GET_G(palette[2]), GET_B(palette[2]), 255);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 36, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[3]), GET_G(palette[3]), GET_B(palette[3]), 255);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 48, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
 
-    setSpriteColor(255, 255, 255);
+    spriteSetColor(SPRITE_BORDER_LAYER, 255, 255, 255, 255);
 }
 
 struct MenuItem* inputPaletteItem(struct CursorMenuItem* menuItem, int buttonDown)
@@ -77,10 +79,9 @@ void graphicsMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     
     if (menuItem == highlightedItem)
     {
-        gButtonSprite.alpha = 255;
         renderMenuBorder();
-        FONTCOL(255, 255, 255, 255);
-        SHOWFONT(&glistp, "SCREEN", 16, 32);
+        spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+        renderText(&gGBFont, "SCREEN", 16, 32, 0);
         renderCursorMenu(&graphicsMenu->cursor, 16, 56, 136);
     }
 }

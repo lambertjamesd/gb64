@@ -18,21 +18,26 @@ void initFont(struct Font* font, int layer, int spaceWidth, struct CharacterDefi
     }
 }
 
-void renderText(struct Font* font, const char* str, int x, int y)
+void setFontColor(struct Font* font, char r, char g, char b)
+{
+
+}
+
+void renderText(struct Font* font, const char* str, int x, int y, int scaleShift)
 {
     while (*str)
     {
-        struct Character curr = font->characters[*str];
+        struct SpriteTile curr = font->characters[*str];
         if (curr.w)
         {
-            drawSprite(font->spriteLayer, x, y, curr.w, curr.h, curr.x, curr.y, curr.w, curr.h);
-            x += curr.w;
+            spriteDraw(font->spriteLayer, x, y, curr.w << scaleShift, curr.h << scaleShift, curr.x, curr.y, scaleShift, scaleShift);
+            x += curr.w << scaleShift;
         }
         else if (*str == ' ')
         {
-            x += font->spaceWidth;
+            x += font->spaceWidth << scaleShift;
         }
-        
+
         ++str;
     }
 }

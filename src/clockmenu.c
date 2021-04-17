@@ -3,6 +3,8 @@
 #include "gameboy.h"
 #include "../render.h"
 #include "debug_out.h"
+#include "spritefont.h"
+#include "sprite.h"
 
 static char* hourLabels[] = {
     "12 AM",
@@ -150,10 +152,9 @@ void clockMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
     
     if (menuItem == highlightedItem)
     {
-        gButtonSprite.alpha = 255;
         renderMenuBorder();
-        FONTCOL(255, 255, 255, 255);
-        SHOWFONT(&glistp, "CLOCK", 16, 32);
+        spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+        renderText(&gGBFont, "CLOCK", 16, 32, 0);
         renderCursorMenu(&clockMenu->cursor, 16, 56, 136);
     }
 }

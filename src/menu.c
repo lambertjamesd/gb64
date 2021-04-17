@@ -5,119 +5,76 @@
 #include "../render.h"
 #include "../tex/textures.h"
 #include "gameboy.h"
+#include "sprite.h"
+#include "spritefont.h"
 
 #define BUTTON_ICON_COUNT   10
 #define BUTTON_ICON_DL_LENGTH   60
 
-Bitmap gButtonIconTemplates[] = {
-    {16, 32, 0, 0, tex_cbuttons, 16, 0},
-    {16, 32, 16, 0, tex_cbuttons, 16, 0},
-    {16, 32, 0, 16, tex_cbuttons, 16, 0},
-    {16, 32, 16, 16, tex_cbuttons, 16, 0},
+struct SpriteTile gButtonIconTile[] = {
+    {0, 0, 16, 16},
+    {16, 0, 16, 16},
+    {0, 16, 16, 16},
+    {16, 16, 16, 16},
     
-    {16, 32, 0, 0, tex_triggers, 16, 0},
-    {16, 32, 16, 0, tex_triggers, 16, 0},
+    {0, 0, 16, 16},
+    {16, 0, 16, 16},
     
     // blank
-    {16, 32, 16, 16, tex_triggers, 16, 0},
-    {16, 32, 16, 16, tex_triggers, 16, 0},
+    {16, 16, 16, 16},
+    {16, 16, 16, 16},
     
-    {16, 32, 16, 0, tex_dpad, 16, 0},
-    {16, 32, 0, 0, tex_dpad, 16, 0},
-    {16, 32, 0, 16, tex_dpad, 16, 0},
-    {16, 32, 16, 16, tex_dpad, 16, 0},
+    {16, 0, 16, 16},
+    {0, 0, 16, 16},
+    {0, 16, 16, 16},
+    {16, 16, 16, 16},
     
-    {16, 32, 0, 16, tex_facebuttons, 16, 0},
-    {16, 32, 0, 16, tex_triggers, 16, 0},
-    {16, 32, 16, 0, tex_facebuttons, 16, 0},
-    {16, 32, 0, 0, tex_facebuttons, 16, 0},
+    {0, 16, 16, 16},
+    {0, 16, 16, 16},
+    {16, 0, 16, 16},
+    {0, 0, 16, 16},
 };
 
-Bitmap gGUIItemTemplates[] = {
-    {8, 32, 0, 0, tex_guiitems, 8, 0},
-    {8, 32, 8, 0, tex_guiitems, 8, 0},
-    {8, 32, 0, 8, tex_guiitems, 8, 0},
-    {8, 32, 8, 8, tex_guiitems, 8, 0},
-    {8, 32, 16, 0, tex_guiitems, 8, 0},
-    {8, 32, 24, 8, tex_guiitems, 8, 0},
-    {8, 32, 24, 0, tex_guiitems, 8, 0},
-    {8, 32, 16, 8, tex_guiitems, 8, 0},
-    {8, 32, 0, 16, tex_guiitems, 8, 0},
-    {8, 32, 8, 16, tex_guiitems, 8, 0},
-    {8, 32, 24, 24, tex_guiitems, 8, 0},
+char gButtonIconLayer[] = {
+    SPRITE_CBUTTONS_LAYER,
+    SPRITE_CBUTTONS_LAYER,
+    SPRITE_CBUTTONS_LAYER,
+    SPRITE_CBUTTONS_LAYER,
+    
+    SPRITE_TRIGGERS_LAYER,
+    SPRITE_TRIGGERS_LAYER,
+    
+    // blank
+    SPRITE_TRIGGERS_LAYER,
+    SPRITE_TRIGGERS_LAYER,
+    
+    SPRITE_DPAD_LAYER,
+    SPRITE_DPAD_LAYER,
+    SPRITE_DPAD_LAYER,
+    SPRITE_DPAD_LAYER,
+    
+    SPRITE_FACE_LAYER,
+    SPRITE_TRIGGERS_LAYER,
+    SPRITE_FACE_LAYER,
+    SPRITE_FACE_LAYER,
+};
+
+struct SpriteTile gGUIItemTiles[] = {
+    {0, 0, 8, 8},
+    {8, 0, 8, 8},
+    {0, 8, 8, 8},
+    {8, 8, 8, 8},
+    {16, 0, 8, 8},
+    {24, 8, 8, 8},
+    {24, 0, 8, 8},
+    {16, 8, 8, 8},
+    {0, 16, 8, 8},
+    {8, 16, 8, 8},
+    {24, 24, 8, 8},
 };
 
 static Gfx      gButtonIconsDL[NUM_DL(1) * BUTTON_ICON_DL_LENGTH];
 static Bitmap   gButtonIcons[BUTTON_ICON_COUNT];
-
-unsigned short gGUIPalette[] = {
-	0x0001,
-	0xEF2B,
-	0xEE87,
-	0xBC83,
-	0x1,
-	0xC631,
-	0x6B5D,
-	0x2109,
-	0x1,
-	0xBE3F,
-	0xCFB1,
-	0x1935,
-	0x1E05,
-	0x2055,
-	0x2C5,
-	0xF5EF,
-	0xC885,
-	0x5045,
-	0x1,
-	0xEF2B,
-	0xFFFF,
-	0x0,
-	0x1,
-	0xC631,
-	0x6B5D,
-	0x2109,
-};
-
-Sprite gButtonSprite = {
-    0, 0,
-    16, 16,
-    1.0, 1.0,
-    0, 0,
-    SP_TRANSPARENT | SP_CUTOUT,
-    0x1234,
-    255, 255, 255, 255,
-    0, sizeof(gGUIPalette) / sizeof(*gGUIPalette), (int*)gGUIPalette,
-    0, 0,
-    BUTTON_ICON_COUNT, NUM_DL(1) * BUTTON_ICON_DL_LENGTH,
-    32, 32,
-    G_IM_FMT_CI,
-    G_IM_SIZ_8b,
-    gButtonIcons,
-    gButtonIconsDL,
-    NULL,
-};
-
-void renderSprite(Bitmap* bitmap, s32 x, s32 y, s32 w, s32 h)
-{
-    gButtonSprite.nbitmaps = 1;
-    gButtonSprite.bitmap[0] = *bitmap;
-
-    Gfx *gxp, *dl;
-    gxp = glistp;
-    spMove(&gButtonSprite, x, y);
-    spScale(&gButtonSprite, w, h);
-    dl = spDraw(&gButtonSprite);
-    gSPDisplayList(gxp++, dl);
-    glistp = gxp;
-}
-
-void setSpriteColor(u8 r, u8 g, u8 b)
-{
-    gButtonSprite.red = r;
-    gButtonSprite.green = g;
-    gButtonSprite.blue = b;
-}
 
 void initMenuState(struct MenuState* menu, struct MenuItem* items, int itemCount)
 {
@@ -264,15 +221,16 @@ void defaultRenderCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, 
 {
     if (selected)
     {
-        renderSprite(
-            &gGUIItemTemplates[GUIItemIconRight], 
+        spriteDrawTile(
+            SPRITE_BORDER_LAYER,
             x, y,
-            1, 1
+            8, 8,
+            gGUIItemTiles[GUIItemIconRight]
         );
     }
 
-    FONTCOL(255, 255, 255, 255);
-    SHOWFONT(&glistp, menuItem->label, x + 12, y);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+    renderText(&gGBFont, menuItem->label, x + 12, y, 0);
 }
 
 struct MenuItem* defaultInputCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown)
@@ -292,10 +250,11 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
 
     if (menuItemIndex)
     {
-        renderSprite(
-            &gGUIItemTemplates[GUIItemIconUp],
+        spriteDrawTile(
+            SPRITE_BORDER_LAYER,
             x, y - 8,
-            1, 1
+            8, 8,
+            gGUIItemTiles[GUIItemIconUp]
         );
     }
 
@@ -323,10 +282,11 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
 
     if (menuItemIndex < menu->menuItemCount)
     {
-        renderSprite(
-            &gGUIItemTemplates[GUIItemIconDown],
+        spriteDrawTile(
+            SPRITE_BORDER_LAYER,
             x, y,
-            1, 1
+            8, 8,
+            gGUIItemTiles[GUIItemIconDown]
         );
     }
 }
@@ -418,12 +378,12 @@ void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, ch
 
 void renderMenuBorder()
 {
-    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 40, 12, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconTopRight], 96, 40, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconVert], 96, 48, 1, 48);
-    renderSprite(&gGUIItemTemplates[GUIItemIconBottomRight], 96, 192, 1, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconHorz], 0, 192, 12, 1);
-    renderSprite(&gGUIItemTemplates[GUIItemIconBlack], 0, 48, 12, 18);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 40, 96, 8, gGUIItemTiles[GUIItemIconHorz]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 96, 40, 8, 8, gGUIItemTiles[GUIItemIconTopRight]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 96, 48, 8, 144, gGUIItemTiles[GUIItemIconVert]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 96, 192, 8, 8, gGUIItemTiles[GUIItemIconBottomRight]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 192, 96, 8, gGUIItemTiles[GUIItemIconHorz]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 48, 96, 144, gGUIItemTiles[GUIItemIconBlack]);
 }
 
 ///////////////////////////////////
@@ -442,26 +402,26 @@ void renderSelectCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, i
 {
     struct SelectCursorMenuItem* select = (struct SelectCursorMenuItem*)menuItem->data;
 
-    FONTCOL(255, 255, 255, 255);
-    SHOWFONT(&glistp, menuItem->label, x, y);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+    renderText(&gGBFont, menuItem->label, x, y, 0);
     
     if (selected)
     {
-        renderSprite(&gGUIItemTemplates[GUIItemIconLeft], x, y + 12, 1, 1);
-        renderSprite(&gGUIItemTemplates[GUIItemIconRight], x + 60, y + 12, 1, 1);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x, y + 12, 8, 8, gGUIItemTiles[GUIItemIconLeft]);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x + 60, y + 12, 8, 8, gGUIItemTiles[GUIItemIconRight]);
     }
 
     int currentValue = (select->value - select->minValue) % (select->maxValue - select->minValue);
     
     if (select->labels)
     {
-        SHOWFONT(&glistp, select->labels[currentValue], x + 12, y + 12);
+        renderText(&gGBFont, select->labels[currentValue], x + 12, y + 12, 0);
     }
     else
     {
         char tmpString[16];
         sprintf(tmpString, "%d", select->value);
-        SHOWFONT(&glistp, tmpString, x + 12, y + 12);
+        renderText(&gGBFont, tmpString, x + 12, y + 12, 0);
     }
 }
 

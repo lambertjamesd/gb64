@@ -5,6 +5,7 @@
 #include "src/assert.h"
 #include "tex/textures.h"
 #include "src/sprite.h"
+#include "src/spritefont.h"
 
 /*
  * Task header.
@@ -71,9 +72,6 @@ void preRenderFrame(int clear)
 
     gDPPipeSync(glistp++);
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
-
-    initSprites();
-    setLayerGraphics(SPRITE_FONT_LAYER, gUseFontTexture);
 }
 
 void renderDebugLog()
@@ -82,12 +80,7 @@ void renderDebugLog()
 	x = 18;
     y = 18;
 
-    font_init( &glistp );
-    
-    font_set_scale( 1.0, 1.0 );
-    font_set_win( 200, 1 );
-
-    FONTCOL(55, 255, 155, 255);
+    spriteSetColor(gGBFont.spriteLayer, 55, 255, 155, 255);
 
     char *cstring = getDebugString();
 
@@ -95,7 +88,7 @@ void renderDebugLog()
 
     while (*cstring)
     {
-            SHOWFONT(&glistp,cstring,x,y);
+            renderText(&gGBFont, cstring, x, y, 0);
 
             while (*cstring && *cstring != '\n')
             {
@@ -119,11 +112,7 @@ void finishRenderFrame()
     theadp = &taskHeader;
     dynamicp = &dynamic;
 
-    font_finish( &glistp );
-
     finishSprites(&glistp);
-
-    gSPTextureRectangle(glistp++, 0, 0, 64 << 2, 64 << 2, 0, 32, 32, 0x400, 0x400);
 
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);

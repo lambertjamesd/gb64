@@ -8,6 +8,8 @@
 #include "faulthandler.h"
 #include "./gameboy.h"
 #include "./graphics.h"
+#include "sprite.h"
+#include "spritefont.h"
 
 u8 READ_FROM_C(struct Memory* memory, u16 address);
 
@@ -144,21 +146,21 @@ void editValueRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
         int index;
         char strBuffer[2];
         struct EditValueMenuState* editMenu = (struct EditValueMenuState*)menuItem->data;
-        FONTCOL(255, 255, 255, 255);
+        spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
 
         for (index = 0; index < editMenu->nibbleWidth; ++index)
         {
             if (editMenu->currentNibble == index)
             {
-                FONTCOL(200, 100, 45, 255);
+                spriteSetColor(gGBFont.spriteLayer, 200, 100, 45, 255);
             }
             else
             {
-                FONTCOL(45, 100, 255, 255);
+                spriteSetColor(gGBFont.spriteLayer, 45, 100, 255, 255);
             }
 
             sprintf(strBuffer, "%1X", (editMenu->currentValue >> (index * 4)) & 0xF);
-            SHOWFONT(&glistp, strBuffer, editMenu->x + DEBUGGER_FONT_W * (editMenu->nibbleWidth - index - 1), editMenu->y);
+            renderText(&gGBFont, strBuffer, editMenu->x + DEBUGGER_FONT_W * (editMenu->nibbleWidth - index - 1), editMenu->y, 0);
         }
     }
 }
@@ -240,7 +242,7 @@ void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlight
     struct EditValueMenuState* editMenu = (struct EditValueMenuState*)addressGUI->editMenuItem->data;
     u16 address = addressGUI->addressStart;
 
-    FONTCOL(255, 255, 255, 255);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
     
     for (index = 0; index < MEMORY_BLOCK_ROWS; ++index)
     {
@@ -248,15 +250,15 @@ void memoryAddressesRender(struct MenuItem* menuItem, struct MenuItem* highlight
         {
             if (addressGUI->menuState->cursorY == index && menuItem == highlightedItem)
             {
-                FONTCOL(43, 200, 100, 255);
+                spriteSetColor(gGBFont.spriteLayer, 43, 200, 100, 255);
             }
             else
             {
-                FONTCOL(255, 255, 255, 255);
+                spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
             }
 
             sprintf(strBuffer, "%04X", address);
-            SHOWFONT(&glistp, strBuffer, MEMORY_GRID_X, MEMORY_GRID_Y + index * DEBUG_MENU_ROW_HEIGHT);
+            renderText(&gGBFont, strBuffer, MEMORY_GRID_X, MEMORY_GRID_Y + index * DEBUG_MENU_ROW_HEIGHT, 0);
         }
         address += MEMORY_BLOCK_COLS;
     }
@@ -352,7 +354,7 @@ void memoryValuesRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     struct EditValueMenuState* editMenu = (struct EditValueMenuState*)values->editMenuItem->data;
     memoryValuesCheckReread(values);
 
-    FONTCOL(255, 255, 255, 255);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
     
     for (y = 0; y < MEMORY_BLOCK_ROWS; ++y)
     {
@@ -363,15 +365,15 @@ void memoryValuesRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
 
             if (values->menuState->cursorY == y && values->menuState->cursorX == x && menuItem == highlightedItem)
             {
-                FONTCOL(43, 200, 100, 255);
+                spriteSetColor(gGBFont.spriteLayer, 43, 200, 100, 255);
             }
             else
             {
-                FONTCOL(255, 255, 255, 255);
+                spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
             }
 
             sprintf(strBuffer, "%02X", values->values[y * MEMORY_BLOCK_COLS + x]);
-            SHOWFONT(&glistp, strBuffer, MEMORY_VALUES_X + x *  MEMORY_VALUES_SPACING, MEMORY_GRID_Y + y * DEBUG_MENU_ROW_HEIGHT);
+            renderText(&gGBFont, strBuffer, MEMORY_VALUES_X + x *  MEMORY_VALUES_SPACING, MEMORY_GRID_Y + y * DEBUG_MENU_ROW_HEIGHT, 0);
         }
     }
 }
@@ -494,7 +496,7 @@ void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     char strBuffer[16];
     struct InstructionsMenuItem* instructions = (struct InstructionsMenuItem*)menuItem->data;
     struct EditValueMenuState* editMenu = (struct EditValueMenuState*)instructions->editMenuItem->data;
-    FONTCOL(255, 255, 255, 255);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
 
     for (index = 0; index < MI_INSTRUCTIONS_LINE_COUNT; ++index)
     {
@@ -504,14 +506,14 @@ void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
         {
             if (instructions->menuState->cursorY == index && menuItem == highlightedItem && instructions->menuState->cursorX == MI_INSTRUCTION_ADDR_COL)
             {
-                FONTCOL(43, 200, 100, 255);
+                spriteSetColor(gGBFont.spriteLayer, 43, 200, 100, 255);
             }
             else
             {
-                FONTCOL(255, 255, 255, 255);
+                spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
             }
             sprintf(strBuffer, "%04X", line->address);
-            SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+            renderText(&gGBFont, strBuffer, MI_INSTRUCTIONS_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT, 0);
         }
 
         decodeInstruction(strBuffer, line->instruction, line->address);
@@ -520,31 +522,31 @@ void instructionsRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
         {
             if (line->breakpoint)
             {
-                FONTCOL(200, 200, 43, 255);
+                spriteSetColor(gGBFont.spriteLayer, 200, 200, 43, 255);
             }
             else
             {
-                FONTCOL(43, 200, 100, 255);
+                spriteSetColor(gGBFont.spriteLayer, 43, 200, 100, 255);
             }
         }
         else
         {
             if (line->breakpoint)
             {
-                FONTCOL(200, 100, 43, 255);
+                spriteSetColor(gGBFont.spriteLayer, 200, 100, 43, 255);
             }
             else
             {
-                FONTCOL(255, 255, 255, 255);
+                spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
             }
         }
 
-        SHOWFONT(&glistp, strBuffer, MI_INSTRUCTIONS_NAME_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+        renderText(&gGBFont, strBuffer, MI_INSTRUCTIONS_NAME_X, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT, 0);
 
         if (line->address == instructions->cpu->pc)
         {
-            FONTCOL(200, 100, 43, 255);
-            SHOWFONT(&glistp, "-", MI_INSTRUCTIONS_X - DEBUGGER_FONT_W, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT);
+            spriteSetColor(gGBFont.spriteLayer, 200, 100, 43, 255);
+            renderText(&gGBFont, "-", MI_INSTRUCTIONS_X - DEBUGGER_FONT_W, MI_INSTRUCTIONS_Y + index * DEBUG_MENU_ROW_HEIGHT, 0);
         }
     }
 }
@@ -647,27 +649,27 @@ void cpuStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
 {
     struct CPUState* cpu = (struct CPUState*)menuItem->data;
     char buffer[8];
-    FONTCOL(255, 255, 255, 255);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
 
     sprintf(buffer, "AF %02X%02X", cpu->a, cpu->f);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 0 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X, CPU_STATE_Y + 0 * DEBUG_MENU_ROW_HEIGHT, 0);
     sprintf(buffer, "BC %02X%02X", cpu->b, cpu->c);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 1 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X, CPU_STATE_Y + 1 * DEBUG_MENU_ROW_HEIGHT, 0);
     sprintf(buffer, "DE %02X%02X", cpu->d, cpu->e);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 2 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X, CPU_STATE_Y + 2 * DEBUG_MENU_ROW_HEIGHT, 0);
     sprintf(buffer, "HL %02X%02X", cpu->h, cpu->l);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 3 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X, CPU_STATE_Y + 3 * DEBUG_MENU_ROW_HEIGHT, 0);
     
     sprintf(buffer, "SP %04X", cpu->sp);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 4 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X, CPU_STATE_Y + 4 * DEBUG_MENU_ROW_HEIGHT, 0);
     sprintf(buffer, "PC %04X", cpu->pc);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X, CPU_STATE_Y + 5 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X, CPU_STATE_Y + 5 * DEBUG_MENU_ROW_HEIGHT, 0);
     
     sprintf(buffer, "EI %1X", cpu->interrupts);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 0 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 0 * DEBUG_MENU_ROW_HEIGHT, 0);
 
     sprintf(buffer, "TK %03X", cpu->cyclesRun & 0xFFFFFF);
-    SHOWFONT(&glistp, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 1 * DEBUG_MENU_ROW_HEIGHT);
+    renderText(&gGBFont, buffer, CPU_STATE_X + 8 * DEBUGGER_FONT_W, CPU_STATE_Y + 1 * DEBUG_MENU_ROW_HEIGHT, 0);
 }
 
 ///////////////////////////////////
@@ -776,6 +778,7 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 
     while (gDebugMenu.state.isDebugging)
     {
+        initSprites();
 		pad = ReadController(0);
 
 		// rerenderLastFrame(&gGameboy.settings.graphics, getColorBuffer());
@@ -821,6 +824,7 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
         lastButton = pad[0]->button;
     }
 
+    initSprites();
     clearDebugOutput();
     zeroMemory(cfb, sizeof(u16) * 2 * SCREEN_WD * SCREEN_HT);
 

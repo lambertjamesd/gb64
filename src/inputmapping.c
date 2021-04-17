@@ -2,6 +2,8 @@
 #include "inputmapping.h"
 #include "gameboy.h"
 #include "render.h"
+#include "sprite.h"
+#include "spritefont.h"
 
 static char* gInputMappingNames[MAPPED_INPUT_COUNT] = {
     "RGHT",
@@ -24,10 +26,11 @@ void renderInputMappingItem(struct CursorMenuItem* menuItem, int x, int y, int s
 
     if (selected)
     {
-        renderSprite(
-            &gGUIItemTemplates[GUIItemIconRight], 
+        spriteDrawTile(
+            SPRITE_BORDER_LAYER,
             x, y + 4,
-            1, 1
+            8, 8,
+            gGUIItemTiles[GUIItemIconRight]
         );
     }
 
@@ -35,15 +38,16 @@ void renderInputMappingItem(struct CursorMenuItem* menuItem, int x, int y, int s
     {
         enum InputButtonSetting buttonSetting = getButtonMapping(&gGameboy.settings.inputMapping, buttonIndex);
 
-        renderSprite(
-            &gButtonIconTemplates[buttonSetting],
+        spriteDrawTile(
+            gButtonIconLayer[buttonSetting],
             x + 12, y,
-            1, 1
+            16, 16,
+            gButtonIconTile[buttonSetting]
         );
     }
 
-    FONTCOL(255, 255, 255, 255);
-    SHOWFONT(&glistp, menuItem->label, x + 32, y + 4);
+    spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+    renderText(&gGBFont, menuItem->label, x + 32, y + 4, 0);
 }
 
 struct MenuItem* inputInputMappingItem(struct CursorMenuItem* menuItem, int buttonDown)
@@ -58,10 +62,9 @@ void inputMappingRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     
     if (menuItem == highlightedItem)
     {
-        gButtonSprite.alpha = 255;
         renderMenuBorder();
-        FONTCOL(255, 255, 255, 255);
-        SHOWFONT(&glistp, "INPUT", 16, 32);
+        spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
+        renderText(&gGBFont, "INPUT", 16, 32, 0);
         renderCursorMenu(&inputMapping->cursor, 16, 56, 136);
     }
 }

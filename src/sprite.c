@@ -7,6 +7,7 @@
 
 Gfx* gLayerSetup[MAX_LAYER_COUNT];
 
+u32 gCurrentSpriteColors[MAX_LAYER_COUNT];
 Gfx gSpriteDisplayList[SPRITE_GL_LENGTH];
 Gfx* gLayerDL[MAX_LAYER_COUNT];
 Gfx* gCurrentLayerDL[MAX_LAYER_COUNT];
@@ -74,31 +75,30 @@ void setLayerGraphics(int layer, Gfx* graphics)
     gLayerSetup[layer] = graphics;
 }
 
-void drawSprite(int layer, int x, int y, int w, int h, int sx, int sy, int sw, int sh)
+void spriteDraw(int layer, int x, int y, int w, int h, int sx, int sy, int sw, int sh)
 {
     Gfx workingMem[4];
     Gfx* curr = workingMem;
 
-    int scaleX;
-    int scaleY;
+    gSPTextureRectangle(
+        curr++,
+        x << 2, 
+        y << 2,
+        (x + (w << sw)) << 2,
+        (y + (h << sh)) << 2,
+        G_TX_RENDERTILE,
+        sx << 5, sy << 5,
+        0x400 >> sw,
+        0x400 >> sh
+    );
 
-    if (w == sw)
-    {
-        scaleX = 0x400;
-    }
-    else
-    {
-        scaleX = (sw << 10) / w;
-    }
+    writeDL(layer, workingMem, curr - workingMem);
+}
 
-    if (h == sh)
-    {
-        scaleY = 0x400;
-    }
-    else
-    {
-        scaleY = (sh << 10) / h;
-    }
+void spriteDrawTile(int layer, int x, int y, int w, int h, struct SpriteTile tile)
+{
+    Gfx workingMem[4];
+    Gfx* curr = workingMem;
 
     gSPTextureRectangle(
         curr++,
@@ -107,12 +107,26 @@ void drawSprite(int layer, int x, int y, int w, int h, int sx, int sy, int sw, i
         (x + w) << 2,
         (y + h) << 2,
         G_TX_RENDERTILE,
-        sx << 5, sy << 5,
-        scaleX,
-        scaleY
+        tile.x << 5, tile.y << 5,
+        (tile.w << 10) / w,
+        (tile.h << 10) / h
     );
 
     writeDL(layer, workingMem, curr - workingMem);
+}
+
+void spriteSetColor(int layer, char r, char g, char b, char a)
+{
+    int key = (r << 24) | (g << 16) | (b << 8) | (a << 0);
+
+    if (key != gCurrentSpriteColors[layer])
+    {
+        Gfx workingMem;
+        Gfx* curr = &workingMem;
+        gDPSetEnvColor(curr++, r, g, b, a);
+        writeDL(layer, &workingMem, curr - &workingMem);
+        gCurrentSpriteColors[layer] = key;
+    }
 }
 
 void initSprites()
@@ -122,6 +136,7 @@ void initSprites()
         gLayerDL[i] = NULL;
         gCurrentLayerDL[i] = NULL;
         gLayerChunk[i] = NULL;
+        gCurrentSpriteColors[i] = ~0;
     }
 
     gSpriteNextChunk = gSpriteDisplayList;
