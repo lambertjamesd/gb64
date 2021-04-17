@@ -26,7 +26,7 @@ typedef int (*SaveWriteCallback)(void *from, int sramOffset, int length);
 
 enum StoredInfoType loadSettings(struct GameBoy* gameboy);
 int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType);
-void loadRAM(struct Memory* memory, enum StoredInfoType storeType);
+void loadRAM(struct Memory* memory, enum StoredInfoType storeType, int compressedSize);
 enum StoredInfoType saveGameboyState(struct GameBoy* gameboy);
 int getSaveStateSize(struct GameBoy* gameboy);
 void initSaveCallbacks();

@@ -39,7 +39,7 @@ struct GameboySettings gDefaultSettings = {
         0,
         0,
     },
-    StoredInfoTypeAll,
+    StoredInfoTypeNone,
     0,
 };
 
@@ -58,7 +58,7 @@ void initGameboy(struct GameBoy* gameboy, struct ROMLayout* rom)
     else
     {
         updateToLatestVersion(gameboy);
-        loadRAM(&gameboy->memory, saveType);
+        loadRAM(&gameboy->memory, saveType, gameboy->settings.version >= 2 ? gameboy->settings.compressedSize : 0);
     }
 
 

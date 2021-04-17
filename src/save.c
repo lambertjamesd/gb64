@@ -230,135 +230,6 @@ int saveToFlash(void *from, int sramOffset, int length)
     return 0;
 }
 
-void loadRAM(struct Memory* memory, enum StoredInfoType storeType)
-{
-    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
-    {
-        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
-        switch (storeType)
-        {
-            case StoredInfoTypeAll:
-            case StoredInfoTypeSettingsRAM:
-                gSaveReadCallback(
-                    memory->cartRam, 
-                    ALIGN_FLASH_OFFSET(sizeof(struct GameboySettings)), 
-                    size
-                );
-                break;
-            case StoredInfoTypeRAM:
-                gSaveReadCallback(
-                    memory->cartRam, 
-                    0, 
-                    size
-                );
-                break;
-        }
-
-
-        if (memory->mbc->flags & MBC_FLAGS_ACCEL)
-        {
-            struct MBC7RamLayout* mbc7Data =  (struct MBC7RamLayout*)memory->cartRam;
-            mbc7Data->accelX  = 0x8000;
-            mbc7Data->accelY = 0x8000;
-            mbc7Data->sensorAccelX  = 0x8000;
-            mbc7Data->sensorAccelY = 0x8000;
-
-            mbc7Data->currentValue = 0x1;
-            mbc7Data->eepromOutIndex = ~0;
-            mbc7Data->eepromDataIn = 0;
-            mbc7Data->eepromDataCount = ~0;
-            mbc7Data->writeEnable = 0;
-            memset(mbc7Data->eeprom, 0, 256);
-
-            mbc7Data->eeprom[0] = 0x54;
-            mbc7Data->eeprom[1] = 0x41;
-            mbc7Data->eeprom[2] = 0x4D;
-            mbc7Data->eeprom[3] = 0x41;
-            mbc7Data->eeprom[4] = 0x7A;
-            mbc7Data->eeprom[5] = 0xA0;
-            mbc7Data->eeprom[6] = 0x87;
-            mbc7Data->eeprom[7] = 0x70;
-
-            if (mbc7Data->dataCheck != GB_SETTINGS_HEADER)
-            {
-                mbc7Data->dataCheck = GB_SETTINGS_HEADER;
-            }
-        }
-    }
-}
-
-enum StoredInfoType loadSettings(struct GameBoy* gameboy)
-{
-    gSaveReadCallback(&gameboy->settings, 0, sizeof(struct GameboySettings));
-    if (gameboy->settings.header == GB_SETTINGS_HEADER)
-    {
-        if (gameboy->settings.version <= 1) {
-            gameboy->settings.storedType = getDeprecatedStoredInfoType(gameboy);
-        }
-    }
-    else
-    {
-        gameboy->settings = gDefaultSettings;
-    }
-}
-
-struct MiscSaveStateData
-{
-    struct CPUState cpu;
-    char cpuPadding[128 - sizeof(struct CPUState)];
-    struct AudioRenderState audioState;
-};
-
-int readGameboyState(struct GameBoy* gameboy, SaveReadCallback readCallback, int offset, int gbc)
-{
-    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
-    if (readCallback(gameboy->memory.cartRam, offset, sectionSize) == -1)
-    {
-        return -1;
-    }
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-    sectionSize = gbc ? 0x4000 : 0x2000;
-    if (readCallback(&gameboy->memory.vram, offset, sectionSize) == -1)
-    {
-        return -1;
-    }
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-    sectionSize = sizeof(u16) * PALETTE_COUNT;
-    if (readCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize) == -1)
-    {
-        return -1;
-    }
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-    sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
-    if (readCallback(gameboy->memory.internalRam, offset, sectionSize) == -1)
-    {
-        return -1;
-    }
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-    
-    sectionSize = sizeof(struct MiscMemory);
-    if (readCallback(&gameboy->memory.misc, offset, sectionSize) == -1)
-    {
-        return -1;
-    }
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-    struct MiscSaveStateData miscData;
-    sectionSize = sizeof(struct MiscSaveStateData);
-    if (readCallback(&miscData, offset, sectionSize) == -1)
-    {
-        return -1;
-    }
-
-    gameboy->cpu = miscData.cpu;
-    gameboy->memory.audio = miscData.audioState;
-    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
-
-    return 0;
-}
 
 #define OUT_CHUNK_SIZE 256
 
@@ -453,6 +324,156 @@ int compressMemory(char* dst, int dstLength, const char* src, int srcLength)
     return comp.out.outlen;
 }
 
+void loadRAM(struct Memory* memory, enum StoredInfoType storeType, int compressedSize)
+{
+    if (memory->mbc && memory->mbc->flags | MBC_FLAGS_BATTERY)
+    {
+        int size = RAM_BANK_SIZE * getRAMBankCount(memory->rom);
+        SaveReadCallback readCallback = 0;
+        int chunkStart = 0;
+
+        if (compressedSize)
+        {
+            if (!gSaveReadCallback(gCompressedMemory, FLASH_BLOCK_SIZE, compressedSize)) {
+                int decompressed = decompressMemory(gUncompressedMemory, sizeof(gUncompressedMemory), gCompressedMemory, compressedSize);
+
+                if (decompressed > 0)
+                {
+                    readCallback = &readFromUncompressedData;
+                }
+            }
+
+        }
+        else
+        {
+            readCallback = gSaveReadCallback;
+
+            if (storeType == StoredInfoTypeAll || storeType == StoredInfoTypeSettingsRAM)
+            {
+                chunkStart = ALIGN_FLASH_OFFSET(sizeof(struct GameboySettings));
+            }
+        }
+
+        if (readCallback)
+        {
+            switch (storeType)
+            {
+                case StoredInfoTypeAll:
+                case StoredInfoTypeSettingsRAM:
+                    readCallback(
+                        memory->cartRam, 
+                        chunkStart, 
+                        size
+                    );
+                    break;
+                case StoredInfoTypeRAM:
+                    readCallback(
+                        memory->cartRam, 
+                        0, 
+                        size
+                    );
+                    break;
+            }
+        }
+
+        if (memory->mbc->flags & MBC_FLAGS_ACCEL)
+        {
+            struct MBC7RamLayout* mbc7Data =  (struct MBC7RamLayout*)memory->cartRam;
+            mbc7Data->accelX  = 0x8000;
+            mbc7Data->accelY = 0x8000;
+            mbc7Data->sensorAccelX  = 0x8000;
+            mbc7Data->sensorAccelY = 0x8000;
+
+            mbc7Data->currentValue = 0x1;
+            mbc7Data->eepromOutIndex = ~0;
+            mbc7Data->eepromDataIn = 0;
+            mbc7Data->eepromDataCount = ~0;
+            mbc7Data->writeEnable = 0;
+
+            if (mbc7Data->dataCheck != GB_SETTINGS_HEADER)
+            {
+                memset(mbc7Data->eeprom, 0, 256);
+                mbc7Data->dataCheck = GB_SETTINGS_HEADER;
+            }
+        }
+    }
+}
+
+enum StoredInfoType loadSettings(struct GameBoy* gameboy)
+{
+    gSaveReadCallback(&gameboy->settings, 0, sizeof(struct GameboySettings));
+    if (gameboy->settings.header == GB_SETTINGS_HEADER)
+    {
+        if (gameboy->settings.version <= 1) {
+            gameboy->settings.storedType = getDeprecatedStoredInfoType(gameboy);
+        }
+    }
+    else
+    {
+        gameboy->settings = gDefaultSettings;
+    }
+
+    return getStoredInfoType(gameboy);
+}
+
+struct MiscSaveStateData
+{
+    struct CPUState cpu;
+    char cpuPadding[128 - sizeof(struct CPUState)];
+    struct AudioRenderState audioState;
+};
+
+int readGameboyState(struct GameBoy* gameboy, SaveReadCallback readCallback, int offset, int gbc)
+{
+    int sectionSize = RAM_BANK_SIZE * getRAMBankCount(gameboy->memory.rom);
+    if (readCallback(gameboy->memory.cartRam, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    sectionSize = gbc ? 0x4000 : 0x2000;
+    if (readCallback(&gameboy->memory.vram, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    sectionSize = sizeof(u16) * PALETTE_COUNT;
+    if (readCallback(&gameboy->memory.vram.colorPalettes, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    sectionSize = gbc ? MAX_RAM_SIZE : 0x2000;
+    if (readCallback(gameboy->memory.internalRam, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+    
+    sectionSize = sizeof(struct MiscMemory);
+    if (readCallback(&gameboy->memory.misc, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    struct MiscSaveStateData miscData;
+    sectionSize = sizeof(struct MiscSaveStateData);
+    if (readCallback(&miscData, offset, sectionSize) == -1)
+    {
+        return -1;
+    }
+
+    gameboy->cpu = miscData.cpu;
+    gameboy->memory.audio = miscData.audioState;
+    offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
+
+    return 0;
+}
+
 int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
 {
     if (storeType != StoredInfoTypeAll)
@@ -528,7 +549,7 @@ int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType)
     return 0;
 }
 
-int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType storeType) {
+int generateUncompressedCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType storeType) {
     bool gbc = gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_ONLY || 
         gameboy->memory.rom->mainBank[GB_ROM_H_GBC_FLAG] == GB_ROM_GBC_SUPPORT;
 
@@ -551,7 +572,7 @@ int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType sto
 
     if (storeType == StoredInfoTypeSettingsRAM || storeType == StoredInfoTypeRAM)
     {
-        return 0;
+        return offset;
     }
 
     sectionSize = gbc ? 0x4000 : 0x2000;
@@ -592,6 +613,11 @@ int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType sto
     }
     offset = ALIGN_FLASH_OFFSET(offset + sectionSize);
 
+    return offset;
+}
+
+int generateCompressedSaveState(struct GameBoy* gameboy, enum StoredInfoType storeType) {
+    int offset = generateUncompressedCompressedSaveState(gameboy, storeType);
     return compressMemory(gCompressedMemory, sizeof(gCompressedMemory), gUncompressedMemory, offset);
 }
 
@@ -691,7 +717,7 @@ void initSaveCallbacks()
 
 enum StoredInfoType getStoredInfoType(struct GameBoy* gameboy)
 {
-    if (gameboy->settings.version == 2) {
+    if (gameboy->settings.version >= 2) {
         return gameboy->settings.storedType;
     } else {
         return getDeprecatedStoredInfoType(gameboy);
