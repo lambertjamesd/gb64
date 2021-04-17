@@ -27,13 +27,13 @@ DEBUG_FILES =
 DEBUG_FLAGS =
 endif
 
-# FINAL = YES
+FINAL = YES
 ifeq ($(FINAL), YES)
 OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
-N64LIB          = -lultra_romq
-N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared
+N64LIB          = -lultra_rom
+N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared --defsym DEBUG=0
 else
 OPTIMIZER       = $(DEBUG_FLAGS) -g -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2

@@ -61,11 +61,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 void outbits(struct Outbuf *out, unsigned long bits, int nbits)
 {
-    assert(out->noutbits + nbits <= 32);
+    teqassert(out->noutbits + nbits <= 32);
     out->outbits |= bits << out->noutbits;
     out->noutbits += nbits;
     while (out->noutbits >= 8) {
-        assert(out->outlen < out->outsize);
+        teqassert(out->outlen < out->outsize);
         out->outbuf[out->outlen++] = (unsigned char) (out->outbits & 0xFF);
         out->outbits >>= 8;
         out->noutbits -= 8;
@@ -211,7 +211,7 @@ void zlib_match(struct Outbuf *out, int distance, int len)
     int i, j, k;
     int lcode;
 
-    assert(!out->comp_disabled);
+    teqassert(!out->comp_disabled);
 
     while (len > 0) {
         int thislen;
@@ -236,7 +236,7 @@ void zlib_match(struct Outbuf *out, int distance, int len)
         i = -1;
         j = sizeof(lencodes) / sizeof(*lencodes);
         while (1) {
-            assert(j - i >= 2);
+            teqassert(j - i >= 2);
             k = (j + i) / 2;
             if (thislen < FROM_LCODE(lencodes[k].min))
                 j = k;
@@ -274,7 +274,7 @@ void zlib_match(struct Outbuf *out, int distance, int len)
         i = -1;
         j = sizeof(distcodes) / sizeof(*distcodes);
         while (1) {
-            assert(j - i >= 2);
+            teqassert(j - i >= 2);
             k = (j + i) / 2;
             if (distance < distcodes[k].min)
                 j = k;

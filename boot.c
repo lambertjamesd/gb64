@@ -26,7 +26,6 @@
 
 #include <ultra64.h>
 #include <PR/ramrom.h>		/* needed for argument passing into the app */
-#include <assert.h>
 
 #include "game.h"
 #include "controller.h"

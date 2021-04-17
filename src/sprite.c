@@ -19,7 +19,7 @@ Gfx* allocateSpriteChunk()
     Gfx* result = gSpriteNextChunk;
 
     gSpriteNextChunk += DL_CHUNK_SIZE;
-    assert(gSpriteNextChunk <= gSpriteDisplayList + SPRITE_GL_LENGTH);
+    teqassert(gSpriteNextChunk <= gSpriteDisplayList + SPRITE_GL_LENGTH);
 
     return result;
 }

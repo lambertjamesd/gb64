@@ -106,7 +106,7 @@ void renderFrame(int clear)
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
 
-    assert(glistp <= dynamicp->glist + GLIST_LEN);
+    teqassert(glistp <= dynamicp->glist + GLIST_LEN);
 
     theadp->t.ucode_boot = (u64 *) rspbootTextStart;
     theadp->t.ucode_boot_size = 

@@ -27,9 +27,9 @@ void test_malloc()
 
     b = malloc(16);
     
-    assert(a == b);
+    teqassert(a == b);
     free(b);
 
-    assert(startSegAddr == gFirstFreeSegment);
-    assert(startSeg.segmentEnd == gFirstFreeSegment->segmentEnd);
+    teqassert(startSegAddr == gFirstFreeSegment);
+    teqassert(startSeg.segmentEnd == gFirstFreeSegment->segmentEnd);
 }
