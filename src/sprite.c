@@ -115,7 +115,7 @@ void spriteDrawTile(int layer, int x, int y, int w, int h, struct SpriteTile til
     writeDL(layer, workingMem, curr - workingMem);
 }
 
-void spriteSetColor(int layer, char r, char g, char b, char a)
+void spriteSetColor(int layer, u8 r, u8 g, u8 b, u8 a)
 {
     int key = (r << 24) | (g << 16) | (b << 8) | (a << 0);
 

@@ -48,10 +48,10 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
     {
         buttonAlpha = 255 * saveState->showLoadTimer / LOAD_TIMER_FRAMES;
         spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, buttonAlpha);
-        renderText(&gGBFont, saveState->loadMessage, 32, 16, 0);
+        renderText(&gGBFont, saveState->loadMessage, 80, 48, 1);
         char layer = gButtonIconLayer[gGameboy.settings.inputMapping.load];
         spriteSetColor(layer, 255, 255, 255, buttonAlpha);
-        spriteDrawTile(layer, 8, 12, 16, 16, gButtonIconTile[gGameboy.settings.inputMapping.load]);
+        spriteDrawTile(layer, 32, 40, 32, 32, gButtonIconTile[gGameboy.settings.inputMapping.load]);
     }
     else if (saveState->showSaveTimer)
     {
@@ -71,11 +71,11 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
             );
         }
 
-        renderText(&gGBFont, saveState->saveMessage, 32, 16, 0);
+        renderText(&gGBFont, saveState->saveMessage, 80, 48, 1);
 
         char layer = gButtonIconLayer[gGameboy.settings.inputMapping.save];
         spriteSetColor(layer, 255, 255, 255, buttonAlpha);
-        spriteDrawTile(layer, 8, 12, 16, 16, gButtonIconTile[gGameboy.settings.inputMapping.save]);
+        spriteDrawTile(layer, 32, 40, 32, 32, gButtonIconTile[gGameboy.settings.inputMapping.save]);
     }
     else if (saveState->showFastTimer > 0)
     {
@@ -95,10 +95,10 @@ void saveStateRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
             );
         }
 
-        renderText(&gGBFont, "FAST FORWARD", 32, 16, 0);
+        renderText(&gGBFont, "FAST FORWARD", 80, 48, 1);
         char layer = gButtonIconLayer[gGameboy.settings.inputMapping.fastForward];
         spriteSetColor(layer, 255, 255, 255, buttonAlpha);
-        spriteDrawTile(layer, 8, 12, 16, 16, gButtonIconTile[gGameboy.settings.inputMapping.fastForward]);
+        spriteDrawTile(layer, 32, 40, 32, 32, gButtonIconTile[gGameboy.settings.inputMapping.fastForward]);
     }
 }
 
@@ -201,9 +201,9 @@ void mainMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem)
         renderMenuBorder();
         spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
 
-        renderCursorMenu(&mainMenuState->cursorMenu, 20, 56, 160);
+        renderCursorMenu(&mainMenuState->cursorMenu, 40, 112, 160);
 
-        renderText(&gGBFont, EMU_VERSION, 16, 216, 0);
+        renderText(&gGBFont, EMU_VERSION, 40, 424, 1);
     }
 }
 
@@ -285,21 +285,21 @@ void initMainMenu(struct MainMenu* mainMenu)
         &mainMenu->mainMenuState.items[MainMenuStateItemsInput],
         &mainMenu->menuItems[MainMenuItemMainInput],
         "INPUT",
-        16
+        32
     );
 
     initCursorMenuItem(
         &mainMenu->mainMenuState.items[MainMenuStateItemsScreen],
         &mainMenu->menuItems[MainMenuItemMainScreen],
         "SCREEN",
-        16
+        32
     );
 
     initCursorMenuItem(
         &mainMenu->mainMenuState.items[MainMenuStateItemsClock],
         &mainMenu->menuItems[MainMenuItemMainClock],
         "CLOCK",
-        16
+        32
     );
 
     mainMenu->saveState.mainMenu = &mainMenu->menuItems[MainMenuItemMainMenu];

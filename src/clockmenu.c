@@ -73,7 +73,7 @@ void initClockMenu(struct ClockMenu* menu, struct MenuItem* parent)
         &menu->menuItems[ClockMenuItemDay],
         NULL,
         "Day",
-        32
+        64
     );
     initSelectCursorMenuItem(
         &menu->day.cursorMenuItem, 
@@ -92,7 +92,7 @@ void initClockMenu(struct ClockMenu* menu, struct MenuItem* parent)
         &menu->menuItems[ClockMenuItemHour],
         NULL,
         "Hour",
-        32
+        64
     );
     initSelectCursorMenuItem(
         &menu->hour.cursorMenuItem, 
@@ -111,7 +111,7 @@ void initClockMenu(struct ClockMenu* menu, struct MenuItem* parent)
         &menu->menuItems[ClockMenuItemMinute],
         NULL,
         "Minute",
-        32
+        64
     );
     initSelectCursorMenuItem(
         &menu->minute.cursorMenuItem, 
@@ -130,7 +130,7 @@ void initClockMenu(struct ClockMenu* menu, struct MenuItem* parent)
         &menu->menuItems[ClockMenuItemSecond],
         NULL,
         "Second",
-        32
+        64
     );
     initSelectCursorMenuItem(
         &menu->second.cursorMenuItem, 
@@ -154,8 +154,8 @@ void clockMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedItem
     {
         renderMenuBorder();
         spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-        renderText(&gGBFont, "CLOCK", 16, 32, 0);
-        renderCursorMenu(&clockMenu->cursor, 16, 56, 136);
+        renderText(&gGBFont, "CLOCK", 32, 64, 1);
+        renderCursorMenu(&clockMenu->cursor, 32, 112, 272);
     }
 }
 

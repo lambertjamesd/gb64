@@ -28,8 +28,8 @@ void renderInputMappingItem(struct CursorMenuItem* menuItem, int x, int y, int s
     {
         spriteDrawTile(
             SPRITE_BORDER_LAYER,
-            x, y + 4,
-            8, 8,
+            x, y + 8,
+            16, 16,
             gGUIItemTiles[GUIItemIconRight]
         );
     }
@@ -40,14 +40,14 @@ void renderInputMappingItem(struct CursorMenuItem* menuItem, int x, int y, int s
 
         spriteDrawTile(
             gButtonIconLayer[buttonSetting],
-            x + 12, y,
-            16, 16,
+            x + 24, y,
+            32, 32,
             gButtonIconTile[buttonSetting]
         );
     }
 
     spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-    renderText(&gGBFont, menuItem->label, x + 32, y + 4, 0);
+    renderText(&gGBFont, menuItem->label, x + 64, y + 8, 1);
 }
 
 struct MenuItem* inputInputMappingItem(struct CursorMenuItem* menuItem, int buttonDown)
@@ -64,8 +64,8 @@ void inputMappingRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     {
         renderMenuBorder();
         spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-        renderText(&gGBFont, "INPUT", 16, 32, 0);
-        renderCursorMenu(&inputMapping->cursor, 16, 56, 136);
+        renderText(&gGBFont, "INPUT", 32, 64, 1);
+        renderCursorMenu(&inputMapping->cursor, 32, 112, 272);
     }
 }
 
@@ -132,7 +132,7 @@ void initInputMappingMenu(struct InputMappingMenu* menu, struct MenuItem* parent
             &menu->menuItems[i],
             NULL,
             gInputMappingNames[i],
-            20
+            40
         );
         menu->menuItems[i].data = (void*)i;
         menu->menuItems[i].render = renderInputMappingItem;

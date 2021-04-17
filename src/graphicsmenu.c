@@ -21,25 +21,25 @@ static char* gPixelLabels[ScreenScaleSettingCount] = {
 void renderPaletteItem(struct CursorMenuItem* menuItem, int x, int y, int selected)
 {
     spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-    renderText(&gGBFont, menuItem->label, x, y, 0);
+    renderText(&gGBFont, menuItem->label, x, y, 1);
 
     u16* paletteIndexPtr = (u16*)menuItem->data;
     u16* palette = getPalette(*paletteIndexPtr);
 
     if (selected)
     {
-        spriteDrawTile(SPRITE_BORDER_LAYER, x, y + 12, 8, 8, gGUIItemTiles[GUIItemIconLeft]);
-        spriteDrawTile(SPRITE_BORDER_LAYER, x + 60, y + 12, 8, 8, gGUIItemTiles[GUIItemIconRight]);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x, y + 24, 16, 16, gGUIItemTiles[GUIItemIconLeft]);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x + 120, y + 24, 16, 16, gGUIItemTiles[GUIItemIconRight]);
     }
 
     spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[0]), GET_G(palette[0]), GET_B(palette[0]), 255);
-    spriteDrawTile(SPRITE_BORDER_LAYER, x + 12, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 24, y + 24, 16, 16, gGUIItemTiles[GUIItemIconWhite]);
     spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[1]), GET_G(palette[1]), GET_B(palette[1]), 255);
-    spriteDrawTile(SPRITE_BORDER_LAYER, x + 24, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 48, y + 24, 16, 16, gGUIItemTiles[GUIItemIconWhite]);
     spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[2]), GET_G(palette[2]), GET_B(palette[2]), 255);
-    spriteDrawTile(SPRITE_BORDER_LAYER, x + 36, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 72, y + 24, 16, 16, gGUIItemTiles[GUIItemIconWhite]);
     spriteSetColor(SPRITE_BORDER_LAYER, GET_R(palette[3]), GET_G(palette[3]), GET_B(palette[3]), 255);
-    spriteDrawTile(SPRITE_BORDER_LAYER, x + 48, y + 12, 8, 8, gGUIItemTiles[GUIItemIconWhite]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, x + 96, y + 24, 16, 16, gGUIItemTiles[GUIItemIconWhite]);
 
     spriteSetColor(SPRITE_BORDER_LAYER, 255, 255, 255, 255);
 }
@@ -81,8 +81,8 @@ void graphicsMenuRender(struct MenuItem* menuItem, struct MenuItem* highlightedI
     {
         renderMenuBorder();
         spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-        renderText(&gGBFont, "SCREEN", 16, 32, 0);
-        renderCursorMenu(&graphicsMenu->cursor, 16, 56, 136);
+        renderText(&gGBFont, "SCREEN", 32, 64, 1);
+        renderCursorMenu(&graphicsMenu->cursor, 32, 112, 272);
     }
 }
 
@@ -129,7 +129,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemScale],
         NULL,
         "Scale",
-        32
+        64
     );
     initSelectCursorMenuItem(
         &menu->scale, 
@@ -147,7 +147,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemPixel],
         NULL,
         "Pixel",
-        32
+        64
     );
     initSelectCursorMenuItem(
         &menu->pixel, 
@@ -165,7 +165,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemGBP],
         NULL,
         "BGP",
-        32
+        64
     );
     menu->menuItems[GraphicsMenuItemGBP].data = &gGameboy.settings.bgpIndex;
     menu->menuItems[GraphicsMenuItemGBP].render = renderPaletteItem;
@@ -175,7 +175,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemOBP0],
         NULL,
         "OBP0",
-        32
+        64
     );
     menu->menuItems[GraphicsMenuItemOBP0].data = &gGameboy.settings.obp0Index;
     menu->menuItems[GraphicsMenuItemOBP0].render = renderPaletteItem;
@@ -185,7 +185,7 @@ void initGraphicsMenu(struct GraphicsMenu* menu, struct MenuItem* parentMenu)
         &menu->menuItems[GraphicsMenuItemOBP1],
         NULL,
         "OBP1",
-        32
+        64
     );
     menu->menuItems[GraphicsMenuItemOBP1].data = &gGameboy.settings.obp1Index;
     menu->menuItems[GraphicsMenuItemOBP1].render = renderPaletteItem;

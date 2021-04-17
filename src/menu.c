@@ -224,13 +224,13 @@ void defaultRenderCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, 
         spriteDrawTile(
             SPRITE_BORDER_LAYER,
             x, y,
-            8, 8,
+            16, 16,
             gGUIItemTiles[GUIItemIconRight]
         );
     }
 
     spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-    renderText(&gGBFont, menuItem->label, x + 12, y, 0);
+    renderText(&gGBFont, menuItem->label, x + 24, y, 1);
 }
 
 struct MenuItem* defaultInputCursorMenuItem(struct CursorMenuItem* menuItem, int buttonDown)
@@ -252,8 +252,8 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
     {
         spriteDrawTile(
             SPRITE_BORDER_LAYER,
-            x, y - 8,
-            8, 8,
+            x, y - 16,
+            16, 16,
             gGUIItemTiles[GUIItemIconUp]
         );
     }
@@ -285,7 +285,7 @@ void renderCursorMenu(struct CursorMenu* menu, int x, int y, int height)
         spriteDrawTile(
             SPRITE_BORDER_LAYER,
             x, y,
-            8, 8,
+            16, 16,
             gGUIItemTiles[GUIItemIconDown]
         );
     }
@@ -378,12 +378,12 @@ void initCursorMenuItem(struct CursorMenuItem* item, struct MenuItem* toMenu, ch
 
 void renderMenuBorder()
 {
-    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 40, 96, 8, gGUIItemTiles[GUIItemIconHorz]);
-    spriteDrawTile(SPRITE_BORDER_LAYER, 96, 40, 8, 8, gGUIItemTiles[GUIItemIconTopRight]);
-    spriteDrawTile(SPRITE_BORDER_LAYER, 96, 48, 8, 144, gGUIItemTiles[GUIItemIconVert]);
-    spriteDrawTile(SPRITE_BORDER_LAYER, 96, 192, 8, 8, gGUIItemTiles[GUIItemIconBottomRight]);
-    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 192, 96, 8, gGUIItemTiles[GUIItemIconHorz]);
-    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 48, 96, 144, gGUIItemTiles[GUIItemIconBlack]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 80, 192, 16, gGUIItemTiles[GUIItemIconHorz]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 192, 80, 16, 16, gGUIItemTiles[GUIItemIconTopRight]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 192, 96, 16, 288, gGUIItemTiles[GUIItemIconVert]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 192, 384, 16, 16, gGUIItemTiles[GUIItemIconBottomRight]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 384, 192, 16, gGUIItemTiles[GUIItemIconHorz]);
+    spriteDrawTile(SPRITE_BORDER_LAYER, 0, 96, 192, 288, gGUIItemTiles[GUIItemIconBlack]);
 }
 
 ///////////////////////////////////
@@ -403,25 +403,25 @@ void renderSelectCursorMenuItem(struct CursorMenuItem* menuItem, int x, int y, i
     struct SelectCursorMenuItem* select = (struct SelectCursorMenuItem*)menuItem->data;
 
     spriteSetColor(gGBFont.spriteLayer, 255, 255, 255, 255);
-    renderText(&gGBFont, menuItem->label, x, y, 0);
+    renderText(&gGBFont, menuItem->label, x, y, 1);
     
     if (selected)
     {
-        spriteDrawTile(SPRITE_BORDER_LAYER, x, y + 12, 8, 8, gGUIItemTiles[GUIItemIconLeft]);
-        spriteDrawTile(SPRITE_BORDER_LAYER, x + 60, y + 12, 8, 8, gGUIItemTiles[GUIItemIconRight]);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x, y + 24, 16, 16, gGUIItemTiles[GUIItemIconLeft]);
+        spriteDrawTile(SPRITE_BORDER_LAYER, x + 120, y + 24, 16, 16, gGUIItemTiles[GUIItemIconRight]);
     }
 
     int currentValue = (select->value - select->minValue) % (select->maxValue - select->minValue);
     
     if (select->labels)
     {
-        renderText(&gGBFont, select->labels[currentValue], x + 12, y + 12, 0);
+        renderText(&gGBFont, select->labels[currentValue], x + 24, y + 24, 1);
     }
     else
     {
         char tmpString[16];
         sprintf(tmpString, "%d", select->value);
-        renderText(&gGBFont, tmpString, x + 12, y + 12, 0);
+        renderText(&gGBFont, tmpString, x + 24, y + 24, 1);
     }
 }
 

@@ -24,7 +24,7 @@ struct SpriteTile
 void setLayerGraphics(int layer, Gfx* graphics);
 void spriteDraw(int layer, int x, int y, int w, int h, int sx, int sy, int scaleShiftX, int scaleShiftY);
 void spriteDrawTile(int layer, int x, int y, int w, int h, struct SpriteTile tile);
-void spriteSetColor(int layer, char r, char g, char b, char a);
+void spriteSetColor(int layer, u8 r, u8 g, u8 b, u8 a);
 
 void initSprites();
 void finishSprites(Gfx** out);

@@ -30,7 +30,7 @@ void renderText(struct Font* font, const char* str, int x, int y, int scaleShift
         struct SpriteTile curr = font->characters[*str];
         if (curr.w)
         {
-            spriteDraw(font->spriteLayer, x, y, curr.w << scaleShift, curr.h << scaleShift, curr.x, curr.y, scaleShift, scaleShift);
+            spriteDraw(font->spriteLayer, x, y, curr.w, curr.h, curr.x, curr.y, scaleShift, scaleShift);
             x += curr.w << scaleShift;
         }
         else if (*str == ' ')
