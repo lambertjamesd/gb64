@@ -33,46 +33,10 @@ OSTask          taskHeader =
 /*
  * global variables
  */
-Gfx		*glistp;	/* RSP display list pointer */
 Dynamic		dynamic;	/* dynamic data */
 int		draw_buffer=0;	/* frame buffer being updated (0 or 1) */
 int		fontcol[4];	/* color for shadowed fonts */
-Dynamic     *dynamicp;
 u16* cfb;
-
-void preRenderFrame(int clear)
-{
-    /*
-    * pointers to build the display list.
-    */
-    dynamicp = &dynamic;
-    glistp = dynamicp->glist;
-
-    /*
-    * Tell RCP where each segment is
-    */
-    gSPSegment(glistp++, 0, 0x0);	/* physical segment */
-    gSPSegment(glistp++, STATIC_SEGMENT, OS_K0_TO_PHYSICAL(staticSegment));
-
-    gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(getColorBuffer()));
-
-    if (clear)
-    {
-        gDPSetFillColor(glistp++, GPACK_RGBA5551(1, 1, 1, 1) << 16 | GPACK_RGBA5551(1, 1, 1, 1));
-        gDPSetCycleType(glistp++, G_CYC_FILL);
-        gDPFillRectangle(glistp++, 0, 0, SCREEN_WD-1, SCREEN_HT-1);
-    }
-
-    gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
-
-    /*
-    * Initialize RCP state.
-    */
-    gSPDisplayList(glistp++, init_dl);
-
-    gDPPipeSync(glistp++);
-    gDPSetCycleType(glistp++, G_CYC_1CYCLE);
-}
 
 void renderDebugLog()
 {
@@ -104,13 +68,38 @@ void renderDebugLog()
     }
 }
 
-void finishRenderFrame()
+void renderFrame(int clear)
 {
-    OSTask      *theadp;
-    Dynamic     *dynamicp;
+    OSTask* theadp = &taskHeader;
+    Dynamic* dynamicp = &dynamic;
+    Gfx* glistp = dynamicp->glist;
 
-    theadp = &taskHeader;
-    dynamicp = &dynamic;
+    /*
+    * Tell RCP where each segment is
+    */
+    gSPSegment(glistp++, 0, 0x0);	/* physical segment */
+    gSPSegment(glistp++, STATIC_SEGMENT, OS_K0_TO_PHYSICAL(staticSegment));
+
+    gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(getColorBuffer()));
+
+    if (clear)
+    {
+        gDPSetFillColor(glistp++, GPACK_RGBA5551(1, 1, 1, 1) << 16 | GPACK_RGBA5551(1, 1, 1, 1));
+        gDPSetCycleType(glistp++, G_CYC_FILL);
+        gDPFillRectangle(glistp++, 0, 0, SCREEN_WD-1, SCREEN_HT-1);
+    }
+
+    gDPSetScissor(glistp++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WD, SCREEN_HT);
+
+    /*
+    * Initialize RCP state.
+    */
+    gSPDisplayList(glistp++, init_dl);
+
+    gDPPipeSync(glistp++);
+    gDPSetCycleType(glistp++, G_CYC_1CYCLE);
+
+    renderDebugLog();
 
     finishSprites(&glistp);
 

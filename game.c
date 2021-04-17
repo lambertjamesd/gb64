@@ -183,14 +183,10 @@ game(void)
 		// );
 		// debugInfo(gTmpBuffer);
 #endif
-		preRenderFrame(0);
-
-		renderDebugLog();
-
 		updateMainMenu(&gMainMenu, pad[0]);
 		renderMainMenu(&gMainMenu);
 
-		finishRenderFrame();
+		renderFrame(0);
 
 		faultHandlerHeartbeat();
     }

@@ -17,7 +17,6 @@ extern OSMesgQueue
  */
 extern int	rdp_flag;
 extern char	*staticSegment;
-extern Gfx	*glistp;
 
 /*
  * frame buffer symbols
@@ -38,7 +37,7 @@ extern int		fontcol[4];	/* color for shadowed fonts */
 #define GET_G(rgb16) ((rgb16) >> 3 & 0xF8)
 #define GET_B(rgb16) ((rgb16) << 2 & 0xF8)
 
-#define	GLIST_LEN	2048
+#define	GLIST_LEN	64
 
 #define BUFFER_COUNT 2
 
@@ -56,9 +55,7 @@ typedef struct {
 
 extern Dynamic	dynamic;
 
-void preRenderFrame(int clear);
-void renderDebugLog();
-void finishRenderFrame();
+void renderFrame(int clear);
 u16* getColorBuffer();
 void* initColorBuffers(void* memoryEnd);
 

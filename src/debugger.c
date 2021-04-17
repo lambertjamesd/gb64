@@ -784,13 +784,10 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
 		// rerenderLastFrame(&gGameboy.settings.graphics, getColorBuffer());
 
         menuStateHandleInput(&gDebugMenu.menu, pad[0]);
-    
-		preRenderFrame(1);
-		renderDebugLog();
 
         menuStateRender(&gDebugMenu.menu);
 
-		finishRenderFrame();
+		renderFrame(1);
         
 		faultHandlerHeartbeat();
 
