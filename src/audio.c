@@ -234,30 +234,30 @@ void renderAudio(struct Memory* memory, int untilSamples)
 		if (
 			memory->audio.pcmSound.volume && 
 			memory->audio.pcmSound.length &&
-			(stereoSelect & 0x33))
+			(stereoSelect & 0x44))
 		{
 			renderPatternWave(
 				memory,
 				&gAudioState,
 				untilSamples,
 				&memory->audio.pcmSound,
-				(stereoSelect & 0x03) ? rightVolume : 0,
-				(stereoSelect & 0x30) ? leftVolume : 0
+				(stereoSelect & 0x04) ? rightVolume : 0,
+				(stereoSelect & 0x40) ? leftVolume : 0
 			);
 		}
 
 		if (memory->audio.noiseSound.envelope.volume && 
 			memory->audio.noiseSound.length && 
 			memory->audio.noiseSound.sampleStep && 
-			(stereoSelect & 0x44)
+			(stereoSelect & 0x88)
 		)
 		{
 			renderNoise(
 				&gAudioState,
 				untilSamples,
 				&memory->audio.noiseSound,
-				(stereoSelect & 0x04) ? rightVolume : 0,
-				(stereoSelect & 0x40) ? leftVolume : 0
+				(stereoSelect & 0x08) ? rightVolume : 0,
+				(stereoSelect & 0x80) ? leftVolume : 0
 			);
 		}
 	}
