@@ -367,9 +367,26 @@ void tickAudio(struct Memory* memory, int untilCyles)
 
 	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
 	{
+		// this state should only happen if loading a corrupt save file
+		if (audio->nextTickCycle - audio->cyclesEmulated > CYCLES_PER_TICK)
+		{
+			audio->nextTickCycle = audio->cyclesEmulated + CYCLES_PER_TICK;
+		}
+
 		while (audio->cyclesEmulated < untilCyles)
 		{
-			int tickTo = gAudioState.currentSampleIndex + (gAudioState.sampleRate >> APU_TICKS_PER_SEC_L2) + gAudioState.tickAdjustment;
+			int cycleUntil = untilCyles;
+			int tickAdjustment = 0;
+
+			if (audio->nextTickCycle < cycleUntil)
+			{
+				cycleUntil = audio->nextTickCycle;
+				tickAdjustment = gAudioState.tickAdjustment;
+			}
+
+			u32 ticksAccumulated = cycleUntil - audio->cyclesEmulated;
+			
+			int tickTo = gAudioState.currentSampleIndex + ((gAudioState.sampleRate * ticksAccumulated) >> (APU_TICKS_PER_SEC_L2 + CYCLES_PER_TICK_L2)) + tickAdjustment;
 
 			if (tickTo >= gAudioState.samplesPerBuffer)
 			{
@@ -383,12 +400,18 @@ void tickAudio(struct Memory* memory, int untilCyles)
 				renderAudio(memory, tickTo);
 			}
 
-			tickSquareWave(&audio->sound1);
-			tickSquareWave(&audio->sound2);
-			tickPCM(&audio->pcmSound);
-			tickNoise(&audio->noiseSound);
 
-			audio->cyclesEmulated += CYCLES_PER_TICK;
+			if (audio->nextTickCycle == cycleUntil)
+			{
+				tickSquareWave(&audio->sound1);
+				tickSquareWave(&audio->sound2);
+				tickPCM(&audio->pcmSound);
+				tickNoise(&audio->noiseSound);
+
+				audio->nextTickCycle = cycleUntil + CYCLES_PER_TICK;
+			}
+
+			audio->cyclesEmulated = cycleUntil;
 		}
 	}
 	else
@@ -569,4 +592,10 @@ u32 getAudioWriteHeadLead(struct AudioState* audioState)
 	return ((audioState->currentWriteBuffer - audioState->nextPlayBuffer) & (AUDIO_BUFFER_COUNT - 1))
 		* audioState->samplesPerBuffer 
 		+ audioState->currentSampleIndex;
+}
+
+void adjustCyclesEmulator(struct AudioRenderState* audioState, u32 by)
+{
+	audioState->cyclesEmulated -= by;
+	audioState->nextTickCycle -= by;
 }

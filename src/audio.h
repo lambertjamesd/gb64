@@ -96,6 +96,7 @@ struct AudioRenderState
     struct PCMSound pcmSound;
     struct NoiseSound noiseSound;
     u32 cyclesEmulated;
+    u32 nextTickCycle;
 };
 
 struct AudioState
@@ -118,5 +119,7 @@ void restartSound(struct Memory* memoryMap, int currentCycle, enum SoundIndex so
 void finishAudioFrame(struct Memory* memoryMap);
 void updateOnOffRegister(struct Memory* memoryMap);
 u32 getAudioWriteHeadLead(struct AudioState* audioState);
+
+void adjustCyclesEmulator(struct AudioRenderState* audioState, u32 by);
 
 #endif

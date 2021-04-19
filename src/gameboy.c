@@ -188,7 +188,7 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
     if (gameboy->cpu.unscaledCyclesRun >= MAX_CYCLE_TIME)
     {
         gameboy->cpu.unscaledCyclesRun -= MAX_CYCLE_TIME;
-        gameboy->memory.audio.cyclesEmulated -= MAX_CYCLE_TIME;
+        adjustCyclesEmulator(&gameboy->memory.audio, MAX_CYCLE_TIME);
     }
 
     if (!(READ_REGISTER_DIRECT(&gameboy->memory, REG_RTC_DH) & REG_RTC_DH_HALT)) 
