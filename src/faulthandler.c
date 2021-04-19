@@ -5,6 +5,7 @@
 #include "debug_out.h"
 #include "../controller.h"
 #include "version.h"
+#include "sprite.h"
 
 #define FAULT_STACK_SIZE     0x200
 #define HANG_DELAY           OS_USEC_TO_CYCLES(3 * 1000000)   
@@ -67,6 +68,7 @@ static void faultHandlerProc(void* arg)
 
     while (1)
     {
+        initSprites();
 		pad = ReadController(0);
 
         if (pad[0]->button & START_BUTTON)

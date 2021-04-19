@@ -352,6 +352,10 @@ _GB_WRITE_SOUND_REG:
     li $at, REG_NR44
     beq $at, ADDR, _GB_RESTART_SOUND
     li TMP2, 3
+
+    li $at, REG_NR50
+    beq $at, ADDR, _GB_BASIC_AUDIO_REGISTER
+    nop
     
     j _GB_BASIC_REGISTER_WRITE
     nop
@@ -359,6 +363,20 @@ _GB_WRITE_SOUND_REG:
 _GB_WRITE_SOUND_OFF:
     jr $ra
     nop
+
+_GB_BASIC_AUDIO_REGISTER:
+    addi $sp, $sp, -16
+    sw $ra, 0($sp)
+    sw ADDR, 4($sp)
+    jal _GB_SYNC_AUDIO
+    sw VAL, 8($sp)
+
+    lw $ra, 0($sp)
+    lw ADDR, 4($sp)
+    lw VAL, 8($sp)
+
+    j _GB_BASIC_REGISTER_WRITE
+    addi $sp, $sp, 16
 
 
 _GB_RESTART_SOUND:
