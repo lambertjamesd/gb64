@@ -49,6 +49,9 @@
 #define RUN_TESTS 0
 
 extern void test_malloc();
+extern OSThread mainThread;
+extern OSPiHandle	*handler;
+extern OSMesgQueue     dmaMessageQ;
 
 char gTmpBuffer[512];
 

@@ -48,24 +48,7 @@ void renderDebugLog()
 
     char *cstring = getDebugString();
 
-    y = 18;
-
-    while (*cstring)
-    {
-            renderText(&gGBFont, cstring, x, y, 0);
-
-            while (*cstring && *cstring != '\n')
-            {
-                    ++cstring;
-            }
-
-            if (*cstring)
-            {
-                    ++cstring;
-            }
-
-            y += 20;
-    }
+    renderText(&gGBFont, cstring, 18, 18, 0);
 }
 
 void renderFrame(int clear)

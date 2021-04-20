@@ -1,4 +1,6 @@
 #include "debug_out.h"
+#include "sprite.h"
+#include "../render.h"
 
 #define DEBUG_BUFFER_SIZE 1024
 #define MAX_DEBUG_LINES 8
@@ -80,4 +82,10 @@ void clearDebugOutput()
 char* getDebugString()
 {
     return debugBuffer + currentSourcePosition;
+}
+
+void renderDebugFrame()
+{
+    initSprites();
+	renderFrame(1);
 }

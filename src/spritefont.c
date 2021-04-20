@@ -25,6 +25,8 @@ void setFontColor(struct Font* font, char r, char g, char b)
 
 void renderText(struct Font* font, const char* str, int x, int y, int scaleShift)
 {
+    int startX = x;
+
     while (*str)
     {
         struct SpriteTile curr = font->characters[*str];
@@ -36,6 +38,11 @@ void renderText(struct Font* font, const char* str, int x, int y, int scaleShift
         else if (*str == ' ')
         {
             x += font->spaceWidth << scaleShift;
+        }
+        else if (*str == '\n')
+        {
+            x = startX;
+            y += 20;
         }
 
         ++str;

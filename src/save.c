@@ -630,10 +630,17 @@ int attemptGameboySaveState(struct GameBoy* gameboy, enum StoredInfoType storeTy
 
     gameboy->settings.timer = gameboy->memory.misc.time;
 
-    if (gSaveTypeSetting.saveType == SaveTypeFlash && osFlashAllErase())
+
+    if (gSaveTypeSetting.saveType == SaveTypeFlash)
     {
-        DEBUG_PRINT_F("Save fail clear\n");
-        return -1;
+        u8 flashStatus;
+        osFlashReadStatus(&flashStatus);
+
+        if (flashStatus == (u8)FLASH_STATUS_ERASE_ERROR || osFlashAllErase())
+        {
+            DEBUG_PRINT_F("Save fail clear\n");
+            return -1;
+        }
     }
 
     gameboy->settings.version = GB_SETTINGS_CURRENT_VERSION;

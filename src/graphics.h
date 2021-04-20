@@ -93,7 +93,7 @@ void initGraphicsState(
 );
 
 void finishScreen(struct GraphicsState* state);
-void rerenderLastFrame();
+void rerenderLastFrame(struct GameboyGraphicsSettings* settings, void* colorBuffer);
 void waitForRDP();
 int palleteUsedCount();
 

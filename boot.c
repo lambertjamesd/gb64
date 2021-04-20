@@ -75,7 +75,7 @@ extern void	game(void);
 static OSThread idleThread;
 static u64      idleThreadStack[STACKSIZE / sizeof(u64)];
 
-static OSThread mainThread;
+OSThread mainThread;
 static u64      mainThreadStack[STACKSIZE / sizeof(u64)];
 
 /*
@@ -213,15 +213,7 @@ static void mainproc(void *arg)
 	 * Wait for DMA to finish
 	 */
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-	
 
-	/*
-	 * Stick the texture segment right after the static segment
-	 */
-	_gEndSegments = staticSegment + 
-		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
-		
-	clearDebugOutput();
 
 #ifdef USE_DEBUGGER
 	OSThread* threads = &mainThread;
@@ -231,6 +223,15 @@ static void mainproc(void *arg)
 		DEBUG_PRINT_F("Failed to initialize debugger %x", err);
 	}
 #endif
+	
+
+	/*
+	 * Stick the texture segment right after the static segment
+	 */
+	_gEndSegments = staticSegment + 
+		(u32) _staticSegmentRomEnd - (u32) _staticSegmentRomStart;
+		
+	clearDebugOutput();
 
 	void* heapEnd = initColorBuffers((void*)OS_PHYSICAL_TO_K0(osMemSize));
 

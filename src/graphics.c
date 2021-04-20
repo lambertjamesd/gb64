@@ -7,7 +7,9 @@
 #include "../memory.h"
 #include "gameboy.h"
 #include "../gfx_extend.h"
+#include "assert.h"
 
+#define GDP_COMMAND_LENGTH  0x800
 
 Gfx* gCurrentDP;
 
@@ -17,7 +19,7 @@ u64 gPadding;
 
 u8 __attribute__((aligned(8))) gScreenBuffer[GB_SCREEN_W * (GB_SCREEN_H + 1)];
 
-Gfx gDPCommands[0x800];
+Gfx gDPCommands[GDP_COMMAND_LENGTH];
 
 u16 gScreenPalette[MAX_PALLETE_SIZE];
 
@@ -27,6 +29,7 @@ int gRenderInformationCount;
 void prepareGraphicsPallete(struct GraphicsState* state);
 
 void flushDPCommands() {
+    teqassert(gCurrentDP - gDPCommands <= GDP_COMMAND_LENGTH);
     osWritebackDCache(gDPCommands, sizeof(gDPCommands));
     IO_WRITE(DPC_END_REG, OS_K0_TO_PHYSICAL(gCurrentDP));
 }
@@ -132,7 +135,7 @@ void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colo
     gDPSetPrimColor(gCurrentDP++, 0, 0, 255, 255, 255, 255);
 
     // wait for DP to be available
-    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
+    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_DMA_BUSY | DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
 
     // start dp commands
     IO_WRITE(DPC_STATUS_REG, DPC_CLR_FLUSH | DPC_CLR_FREEZE | DPC_CLR_XBUS_DMEM_DMA);
@@ -146,7 +149,7 @@ void waitForRDP() {
     // screen was turned off while rending the previous frame
     IO_WRITE(SP_STATUS_REG, SP_SET_SIG2);
     // wait for DP to be available
-    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
+    while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_DMA_BUSY | DPC_STATUS_TMEM_BUSY | DPC_STATUS_PIPE_BUSY | DPC_STATUS_CMD_BUSY | DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
 }
 
 void initGraphicsState(
