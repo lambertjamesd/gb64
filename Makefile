@@ -17,7 +17,7 @@ WARNING_FLAGS = -Werror=implicit-function-declaration
 
 RSP2DWARF = /home/james/go/src/github.com/lambertjamesd/rsp2dwarf/rsp2dwarf
 
-INCLUDE_DEBUGGER = TRUE
+# INCLUDE_DEBUGGER = TRUE
 
 ifeq ($(INCLUDE_DEBUGGER), TRUE)
 DEBUG_FLAGS = -g -DUSE_DEBUGGER
@@ -149,6 +149,7 @@ default:	$(TARGETS)
 asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \
        asm/_cpu_inst_prefix.s asm/_math.s asm/_stopping_point.s \
        asm/_memory.s \
+       asm/_registers.s \
        asm/_debug.s \
        asm/_mbc.s \
        asm/_mbc7.s \

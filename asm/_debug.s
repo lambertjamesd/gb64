@@ -66,6 +66,11 @@ OPEN_DEBUGGER:
     lhu Param0, CPU_STATE_PC(CPUState)
     jal SET_GB_PC
     addi Param0, Param0, 1
+
+    # disable frame rendering for the rest of this frame
+    lw $at, ST_FLAGS($fp)
+    andi $at, $at, %lo(~RUN_CPU_FLAGS_RENDER)
+    sw $at, ST_FLAGS($fp)
     
     j DECODE_V0
     nop

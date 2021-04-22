@@ -776,6 +776,9 @@ u8 useDebugger(struct CPUState* cpu, struct Memory* memory)
     }
     gDebugMenu.state.isDebugging = TRUE;
 
+    // exit out of render routine early
+    waitForRDP();
+
     while (gDebugMenu.state.isDebugging)
     {
         initSprites();

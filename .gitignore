@@ -6,6 +6,9 @@ bin/*
 *.gb
 *.gbc
 data/*.hex
+data/*.sav
+data/*.txt
+data/*.sn1
 data/dmg_boot.bin
 data/cgb_bios.bin
 data/*.s
