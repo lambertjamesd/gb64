@@ -37,7 +37,7 @@ struct GameboySettings gDefaultSettings = {
     {
         0,
         0,
-        0,
+        ScreenScale1_5,
     },
     StoredInfoTypeNone,
     0,
@@ -172,9 +172,6 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
         cyclesToRun -= runCPU(&gameboy->cpu, &gameboy->memory, cyclesToRun, RUN_CPU_FLAGS_RENDER);
 
         accumulatedTime += CYCLES_PER_FRAME;
-
-        // Wait for RDP to complete
-        waitForRDP();
     }
     else
     {
@@ -194,6 +191,12 @@ void emulateFrame(struct GameBoy* gameboy, void* colorBuffer)
     if (!(READ_REGISTER_DIRECT(&gameboy->memory, REG_RTC_DH) & REG_RTC_DH_HALT)) 
     {
         gameboy->memory.misc.time += accumulatedTime;
+    }
+
+    if (colorBuffer && screenWasEnabled)
+    {
+        // Wait for RDP to complete
+        waitForRDP();
     }
 }
 

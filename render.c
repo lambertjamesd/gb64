@@ -37,6 +37,7 @@ Dynamic		dynamic;	/* dynamic data */
 int		draw_buffer=0;	/* frame buffer being updated (0 or 1) */
 int		fontcol[4];	/* color for shadowed fonts */
 u16* cfb;
+u8 isBlack = 1;
 
 void renderDebugLog()
 {
@@ -106,8 +107,15 @@ void renderFrame(int clear)
     osSpTaskStart(theadp);
     (void)osRecvMesg(&rdpMessageQ, NULL, OS_MESG_BLOCK);
 
+    if (isBlack)
+    {
+        isBlack = 0;
+	    osViBlack(0);
+    }
+
     osViSwapBuffer(getColorBuffer());
-    while (!MQ_IS_EMPTY(&retraceMessageQ)) {
+    while (!MQ_IS_EMPTY(&retraceMessageQ))
+    {
         (void) osRecvMesg(&retraceMessageQ, NULL, OS_MESG_NOBLOCK);
     }
     (void) osRecvMesg(&retraceMessageQ, NULL, OS_MESG_BLOCK);

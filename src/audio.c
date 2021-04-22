@@ -392,7 +392,7 @@ void tickAudio(struct Memory* memory, int untilCyles)
 			{
 				renderAudio(memory, gAudioState.samplesPerBuffer);
 				advanceWriteBuffer(&gAudioState);
-				tickTo -= gAudioState.samplesPerBuffer;
+				tickTo %= gAudioState.samplesPerBuffer;
 			}
 
 			if (tickTo != gAudioState.currentSampleIndex)

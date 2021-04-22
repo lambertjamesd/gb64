@@ -145,6 +145,7 @@ idle(void *arg)
 			osViSetMode(&osViModeTable[OS_VI_MPAL_HPF1]);
 			break;
 	}
+	osViBlack(1);
 	osViSetSpecialFeatures(OS_VI_GAMMA_OFF |
 			OS_VI_GAMMA_DITHER_OFF |
 			OS_VI_DIVOT_OFF |

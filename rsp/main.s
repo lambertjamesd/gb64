@@ -26,6 +26,15 @@ ppuMain:
 
     lw t1, cyclesWaitingForMode2(zero)
 
+    # clear the scanline buffer
+nextScanline:
+    li(t0, scanline)
+clearScanlineLoop:
+    sw zero, 0(t0)
+    slti $at, t0, (scanline + GB_SCREEN_WD - 4)
+    bne $at, zero, clearScanlineLoop
+    addi t0, t0, 4
+
 loadSprites:
     mfc0 t0, SP_STATUS
     andi $at, t0, EXIT_EARLY_FLAG
@@ -240,20 +249,12 @@ writeOutPixels:
     jal DMAWait
     nop
 
-    # clear the scanline buffer
-    li(t0, scanline)
-clearScanlineLoop:
-    sw zero, 0(t0)
-    slti $at, t0, (scanline + GB_SCREEN_WD - 4)
-    bne $at, zero, clearScanlineLoop
-    addi t0, t0, 4
-
     # check if this is the last line
     lbu $at, (ppuTask + PPUTask_ly)(zero)
     addi $at, $at, -(GB_SCREEN_HT - 1)
 
     # render the next line if there is more data to render
-    bne $at, zero, loadSprites
+    bne $at, zero, nextScanline
     nop
 ppuExit:
     li(a0, cyclesWaitingForMode2)
