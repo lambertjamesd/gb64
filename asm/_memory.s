@@ -133,6 +133,32 @@ GB_WRITE_ROM_BANK:
 
 GB_DO_WRITE_REGISTERS:
     la $ra, DECODE_NEXT
+
+
+# GB_DO_WRITE_REGISTERS_CALL:
+#     andi TMP2, ADDR, 0xFFF
+
+#     # check for sprites
+#     slti $at, TMP2, 0xEA0 
+#     bnez $at, _GB_BASIC_REGISTER_WRITE
+
+#     # check for unwritable region
+#     slti $at, TMP2, 0xF00
+#     bnez $at, GB_DO_WRITE_NOP 
+
+#     # check for register ram
+#     slti $at, TMP2, 0xF80
+#     beqz $at, _GB_BASIC_REGISTER_WRITE 
+
+#     # mask $at into the range 00 - 80
+#     andi $at, ADDR, 0xF0
+#     srl $at, $at, 1 # get the upper nibble and multiply it by 8
+
+#     la TMP2, _GB_WRITE_JUMP_TABLE
+#     add $at, $at, TMP2
+#     jr $at
+#     nop
+
 GB_DO_WRITE_REGISTERS_CALL:
     andi TMP2, ADDR, 0xFFF
 
@@ -159,47 +185,22 @@ GB_DO_WRITE_REGISTERS_CALL:
     jr $at
     nop
 
-
-# GB_DO_WRITE_REGISTERS_OLD:
-#     andi TMP2, ADDR, 0xFFF
-
-#     # check for sprites
-#     slti $at, TMP2, 0xEA0 
-#     bnez $at, _GB_BASIC_REGISTER_WRITE
-
-#     # check for unwritable region
-#     slti $at, TMP2, 0xF00
-#     bnez $at, GB_DO_WRITE_NOP 
-
-#     # check for register ram
-#     slti $at, TMP2, 0xF80
-#     beqz $at, _GB_BASIC_REGISTER_WRITE 
-
-#     # mask $at into the range 00 - 80
-#     andi $at, ADDR, 0xF0
-#     srl $at, $at, 1 # get the upper nibble and multiply it by 8
-
-#     la TMP2, _GB_WRITE_JUMP_TABLE
-#     add $at, $at, TMP2
-#     jr $at
-#     nop
-
 # _GB_WRITE_JUMP_TABLE:
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_REG_0X
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_SOUND_REG
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_SOUND_REG
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_SOUND_REG
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_REG_4X
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_REG_5X
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_REG_6X
 #     nop
-#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     j _GB_WRITE_REG_7X
 #     nop
 
 # ########################
