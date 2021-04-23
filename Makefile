@@ -17,7 +17,7 @@ WARNING_FLAGS = -Werror=implicit-function-declaration
 
 RSP2DWARF = /home/james/go/src/github.com/lambertjamesd/rsp2dwarf/rsp2dwarf
 
-# INCLUDE_DEBUGGER = TRUE
+INCLUDE_DEBUGGER = TRUE
 
 ifeq ($(INCLUDE_DEBUGGER), TRUE)
 DEBUG_FLAGS = -g -DUSE_DEBUGGER

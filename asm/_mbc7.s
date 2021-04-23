@@ -85,9 +85,9 @@ _GB_WRITE_MBC7_ACCEL_ERASE:
     lw TMP2, (MEMORY_ADDR_TABLE + 4 * 0xA)(Memory)
     sw $zero, MBC7_RAM_HAS_DATA(TMP2)
     li $at, 0x8000
-    sw $at, MBC7_RAM_ACCEL_X(TMP2)
+    sh $at, MBC7_RAM_ACCEL_X(TMP2)
     jr $ra
-    sw $at, MBC7_RAM_ACCEL_Y(TMP2)
+    sh $at, MBC7_RAM_ACCEL_Y(TMP2)
 
 _GB_WRITE_MBC7_LATCH:
     li $at, 0xAA

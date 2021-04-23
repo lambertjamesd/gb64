@@ -28,14 +28,14 @@ registerWriteTable:
     # FF10
     .word _GB_WRITE_REGISTER        # REG_NR10
     .word _GB_WRITE_REGISTER        # REG_NR11
-    .word _GB_WRITE_REGISTER        # REG_NR12
+    .word _GB_SET_VOLUME            # REG_NR12
     .word _GB_WRITE_REGISTER        # REG_NR13
 
     # FF14
     .word _GB_RESTART_SOUND_1       # REG_NR14
     .word GB_DO_WRITE_NOP
     .word _GB_WRITE_REGISTER        # REG_NR21
-    .word _GB_WRITE_REGISTER        # REG_NR22
+    .word _GB_SET_VOLUME            # REG_NR22
 
     # FF18
     .word _GB_WRITE_REGISTER        # REG_NR23
@@ -51,7 +51,7 @@ registerWriteTable:
     
     # FF20
     .word _GB_WRITE_REGISTER        # REG_NR41
-    .word _GB_WRITE_REGISTER        # REG_NR42
+    .word _GB_SET_VOLUME            # REG_NR42
     .word _GB_WRITE_REGISTER        # REG_NR43
     .word _GB_RESTART_SOUND_4       # REG_NR44
 
@@ -418,6 +418,23 @@ _GB_RESTART_SOUND:
     # TODO use unscaledCyclesRun
     move $a2, TMP2
     call_c_fn restartSound, 3
+
+    restore_state_from_stack
+
+    jr $ra
+    nop
+
+_GB_SET_VOLUME:
+    save_state_on_stack
+
+    jal GB_CALC_UNSCALED_CLOCKS
+    nop
+
+    move $a0, Memory
+    move $a1, $v0
+    move $a2, ADDR
+    move $a3, VAL
+    call_c_fn setAudioVolume, 4
 
     restore_state_from_stack
 

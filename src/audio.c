@@ -441,11 +441,53 @@ void initSweep(struct AudioSweep* sweep, unsigned char sweepData)
 	sweep->stepTimer = sweep->stepDuration - 1;
 }
 
+void setAudioVolume(struct Memory* memory, int currentCycle, u16 addr, u8 value)
+{
+	tickAudio(memory, currentCycle);
+
+	u16* length = 0;
+	struct AudioEnvelope* env = 0;
+
+	switch (addr) {
+		case REG_NR12:
+			length = &memory->audio.sound1.length;
+			env = &memory->audio.sound1.envelope;
+			break;
+		case REG_NR22:
+			length = &memory->audio.sound2.length;
+			env = &memory->audio.sound2.envelope;
+			break;
+		case REG_NR42:
+			length = &memory->audio.noiseSound.length;
+			env = &memory->audio.noiseSound.envelope;
+			break;
+	}
+
+	if (length && *length)
+	{
+		if (value == 0x08)
+		{
+			env->volume = (env->volume + 1) & 0xF;
+		}
+		else if (value == 0x00)
+		{
+			env->volume = 0;
+		}
+	}
+
+	WRITE_REGISTER_DIRECT(memory, addr, value);
+}
+
 void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex soundNumber)
 {
 #if ENABLE_AUDIO
 	tickAudio(memory, currentCycle);
 	struct AudioRenderState* audio = &memory->audio;
+
+	if (!(READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED))
+	{
+		return;
+	}
 
 	switch (soundNumber)
 	{
