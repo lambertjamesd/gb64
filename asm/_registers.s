@@ -28,14 +28,14 @@ registerWriteTable:
     # FF10
     .word _GB_WRITE_REGISTER        # REG_NR10
     .word _GB_WRITE_REGISTER        # REG_NR11
-    .word _GB_SET_VOLUME            # REG_NR12
+    .word _GB_WRITE_REGISTER # _GB_SET_VOLUME            # REG_NR12
     .word _GB_WRITE_REGISTER        # REG_NR13
 
     # FF14
     .word _GB_RESTART_SOUND_1       # REG_NR14
     .word GB_DO_WRITE_NOP
     .word _GB_WRITE_REGISTER        # REG_NR21
-    .word _GB_SET_VOLUME            # REG_NR22
+    .word _GB_WRITE_REGISTER # _GB_SET_VOLUME            # REG_NR22
 
     # FF18
     .word _GB_WRITE_REGISTER        # REG_NR23
@@ -46,12 +46,12 @@ registerWriteTable:
     # FF1C
     .word _GB_WRITE_REGISTER        # REG_NR32
     .word _GB_WRITE_REGISTER        # REG_NR33
-    .word _GB_RESTART_SOUND_2       # REG_NR34
+    .word _GB_RESTART_SOUND_3       # REG_NR34
     .word GB_DO_WRITE_NOP
     
     # FF20
     .word _GB_WRITE_REGISTER        # REG_NR41
-    .word _GB_SET_VOLUME            # REG_NR42
+    .word _GB_WRITE_REGISTER # _GB_SET_VOLUME            # REG_NR42
     .word _GB_WRITE_REGISTER        # REG_NR43
     .word _GB_RESTART_SOUND_4       # REG_NR44
 

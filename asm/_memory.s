@@ -135,7 +135,7 @@ GB_DO_WRITE_REGISTERS:
     la $ra, DECODE_NEXT
 
 
-# GB_DO_WRITE_REGISTERS_CALL:
+GB_DO_WRITE_REGISTERS_CALL:
 #     andi TMP2, ADDR, 0xFFF
 
 #     # check for sprites
@@ -159,7 +159,7 @@ GB_DO_WRITE_REGISTERS:
 #     jr $at
 #     nop
 
-GB_DO_WRITE_REGISTERS_CALL:
+# GB_DO_WRITE_REGISTERS_NEW:
     andi TMP2, ADDR, 0xFFF
 
     # check for sprites
@@ -230,7 +230,6 @@ GB_DO_WRITE_REGISTERS_CALL:
 # _GB_WRITE_SOUND_REG:
 #     li $at, REG_NR52
 #     beq $at, ADDR, _GB_SOUND_ENABLED
-#     li TMP2, 3
     
 #     read_register_direct $at, REG_NR52
 #     andi $at, $at, REG_NR52_ON_OFF
