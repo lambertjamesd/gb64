@@ -2,7 +2,6 @@
 <html>
     <head>
         <title>GB64</title>
-        <script src="gb.n64.js"></script>
         <script src="crc.js"></script>
         <script src="https://stuk.github.io/jszip/dist/jszip.js"></script>
         <style>
@@ -126,13 +125,27 @@
             }
         </style>
         <script>
-            const gGB64 = atob(gGB64Base64);
-            const gGB64ArrayBuffer = new Uint8Array(new ArrayBuffer(gGB64.length));
+            let romPromise = null;
 
-            for (let i = 0; i < gGB64.length; ++i)
+            function downloadRomTemplate()
             {
-                gGB64ArrayBuffer[i] = gGB64.charCodeAt(i);
+                if (romPromise === null) {
+                    const currentRequest = fetch('gb.n64').then(response => {
+                        if (!response.ok) {
+                            throw new Error('This is borked');
+                        }
+                        return response.arrayBuffer();
+                    }).catch(() => {
+                        if (romPromise === currentRequest) {
+                            romPromise = null;
+                        }
+                    });
+                    romPromise = currentRequest;
+                }
+                return romPromise;
             }
+
+            downloadRomTemplate();
 
             function findIndex(arrayBuffer, string)
             {
@@ -214,9 +227,9 @@
                 }
             }
 
-            function convert(romName, rom, dmgBoot, cgbBios, saveType) {
+            function convert(emulatorArrayBuffer, romName, rom, dmgBoot, cgbBios, saveType) {
                 try {
-                    const romIndex = findIndex(gGB64ArrayBuffer, 'GB64_ROM');
+                    const romIndex = findIndex(emulatorArrayBuffer, 'GB64_ROM');
 
                     if (romIndex == -1)
                     {
@@ -225,11 +238,11 @@
                     }
 
                     const result = new Uint8Array(new ArrayBuffer(Math.max(romIndex + rom.length, 0x101000)));
-                    copyInto(result, 0, gGB64ArrayBuffer);
+                    copyInto(result, 0, emulatorArrayBuffer);
                     
-                    const dmgIndex = findIndex(gGB64ArrayBuffer, 'DMG_BOOT');
-                    const cgbIndex = findIndex(gGB64ArrayBuffer, 'CGB_BIOS');
-                    const saveTypeIndex = findIndex(gGB64ArrayBuffer, 'SVID');
+                    const dmgIndex = findIndex(emulatorArrayBuffer, 'DMG_BOOT');
+                    const cgbIndex = findIndex(emulatorArrayBuffer, 'CGB_BIOS');
+                    const saveTypeIndex = findIndex(emulatorArrayBuffer, 'SVID');
 
                     if (dmgIndex == -1)
                     {
@@ -315,6 +328,7 @@
                     const romName = extensionIndex == -1 ? filename : filename.slice(0, extensionIndex);
 
                     const result = convert(
+                        new Uint8Array(await downloadRomTemplate()),
                         romName,
                         await readAsArrayBuffer(rom), 
                         dmgBootFile, 
