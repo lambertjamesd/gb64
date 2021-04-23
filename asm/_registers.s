@@ -26,34 +26,34 @@ registerWriteTable:
     .word _GB_WRITE_REG_INT_REQ     # REG_INTERRUPTS_REQUESTED
 
     # FF10
-    .word _GB_WRITE_REGISTER        # REG_NR10
-    .word _GB_WRITE_REGISTER        # REG_NR11
-    .word _GB_WRITE_REGISTER # _GB_SET_VOLUME            # REG_NR12
-    .word _GB_WRITE_REGISTER        # REG_NR13
+    .word _GB_SET_SOUND_REGISTER    # REG_NR10
+    .word _GB_SET_SOUND_REGISTER    # REG_NR11
+    .word _GB_SET_SOUND_REGISTER    # REG_NR12
+    .word _GB_SET_SOUND_REGISTER    # REG_NR13
 
     # FF14
-    .word _GB_RESTART_SOUND_1       # REG_NR14
+    .word _GB_SET_SOUND_REGISTER    # REG_NR14
     .word GB_DO_WRITE_NOP
-    .word _GB_WRITE_REGISTER        # REG_NR21
-    .word _GB_WRITE_REGISTER # _GB_SET_VOLUME            # REG_NR22
+    .word _GB_SET_SOUND_REGISTER    # REG_NR21
+    .word _GB_SET_SOUND_REGISTER    # REG_NR22
 
     # FF18
-    .word _GB_WRITE_REGISTER        # REG_NR23
-    .word _GB_RESTART_SOUND_2       # REG_NR24
+    .word _GB_SET_SOUND_REGISTER    # REG_NR23
+    .word _GB_SET_SOUND_REGISTER    # REG_NR24
     .word _GB_PCM_ENABLE            # REG_NR30
-    .word _GB_WRITE_REGISTER        # REG_NR31
+    .word _GB_SET_SOUND_REGISTER    # REG_NR31
 
     # FF1C
-    .word _GB_WRITE_REGISTER        # REG_NR32
-    .word _GB_WRITE_REGISTER        # REG_NR33
-    .word _GB_RESTART_SOUND_3       # REG_NR34
+    .word _GB_SET_SOUND_REGISTER    # REG_NR32
+    .word _GB_SET_SOUND_REGISTER    # REG_NR33
+    .word _GB_SET_SOUND_REGISTER    # REG_NR34
     .word GB_DO_WRITE_NOP
     
     # FF20
-    .word _GB_WRITE_REGISTER        # REG_NR41
-    .word _GB_WRITE_REGISTER # _GB_SET_VOLUME            # REG_NR42
-    .word _GB_WRITE_REGISTER        # REG_NR43
-    .word _GB_RESTART_SOUND_4       # REG_NR44
+    .word _GB_SET_SOUND_REGISTER    # REG_NR41
+    .word _GB_SET_SOUND_REGISTER    # REG_NR42
+    .word _GB_SET_SOUND_REGISTER    # REG_NR43
+    .word _GB_SET_SOUND_REGISTER    # REG_NR44
 
     # FF24
     .word _GB_BASIC_AUDIO_REGISTER  # REG_NR50
@@ -329,22 +329,6 @@ _GB_WRITE_REG_INT_REQ:
 
 ############################
 
-_GB_RESTART_SOUND_1:
-    j _GB_RESTART_SOUND
-    li TMP2, 0
-
-_GB_RESTART_SOUND_2:
-    j _GB_RESTART_SOUND
-    li TMP2, 1
-
-_GB_RESTART_SOUND_3:
-    j _GB_RESTART_SOUND
-    li TMP2, 2
-
-_GB_RESTART_SOUND_4:
-    j _GB_RESTART_SOUND
-    li TMP2, 3
-
 _GB_BASIC_AUDIO_REGISTER:
     addi $sp, $sp, -16
     sw $ra, 0($sp)
@@ -359,33 +343,7 @@ _GB_BASIC_AUDIO_REGISTER:
     j _GB_BASIC_REGISTER_WRITE
     addi $sp, $sp, 16
 
-
-_GB_RESTART_SOUND:
-    andi $at, VAL, 0x80
-    beqz $at, _GB_BASIC_REGISTER_WRITE # only restart sound if upper bit is set
-    nop
-
-    save_state_on_stack
-
-    # write the register before making the call
-    jal _GB_BASIC_REGISTER_WRITE
-    nop
-
-    jal GB_CALC_UNSCALED_CLOCKS
-    nop
-
-    move $a0, Memory
-    move $a1, $v0
-    # TODO use unscaledCyclesRun
-    move $a2, TMP2
-    call_c_fn restartSound, 3
-
-    restore_state_from_stack
-
-    jr $ra
-    nop
-
-_GB_SET_VOLUME:
+_GB_SET_SOUND_REGISTER:
     save_state_on_stack
 
     jal GB_CALC_UNSCALED_CLOCKS
@@ -395,7 +353,7 @@ _GB_SET_VOLUME:
     move $a1, $v0
     move $a2, ADDR
     move $a3, VAL
-    call_c_fn setAudioVolume, 4
+    call_c_fn setSoundRegister, 4
 
     restore_state_from_stack
 

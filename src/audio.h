@@ -9,6 +9,8 @@
 #define CYCLES_PER_TICK         4096
 #define CYCLES_PER_TICK_L2      12
 
+#define RESTART_BIT             0x80
+
 struct Memory;
 
 #define GET_WAVE_DUTY(length_pattern) (((length_pattern) & 0xC0) >> 6)
@@ -115,7 +117,6 @@ extern struct AudioState gAudioState;
 
 void initAudio(struct AudioState* audioState, int sampleRate, int frameRate);
 void tickAudio(struct Memory* memoryMap, int untilCyles);
-void restartSound(struct Memory* memoryMap, int currentCycle, enum SoundIndex soundNumber);
 void finishAudioFrame(struct Memory* memoryMap);
 void updateOnOffRegister(struct Memory* memoryMap);
 u32 getAudioWriteHeadLead(struct AudioState* audioState);

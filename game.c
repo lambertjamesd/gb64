@@ -118,6 +118,11 @@ game(void)
             useDebugger(&gGameboy.cpu, &gGameboy.memory);
         }
 
+		if (pad[0]->button & START_BUTTON)
+		{
+			clearDebugOutput();
+		}
+
 		u32 currentTime = osGetCount();
 		u32 frameTime = currentTime - lastTime;
 		lastTime = currentTime;

@@ -358,12 +358,6 @@ void tickNoise(struct NoiseSound* noiseSound)
 void tickAudio(struct Memory* memory, int untilCyles)
 {
 	struct AudioRenderState* audio = &memory->audio;
-			
-	if (!(READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED))
-	{
-		audio->pcmSound.length = 0;
-		audio->pcmSound.volume = 0;
-	}
 
 	if (READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED)
 	{
@@ -435,53 +429,24 @@ void initEnvelope(struct AudioEnvelope* target, unsigned char envelopeData)
 
 void initSweep(struct AudioSweep* sweep, unsigned char sweepData)
 {
-	sweep->stepDir = GET_SWEEP_DIR(sweepData);
+	if (sweepData)
+	{
+		sweep->stepDir = GET_SWEEP_DIR(sweepData);
+	}
+	else
+	{
+		sweep->stepDir = 0;
+	}
 	sweep->stepShift = GET_SWEEP_SHIFT(sweepData);
 	sweep->stepDuration = GET_SWEEP_TIME(sweepData) << 1;
 	sweep->stepTimer = sweep->stepDuration - 1;
 }
 
-void setAudioVolume(struct Memory* memory, int currentCycle, u16 addr, u8 value)
+void setSoundRegister(struct Memory* memory, int currentCycle, u16 addr, u8 value)
 {
 	tickAudio(memory, currentCycle);
-
-	u16* length = 0;
-	struct AudioEnvelope* env = 0;
-
-	switch (addr) {
-		case REG_NR12:
-			length = &memory->audio.sound1.length;
-			env = &memory->audio.sound1.envelope;
-			break;
-		case REG_NR22:
-			length = &memory->audio.sound2.length;
-			env = &memory->audio.sound2.envelope;
-			break;
-		case REG_NR42:
-			length = &memory->audio.noiseSound.length;
-			env = &memory->audio.noiseSound.envelope;
-			break;
-	}
-
-	if (length && *length)
-	{
-		if (value == 0x08)
-		{
-			env->volume = (env->volume + 1) & 0xF;
-		}
-		else if (value == 0x00)
-		{
-			env->volume = 0;
-		}
-	}
-
 	WRITE_REGISTER_DIRECT(memory, addr, value);
-}
 
-void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex soundNumber)
-{
-#if ENABLE_AUDIO
-	tickAudio(memory, currentCycle);
 	struct AudioRenderState* audio = &memory->audio;
 
 	if (!(READ_REGISTER_DIRECT(memory, REG_NR52) & REG_NR52_ENABLED))
@@ -489,53 +454,114 @@ void restartSound(struct Memory* memory, int currentCycle, enum SoundIndex sound
 		return;
 	}
 
-	switch (soundNumber)
+	switch (addr)
 	{
-		case SoundIndexSquare1:
+		case REG_NR10:
 			initSweep(&audio->sound1.sweep, READ_REGISTER_DIRECT(memory, REG_NR10));
+			break;
+		case REG_NR11:
 			audio->sound1.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR11));
-			audio->sound1.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR14)) ? 
-				GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR11)) :
-				SOUND_LENGTH_INDEFINITE;
-			initEnvelope(&audio->sound1.envelope, READ_REGISTER_DIRECT(memory, REG_NR12));
-			audio->sound1.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR14), READ_REGISTER_DIRECT(memory, REG_NR13));
-			break;
-		case SoundIndexSquare2:
-			initSweep(&audio->sound2.sweep, 0);
-			audio->sound2.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR21));
-			audio->sound2.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR24)) ? 
-				GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR21)) :
-				SOUND_LENGTH_INDEFINITE;
-			initEnvelope(&audio->sound2.envelope, READ_REGISTER_DIRECT(memory, REG_NR22));
-			audio->sound2.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
-			break;
-		case SoundIndexPCM:
-			if (READ_REGISTER_DIRECT(memory, REG_NR30) & RER_NR30_ENABLED)
+			if (audio->sound1.length)
 			{
-				audio->pcmSound.cycle = 0;
-				audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
-				audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
-				audio->pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
-					READ_REGISTER_DIRECT(memory, REG_NR31) :
+				audio->sound1.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR14)) ? 
+					GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR11)) :
 					SOUND_LENGTH_INDEFINITE;
 			}
 			break;
-		case SoundIndexNoise:
-			audio->noiseSound.lfsr = 0x7FFF;
-			audio->noiseSound.accumulator = 0;
+		case REG_NR12:
+			initEnvelope(&audio->sound1.envelope, READ_REGISTER_DIRECT(memory, REG_NR12));
+			break;
+		case REG_NR14:
+			if (value & RESTART_BIT)
+			{
+				audio->sound1.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR14)) ? 
+					GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR11)) :
+					SOUND_LENGTH_INDEFINITE;
+			}
+		case REG_NR13:
+			audio->sound1.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR14), READ_REGISTER_DIRECT(memory, REG_NR13));
+			break;
+
+		case REG_NR21:
+			audio->sound2.waveDuty = GET_WAVE_DUTY(READ_REGISTER_DIRECT(memory, REG_NR21));
+			if (audio->sound2.length)
+			{
+				audio->sound2.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR24)) ? 
+					GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR21)) :
+					SOUND_LENGTH_INDEFINITE;
+			}
+			break;
+		case REG_NR22:
+			initEnvelope(&audio->sound2.envelope, READ_REGISTER_DIRECT(memory, REG_NR22));
+			break;
+		case REG_NR24:
+			if (value & RESTART_BIT)
+			{
+				audio->sound2.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR24)) ? 
+					GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR21)) :
+					SOUND_LENGTH_INDEFINITE;
+			}
+		case REG_NR23:
+			audio->sound2.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR24), READ_REGISTER_DIRECT(memory, REG_NR23));
+			break;
+
+		case REG_NR30:
+			if (!(value & RER_NR30_ENABLED))
+			{
+				audio->pcmSound.length = 0;
+			}
+			break;
+		case REG_NR31:
+			if (audio->pcmSound.length)
+			{
+				audio->pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
+							READ_REGISTER_DIRECT(memory, REG_NR31) :
+							SOUND_LENGTH_INDEFINITE;
+			}
+			break;
+		case REG_NR32:
+			audio->pcmSound.volume = GET_PCM_VOLUME(READ_REGISTER_DIRECT(memory, REG_NR32));
+			break;
+		case REG_NR34:
+			if (value & RESTART_BIT)
+			{
+				audio->pcmSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR34)) ?
+							READ_REGISTER_DIRECT(memory, REG_NR31) :
+							SOUND_LENGTH_INDEFINITE;
+			}
+		case REG_NR33:
+			audio->pcmSound.frequency = GET_SOUND_FREQ(READ_REGISTER_DIRECT(memory, REG_NR34), READ_REGISTER_DIRECT(memory, REG_NR33));
+			break;
+
+		case REG_NR41:
+			if (audio->noiseSound.length)
+			{
+				audio->noiseSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR44)) ? 
+					GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR41)) :
+					SOUND_LENGTH_INDEFINITE;
+			}
+			break;
+		case REG_NR42:
+			initEnvelope(&audio->noiseSound.envelope, READ_REGISTER_DIRECT(memory, REG_NR42));
+			break;
+		case REG_NR43:
 			audio->noiseSound.sampleStep = noiseSampleStep(
 				READ_REGISTER_DIRECT(memory, READ_REGISTER_DIRECT(memory, REG_NR43) & 0x3), 
 				READ_REGISTER_DIRECT(memory, REG_NR43) >> 4,
 				gAudioState.sampleRate
 			);
-			initEnvelope(&audio->noiseSound.envelope, READ_REGISTER_DIRECT(memory, REG_NR42));
-			audio->noiseSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR44)) ? 
-				GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR41)) :
-				SOUND_LENGTH_INDEFINITE;
+		case REG_NR44:
+			if (value & RESTART_BIT)
+			{
+				audio->noiseSound.lfsr = 0x7FFF;
+				audio->noiseSound.accumulator = 0;
+				audio->noiseSound.length = GET_SOUND_LENGTH_LIMITED(READ_REGISTER_DIRECT(memory, REG_NR44)) ? 
+					GET_SOUND_LENGTH(READ_REGISTER_DIRECT(memory, REG_NR41)) :
+					SOUND_LENGTH_INDEFINITE;
+			}
 			break;
 	}
 	updateOnOffRegister(memory);
-#endif
 }
 
 void recalcTickAdjustment(struct AudioState* state)

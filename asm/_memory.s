@@ -236,22 +236,22 @@ GB_DO_WRITE_REGISTERS_CALL:
 #     beqz $at, _GB_WRITE_SOUND_OFF
 
 #     li $at, REG_NR14
-#     beq $at, ADDR, _GB_RESTART_SOUND
+#     beq $at, ADDR, _GB_SET_SOUND_REGISTER
 #     li TMP2, 0
 
 #     li $at, REG_NR24
-#     beq $at, ADDR, _GB_RESTART_SOUND
+#     beq $at, ADDR, _GB_SET_SOUND_REGISTER
 #     li TMP2, 1
     
 #     li $at, REG_NR30
 #     beq $at, ADDR, _GB_PCM_ENABLE
 
 #     li $at, REG_NR34
-#     beq $at, ADDR, _GB_RESTART_SOUND
+#     beq $at, ADDR, _GB_SET_SOUND_REGISTER
 #     li TMP2, 2
     
 #     li $at, REG_NR44
-#     beq $at, ADDR, _GB_RESTART_SOUND
+#     beq $at, ADDR, _GB_SET_SOUND_REGISTER
 #     li TMP2, 3
 
 #     li $at, REG_NR50
