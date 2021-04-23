@@ -917,6 +917,15 @@ _GB_WRITE_PALETTE_1:
     j _GB_WRITE_PALETTE
     li Param0, 1
 
+_GB_WRITE_PALLETE_ADDR_0:
+    j _GB_WRITE_PALLETE_ADDR
+    li Param0, 0
+
+_GB_WRITE_PALLETE_ADDR_1:
+    j _GB_WRITE_PALLETE_ADDR
+    li Param0, 1
+
+
 _GB_WRITE_PALETTE:
     la $at, gPalleteDirty
     li TMP2, 1
@@ -944,14 +953,7 @@ _GB_WRITE_PALETTE:
     addi VAL, VAL, 1
     andi VAL, VAL, 0xBF
 
-_GB_WRITE_PALLETE_ADDR_0:
-    j _GB_WRITE_PALLETE_ADDR
-    li Param0, 0
-
-_GB_WRITE_PALLETE_ADDR_1:
-    j _GB_WRITE_PALLETE_ADDR
-    li Param0, 1
-
+    # intentionally fall through
 _GB_WRITE_PALLETE_ADDR:
     sll TMP3, Param0, 1
     add TMP3, TMP3, Memory # TMP3 used to point to memory register
