@@ -151,13 +151,272 @@ GB_DO_WRITE_REGISTERS_CALL:
     # mask $at into the range 00 - 80
     andi $at, ADDR, 0x7F
     sll $at, $at, 2 # convert to a 4 byte offset
-
+ 
     # load jump table offset
     la TMP2, registerWriteTable
     add TMP2, TMP2, $at
     lw $at, 0(TMP2)
     jr $at
     nop
+
+
+# GB_DO_WRITE_REGISTERS_OLD:
+#     andi TMP2, ADDR, 0xFFF
+
+#     # check for sprites
+#     slti $at, TMP2, 0xEA0 
+#     bnez $at, _GB_BASIC_REGISTER_WRITE
+
+#     # check for unwritable region
+#     slti $at, TMP2, 0xF00
+#     bnez $at, GB_DO_WRITE_NOP 
+
+#     # check for register ram
+#     slti $at, TMP2, 0xF80
+#     beqz $at, _GB_BASIC_REGISTER_WRITE 
+
+#     # mask $at into the range 00 - 80
+#     andi $at, ADDR, 0xF0
+#     srl $at, $at, 1 # get the upper nibble and multiply it by 8
+
+#     la TMP2, _GB_WRITE_JUMP_TABLE
+#     add $at, $at, TMP2
+#     jr $at
+#     nop
+
+# _GB_WRITE_JUMP_TABLE:
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+#     j GB_DO_WRITE_REGISTERS_CALL_NEW
+#     nop
+
+# ########################
+
+# _GB_WRITE_REG_0X:
+#     li $at, REG_JOYP
+#     beq ADDR, $at, _GB_WRITE_REG_JOYP
+#     li $at, REG_SERIAL
+#     beq ADDR, $at, _GB_WRITE_REG_SERIAL
+#     li $at, REG_DIV
+#     beq ADDR, $at, _GB_WRITE_REG_DIV
+#     li $at, REG_TIMA
+#     beq ADDR, $at, _GB_WRITE_REG_TIMA
+#     li $at, REG_TMA
+#     beq ADDR, $at, _GB_WRITE_REG_TMA
+#     li $at, REG_TAC
+#     beq ADDR, $at, _GB_WRITE_REG_TAC
+#     li $at, REG_INTERRUPTS_REQUESTED
+#     beq ADDR, $at, _GB_WRITE_REG_INT_REQ
+#     nop
+#     jr $ra
+#     nop
+
+
+# ############################
+
+# _GB_WRITE_SOUND_REG:
+#     li $at, REG_NR52
+#     beq $at, ADDR, _GB_SOUND_ENABLED
+#     li TMP2, 3
+    
+#     read_register_direct $at, REG_NR52
+#     andi $at, $at, REG_NR52_ON_OFF
+#     beqz $at, _GB_WRITE_SOUND_OFF
+
+#     li $at, REG_NR14
+#     beq $at, ADDR, _GB_RESTART_SOUND
+#     li TMP2, 0
+
+#     li $at, REG_NR24
+#     beq $at, ADDR, _GB_RESTART_SOUND
+#     li TMP2, 1
+    
+#     li $at, REG_NR30
+#     beq $at, ADDR, _GB_PCM_ENABLE
+
+#     li $at, REG_NR34
+#     beq $at, ADDR, _GB_RESTART_SOUND
+#     li TMP2, 2
+    
+#     li $at, REG_NR44
+#     beq $at, ADDR, _GB_RESTART_SOUND
+#     li TMP2, 3
+
+#     li $at, REG_NR50
+#     beq $at, ADDR, _GB_BASIC_AUDIO_REGISTER
+#     nop
+    
+#     j _GB_BASIC_REGISTER_WRITE
+#     nop
+
+# _GB_WRITE_SOUND_OFF:
+#     jr $ra
+#     nop
+
+# ############################
+
+# _GB_WRITE_REG_4X:
+#     andi $at, ADDR, 0xF
+#     sll $at, $at, 3
+#     la TMP2, _GB_WRITE_REG_4X_TABLE
+#     add $at, $at, TMP2
+#     jr $at
+#     nop
+# _GB_WRITE_REG_4X_TABLE:
+#     # LCDC
+#     j _GB_WRITE_REG_LCDC
+#     nop
+#     # LCDC Status
+#     j _GB_WRITE_REG_LCDC_STATUS
+#     nop
+#     # SCY
+#     jr $ra
+#     write_register_direct VAL, REG_SCY
+#     # SCX
+#     jr $ra
+#     write_register_direct VAL, REG_SCX
+#     # LY
+#     jr $ra
+#     nop
+#     # LYC
+#     j _GB_WRITE_REG_LCY
+#     nop
+#     # DMA
+#     j _GB_WRITE_DMA
+#     nop # TODO
+#     # BGP
+#     j _GB_WRITE_BGP
+#     nop # TODO
+#     # OBP0
+#      j _GB_WRITE_OBP0
+#     nop # TODO
+#     # OBP1
+#      j _GB_WRITE_OBP1
+#     nop # TODO
+#     # WY
+#     jr $ra
+#     write_register_direct VAL, REG_WY
+#     # WX
+#     jr $ra
+#     write_register_direct VAL, REG_WX
+#     # Unused
+#     jr $ra
+#     nop
+#     # KEY1
+#     j _GB_SPEED_KEY1
+#     nop
+#     jr $ra
+#     nop
+#     # VBK
+#     andi VAL, VAL, 0x1
+#     write_register_direct VAL, REG_VBK
+    
+#     save_state_on_stack
+
+# .if DEBUG
+#     addi $sp, $sp, -8
+# .endif
+
+#     move $a0, Memory
+#     move $a1, VAL
+#     call_c_fn setVRAMBank, 2
+#     move $a2, VAL
+
+# .if DEBUG
+#     addi $sp, $sp, 8
+# .endif
+
+#     restore_state_from_stack
+#     jr $ra
+#     nop
+
+# ############################
+
+# _GB_WRITE_REG_5X:
+#     li $at, REG_UNLOAD_BIOS
+#     beq $at, ADDR, _GB_WRITE_REG_UNLOAD_BIOS
+    
+#     li $at, REG_HDMA1
+#     beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+#     li Param0, 0xFF
+    
+#     li $at, REG_HDMA2
+#     beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+#     li Param0, 0xF0
+
+#     li $at, REG_HDMA3
+#     beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+#     li Param0, 0x1F
+
+#     li $at, REG_HDMA4
+#     beq $at, ADDR, _GB_WRITE_MASKED_HDMA
+#     li Param0, 0xF0
+
+#     li $at, REG_HDMA5
+#     beq $at, ADDR, _GB_START_DMA
+
+#     nop
+#     jr $ra
+#     nop
+
+# ############################
+
+# _GB_WRITE_REG_6X:
+#     li $at, REG_BCPS
+#     beq $at, ADDR, _GB_WRITE_PALLETE_ADDR
+#     li Param0, 0
+
+#     li $at, REG_BCPD
+#     beq $at, ADDR, _GB_WRITE_PALETTE
+
+#     li $at, REG_OCPS
+#     beq $at, ADDR, _GB_WRITE_PALLETE_ADDR
+#     li Param0, 1
+    
+#     li $at, REG_OCPD
+#     beq $at, ADDR, _GB_WRITE_PALETTE
+#     nop
+
+#     jr $ra
+#     nop    
+
+# ############################
+
+# _GB_WRITE_REG_7X:
+#     li $at, REG_SVBK
+#     bne ADDR, $at, _GB_WRITE_REG_7X_SKIP
+#     andi VAL, VAL, 0x7
+#     write_register_direct VAL, REG_SVBK
+
+#     save_state_on_stack
+# .if DEBUG
+#     addi $sp, $sp, -8
+# .endif
+
+#     move $a0, Memory
+#     move $a1, VAL
+#     call_c_fn setInternalRamBank, 2
+
+# .if DEBUG
+#     addi $sp, $sp, 8
+# .endif
+
+#     restore_state_from_stack
+# _GB_WRITE_REG_7X_SKIP:
+#     jr $ra
+#     nop
     
 ######################
 # Reads ADDR into $v0

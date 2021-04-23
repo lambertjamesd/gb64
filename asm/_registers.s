@@ -159,9 +159,9 @@ registerWriteTable:
 
     # FF68
     .word _GB_WRITE_PALLETE_ADDR_0  # REG_BCPS
-    .word _GB_WRITE_PALETTE         # REG_BCPD
+    .word _GB_WRITE_PALETTE_0       # REG_BCPD
     .word _GB_WRITE_PALLETE_ADDR_1  # REG_OCPS
-    .word _GB_WRITE_PALETTE         # REG_OCPD
+    .word _GB_WRITE_PALETTE_1       # REG_OCPD
 
     # FF6C
     .word GB_DO_WRITE_NOP
@@ -344,45 +344,6 @@ _GB_RESTART_SOUND_3:
 _GB_RESTART_SOUND_4:
     j _GB_RESTART_SOUND
     li TMP2, 3
-
-_GB_WRITE_SOUND_REG:
-    li $at, REG_NR52
-    beq $at, ADDR, _GB_SOUND_ENABLED
-    li TMP2, 3
-    
-    read_register_direct $at, REG_NR52
-    andi $at, $at, REG_NR52_ON_OFF
-    beqz $at, _GB_WRITE_SOUND_OFF
-
-    li $at, REG_NR14
-    beq $at, ADDR, _GB_RESTART_SOUND
-    li TMP2, 0
-
-    li $at, REG_NR24
-    beq $at, ADDR, _GB_RESTART_SOUND
-    li TMP2, 1
-    
-    li $at, REG_NR30
-    beq $at, ADDR, _GB_PCM_ENABLE
-
-    li $at, REG_NR34
-    beq $at, ADDR, _GB_RESTART_SOUND
-    li TMP2, 2
-    
-    li $at, REG_NR44
-    beq $at, ADDR, _GB_RESTART_SOUND
-    li TMP2, 3
-
-    li $at, REG_NR50
-    beq $at, ADDR, _GB_BASIC_AUDIO_REGISTER
-    nop
-    
-    j _GB_BASIC_REGISTER_WRITE
-    nop
-
-_GB_WRITE_SOUND_OFF:
-    jr $ra
-    nop
 
 _GB_BASIC_AUDIO_REGISTER:
     addi $sp, $sp, -16
@@ -931,12 +892,12 @@ _GB_DMA_BLOCK_DONE:
 ############################ 
 
 
-_GB_WRITE_PALLETE_ADDR_0:
-    j _GB_WRITE_PALLETE_ADDR
+_GB_WRITE_PALETTE_0:
+    j _GB_WRITE_PALETTE
     li Param0, 0
 
-_GB_WRITE_PALLETE_ADDR_1:
-    j _GB_WRITE_PALLETE_ADDR
+_GB_WRITE_PALETTE_1:
+    j _GB_WRITE_PALETTE
     li Param0, 1
 
 _GB_WRITE_PALETTE:
@@ -965,6 +926,14 @@ _GB_WRITE_PALETTE:
     addi ADDR, ADDR, -1
     addi VAL, VAL, 1
     andi VAL, VAL, 0xBF
+
+_GB_WRITE_PALLETE_ADDR_0:
+    j _GB_WRITE_PALLETE_ADDR
+    li Param0, 0
+
+_GB_WRITE_PALLETE_ADDR_1:
+    j _GB_WRITE_PALLETE_ADDR
+    li Param0, 1
 
 _GB_WRITE_PALLETE_ADDR:
     sll TMP3, Param0, 1
