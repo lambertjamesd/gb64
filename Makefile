@@ -17,7 +17,7 @@ WARNING_FLAGS = -Werror=implicit-function-declaration
 
 RSP2DWARF = /home/james/go/src/github.com/lambertjamesd/rsp2dwarf/rsp2dwarf
 
-INCLUDE_DEBUGGER = TRUE
+# INCLUDE_DEBUGGER = TRUE
 
 ifeq ($(INCLUDE_DEBUGGER), TRUE)
 DEBUG_FLAGS = -g -DUSE_DEBUGGER
@@ -27,7 +27,7 @@ DEBUG_FILES =
 DEBUG_FLAGS =
 endif
 
-# FINAL = YES
+FINAL = YES
 ifeq ($(FINAL), YES)
 OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2

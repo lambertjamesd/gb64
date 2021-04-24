@@ -24,8 +24,8 @@ extern OSIoMesg        dmaIOMessageBuf;
 #define SRAM_ADDR   0x08000000
 
 char gTmpSaveBuffer[FLASH_BLOCK_SIZE];
-char gUncompressedMemory[128 * 1024];
-char gCompressedMemory[32 * 1024];
+char __attribute__((aligned(16))) gUncompressedMemory[128 * 1024];
+char __attribute__((aligned(16))) gCompressedMemory[32 * 1024];
 
 SaveReadCallback gSaveReadCallback;
 SaveWriteCallback gSaveWriteCallback;
@@ -76,9 +76,6 @@ OSPiHandle gSramHandle;
 
 OSPiHandle * osSramInit(void)
 {
-    if (gSramHandle.baseAddress == PHYS_TO_K1(SRAM_START_ADDR))
-            return(&gSramHandle);
-
     /* Fill basic information */
 
     gSramHandle.type = 3;
@@ -118,7 +115,7 @@ int loadFromSRAM(void* target, int sramOffset, int length)
     dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
     dmaIoMesgBuf.dramAddr = target;
     dmaIoMesgBuf.devAddr = SRAM_ADDR + sramOffset;
-    dmaIoMesgBuf.size = length;
+    dmaIoMesgBuf.size = (length + 1) & ~1;
 
     osInvalDCache(target, length);
     if (osEPiStartDma(&gSramHandle, &dmaIoMesgBuf, OS_READ) == -1)
@@ -138,7 +135,7 @@ int saveToSRAM(void* target, int sramOffset, int length)
     dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
     dmaIoMesgBuf.dramAddr = target;
     dmaIoMesgBuf.devAddr = SRAM_ADDR + sramOffset;
-    dmaIoMesgBuf.size = length;
+    dmaIoMesgBuf.size = (length + 1) & ~1;
 
     osWritebackDCache(target, length);
     if (osEPiStartDma(&gSramHandle, &dmaIoMesgBuf, OS_WRITE) == -1)

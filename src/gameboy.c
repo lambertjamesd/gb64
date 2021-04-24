@@ -9,7 +9,7 @@
 #include "save.h"
 #include "rspppu.h"
 
-struct GameBoy __attribute__((aligned(8))) gGameboy;
+struct GameBoy __attribute__((aligned(16))) gGameboy;
 
 struct GameboySettings gDefaultSettings = {
     GB_SETTINGS_HEADER,

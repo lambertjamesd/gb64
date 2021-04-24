@@ -1,6 +1,6 @@
 #include "boot.h"
 
-#define USE_PLACEHOLDER 0
+#define USE_PLACEHOLDER 1
 
 /*
  * ROM spec file
@@ -14,6 +14,7 @@ beginseg
 	include "$(ROOT)/usr/lib/PR/rspboot.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.fifo.o"
 	include "bin/rsp/ppu.o"
+	//include "debugger/dump_rsp_state.o"
 endseg
 
 beginseg
@@ -53,7 +54,7 @@ endseg
 beginseg
 	name "cgb_bios"
 	flags RAW
-	include "data/cgb_bios.bin"
+	include "data/cgb_bios_placeholder.bin"
 endseg
 
 beginseg
