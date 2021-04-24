@@ -40,7 +40,7 @@ registerWriteTable:
     # FF18
     .word _GB_SET_SOUND_REGISTER    # REG_NR23
     .word _GB_SET_SOUND_REGISTER    # REG_NR24
-    .word _GB_PCM_ENABLE            # REG_NR30
+    .word _GB_SET_SOUND_REGISTER    # REG_NR30
     .word _GB_SET_SOUND_REGISTER    # REG_NR31
 
     # FF1C
@@ -359,19 +359,6 @@ _GB_SET_SOUND_REGISTER:
 
     jr $ra
     nop
-
-_GB_PCM_ENABLE:
-    addi $sp, $sp, -8
-    sw $ra, 0($sp)
-    sb VAL, 4($sp)
-    jal _GB_SYNC_AUDIO
-    nop
-    lbu VAL, 4($sp)
-    write_register_direct VAL, REG_NR30
-    lw $ra, 0($sp)
-    jr $ra
-    addi $sp, $sp, 8
-
 
 _GB_SOUND_ENABLED:
     addi $sp, $sp, -8
