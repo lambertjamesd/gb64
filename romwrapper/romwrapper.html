@@ -284,12 +284,41 @@
                 });
             }
 
-            async function convertROMsAsFiles(roms) {
+            async function readBIOSFiles() {
                 const dmgBoot = document.querySelector('#dmgBoot').files[0];
                 const cgbBios = document.querySelector('#cgbBios').files[0];
-                const saveType = document.getElementById('save-type');
                 const dmgBootFile = dmgBoot && await readAsArrayBuffer(dmgBoot);
                 const cgbBiosFile = cgbBios && await readAsArrayBuffer(cgbBios);
+                return {dmgBootFile: dmgBootFile, cgbBiosFile: cgbBiosFile};
+            }
+
+            async function downloadEV() {
+                const biosFiles = await readBIOSFiles();
+                const dmgBootFile = biosFiles.dmgBootFile;
+                const cgbBiosFile = biosFiles.cgbBiosFile;
+
+                const result = convert(
+                    new Uint8Array(await downloadRomTemplate()),
+                    'gb64',
+                    new Uint8Array([0x47, 0x42, 0x36, 0x34, 0x5f, 0x52, 0x4f, 0x4d]), 
+                    dmgBootFile, 
+                    cgbBiosFile,
+                    0
+                );
+                
+                const zip = new JSZip();
+                zip.file('gb.v64', result);
+                zip.file('gbc.v64', result);
+                await triggerDownload(`gb64.zip`, await zip.generateAsync({
+                    type: 'uint8array',
+                }));
+            }
+
+            async function convertROMsAsFiles(roms) {
+                const saveType = document.getElementById('save-type');
+                const biosFiles = await readBIOSFiles();
+                const dmgBootFile = biosFiles.dmgBootFile;
+                const cgbBiosFile = biosFiles.cgbBiosFile;
 
                 const zip = new JSZip();
                 const duplicateFiles = new Set();
@@ -373,6 +402,22 @@
                                     onclick="convertROM()"
                                 >
                             </div>
+                        </div>
+                        <div class="form-section">
+                            <h2>Emulator for Everdrive</h2>
+                            <div>
+                                <input
+                                    class="download-button"
+                                    value="Download Emulator"
+                                    type="submit"
+                                    onclick="downloadEV()"
+                                >
+                            </div>
+                            <p>
+                                If you put gb.v64 and gbc.v64 from the download link above into
+                                the folder ED64/emu on your everdrive you can play gameboy ROMs directly
+                                without having convert them individually.
+                            </p>
                         </div>
                     </div>
                     <div class="bios-section">
