@@ -9,7 +9,7 @@
 #include "../gfx_extend.h"
 #include "assert.h"
 
-#define GDP_COMMAND_LENGTH  0x800
+#define GDP_COMMAND_LENGTH  0x1000
 
 Gfx* gCurrentDP;
 

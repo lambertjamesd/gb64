@@ -15,6 +15,9 @@ struct ROMLayout gGBRom;
 #define EXTENDED_BANK_OFFSET    0x9
 #define EXTENDED_BANK_ID        0x52
 
+#define EV_ROM_MEMORY_START	0x200000
+#define PLACEHOLDER_ROM_ENTRY 0x474236345f524f4d
+
 // preserve 256k of ram
 #define RESERVE_RAM             256 * 1024
 
@@ -44,9 +47,9 @@ void loadRomSegment(void* target, void *romLocation, int bankNumber)
     dmaIoMesgBuf.devAddr = (u32)romLocation + bankNumber * ROM_BANK_SIZE;
     dmaIoMesgBuf.size = ROM_BANK_SIZE;
 
+    osInvalDCache(target, ROM_BANK_SIZE);
     osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
 	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-    osInvalDCache(target, ROM_BANK_SIZE);
 }
 
 void initRomLayout(struct ROMLayout* romLayout, void *romLocation)
@@ -55,6 +58,15 @@ void initRomLayout(struct ROMLayout* romLayout, void *romLocation)
     romLayout->mainBank = malloc(ROM_BANK_SIZE + sizeof(struct VirtualBank));
 
     loadRomSegment(romLayout->mainBank, romLocation, 0);
+
+    if (*((u64*)romLayout->mainBank) == PLACEHOLDER_ROM_ENTRY) 
+    {
+        // If there is no rom specified, fall back to 
+        // loading from where ED typically puts the rom
+        romLocation = (void*)EV_ROM_MEMORY_START;
+        loadRomSegment(romLayout->mainBank, romLocation, 0);
+    }
+
     romLayout->firstVirtualBank = 0;
     romLayout->lastVirtualBank = 0;
     romLayout->romBankToVirtualBank = 0;
@@ -228,6 +240,7 @@ void loadBIOS(struct ROMLayout* romLayout, int gbc)
         dmaIoMesgBuf.devAddr = (u32)_cgb_biosSegmentRomStart;
         dmaIoMesgBuf.size = 0x100;
 
+        osInvalDCache(romLayout->mainBank, ROM_BANK_SIZE);
         osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 
@@ -241,7 +254,6 @@ void loadBIOS(struct ROMLayout* romLayout, int gbc)
 
         osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        osInvalDCache(romLayout->mainBank, ROM_BANK_SIZE);
     }
     else
     {
@@ -253,8 +265,8 @@ void loadBIOS(struct ROMLayout* romLayout, int gbc)
         dmaIoMesgBuf.devAddr = (u32)_dmg_bootSegmentRomStart;
         dmaIoMesgBuf.size = (u32)_dmg_bootSegmentRomEnd - (u32)_dmg_bootSegmentRomStart;
 
+        osInvalDCache(romLayout->mainBank, ROM_BANK_SIZE);
         osEPiStartDma(handler, &dmaIoMesgBuf, OS_READ);
         (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
-        osInvalDCache(romLayout->mainBank, ROM_BANK_SIZE);
     }
 }
