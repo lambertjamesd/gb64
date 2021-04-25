@@ -19,6 +19,13 @@
                 color: red;
             }
 
+            .save-db {
+                font-family: Lucida Console,Lucida Sans Typewriter,monaco,Bitstream Vera Sans Mono,monospace;
+                background: #f0f0f0;
+                border: solid 1px #404040;
+                padding: 12px;
+            }
+
             .version {
                 font-family: Lucida Console,Lucida Sans Typewriter,monaco,Bitstream Vera Sans Mono,monospace;
                 display: flex;
@@ -199,6 +206,27 @@
             }
 
             const edSavetypes = [0x50, 0x30];
+            const edPrintSaveTypes = [0x5, 0x3];
+
+            function outputCRC(filename, crc, saveType) {
+                const parent = document.querySelector('.save-db');
+
+                if (parent)
+                {
+                    const placeholder = parent.querySelector('.placeholder');
+
+                    if (placeholder)
+                    {
+                        parent.removeChild(placeholder);
+                    }
+
+                    const line = document.createElement('div');
+                    line.appendChild(document.createTextNode(
+                        `0x${crc.toString(16)}=${edPrintSaveTypes[saveType]} (${filename})`
+                    ));
+                    parent.appendChild(line);
+                }
+            }
 
             function convert(emulatorArrayBuffer, romName, rom, dmgBoot, cgbBios, saveType) {
                 try {
@@ -260,6 +288,8 @@
                         result[targetIndex] = rom[sourceIndex];
                     }
 
+                    const crc = recalcCRC(result);
+                    outputCRC(romName, crc[0], saveType);
                     recalcCRC(result);
 
                     return result;
@@ -449,7 +479,28 @@
                 </div>
                 <div class="version">V 3.0</div>
                 <div class="error-log">
-        
+                </div>
+                <div>
+                    <h2>Getting save files to work on Everdrive</h2>
+                    <p>
+                        If you are using EV X7 you can skip this step.
+                        
+                        The emulator uses flashram to save. To get this to work with everdrive V 3 or lower you 
+                        need to specify that in save_db.txt using the rom's CRC code. By adding the codes generated 
+                        below when you convert a rom.
+                    </p>
+                    <div class="save-db">
+                        <div class="placeholder">
+                            (CRC code will appear here when you convert a rom)
+                        </div>
+                    </div>
+                    <p>
+                        This emulator supports save states. Press down C to save. Hold up C to load a save state.
+                        When staring a ROM it will not load the entire save state by default. It will only load the
+                        GameBoy cartridge ram emulating the behavior of the GameBoy. If you want a save file to load
+                        from a fresh boot you first need to save the game inside the emulator then create the save state
+                        with down C. 
+                    </p>
                 </div>
                 <div>
                     <h2>Default Controls</h2>
