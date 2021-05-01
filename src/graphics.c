@@ -147,7 +147,7 @@ void beginScreenDisplayList(struct GameboyGraphicsSettings* settings, void* colo
 void waitForRDP() {
     // set flag for exit early in case
     // screen was turned off while rending the previous frame
-    IO_WRITE(SP_STATUS_REG, SP_SET_SIG2);
+    IO_WRITE(SP_STATUS_REG, SP_SET_SIG2 | SP_SET_SIG0);
     // wait for DP to be available
     while (IO_READ(DPC_STATUS_REG) & (DPC_STATUS_DMA_BUSY | DPC_STATUS_TMEM_BUSY | DPC_STATUS_PIPE_BUSY | DPC_STATUS_CMD_BUSY | DPC_STATUS_END_VALID | DPC_STATUS_START_VALID));
 }

@@ -10,7 +10,7 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     read_register_direct TMP2, REG_TAC # load the timer attributes table
     andi $at, TMP2, REG_TAC_STOP_BIT # check if interrupts are enabled
     beqz $at, _CALCULATE_NEXT_TIMER_INTERRUPT_NONE # if timers are off, do nothing
-    # input clock divider pattern is 0->256, 1->4, 2->16, 3->64
+    # input clock divider pattern is 0-> 1 << 8, 1-> 1 << 2, 2-> 1 << 4, 3-> 1 << 6
     # or (1 << (((dividerIndex - 1) & 0x3) + 1) * 2)
     addi TMP2, TMP2, -1 # 
     andi TMP2, TMP2, REG_TAC_CLOCK_SELECT
@@ -25,6 +25,8 @@ CALCULATE_NEXT_TIMER_INTERRUPT:
     sllv $at, $at, TMP2
 
     # adjust timer offset by hidden div bits
+    # FULL_DIV = ((CYCLES_RUN << 2) + _REG_DIV_OFFSET)
+    # CYCLES_ALREADY_RUN = (FULL_DIV >> 2) & MASK
     li TMP3, 1
     sllv TMP2, TMP3, TMP2
     addi TMP2, TMP2, -1

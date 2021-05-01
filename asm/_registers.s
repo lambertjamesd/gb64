@@ -277,13 +277,19 @@ _GB_WRITE_REG_SERIAL_END:
 
     
 _GB_WRITE_REG_DIV:
-    # DIV = (((CYCLES_RUN << 2) + _REG_DIV_OFFSET) >> 8) & 0xFFFF
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+
+    # ensure tima value is accurate before changing 
+    # the div register
+    jal CALCULATE_TIMA_VALUE
+    nop
+
+    # DIV = (((CYCLES_RUN << 2) + _REG_DIV_OFFSET) >> 8) & 0xFF
     # _REG_DIV_OFFSET = -(CYCLES_RUN << 2) & 0xFFFF
     sll $at, CYCLES_RUN, 2
     sub $at, $zero, $at
     write_register16_direct $at, _REG_DIV_OFFSET
-    addi $sp, $sp, -8
-    sw $ra, 0($sp)
     jal REMOVE_STOPPING_POINT
     li Param0, CPU_STOPPING_POINT_TYPE_TIMER_RESET
     lw $ra, 0($sp)
@@ -740,33 +746,34 @@ _GB_WRITE_REG_UNLOAD_BIOS_SKIP:
 
 
 _GB_WRITE_MASKED_HDMA1:
-    j _GB_WRITE_MASKED_HDMA
-    li Param0, 0xFF
+    j _GB_BASIC_REGISTER_WRITE
+    andi VAL, VAL, 0xFF
 
 _GB_WRITE_MASKED_HDMA2:
-    j _GB_WRITE_MASKED_HDMA
-    li Param0, 0xF0
+    j _GB_BASIC_REGISTER_WRITE
+    andi VAL, VAL, 0xF0
 
 _GB_WRITE_MASKED_HDMA3:
-    j _GB_WRITE_MASKED_HDMA
-    li Param0, 0x1F
+    j _GB_BASIC_REGISTER_WRITE
+    andi VAL, VAL, 0x1F
 
 _GB_WRITE_MASKED_HDMA4:
-    j _GB_WRITE_MASKED_HDMA
-    li Param0, 0xF0
-
-_GB_WRITE_MASKED_HDMA:
     j _GB_BASIC_REGISTER_WRITE
-    and VAL, VAL, Param0
+    andi VAL, VAL, 0xF0
 
 _GB_START_DMA:
     lbu $at, CPU_STATE_GBC(CPUState)
     beqz $at, _GB_SKIP_DMA
     andi $at, VAL, 0x7F
+    read_register_direct TMP2, REG_HDMA5
     write_register_direct $at, REG_HDMA5
     andi $at, VAL, 0x80
     bnez $at, _GB_SKIP_DMA
     nop
+    or $at, VAL, TMP2
+    andi $at, $at, 0x80
+    beqz $at, _GB_STOP_DMA
+
     addi CYCLES_RUN, CYCLES_RUN, 1
     addi $sp, $sp, -8
     sw $ra, 0($sp)
@@ -780,6 +787,11 @@ _GB_DMA_LOOP:
 _GB_SKIP_DMA:
     jr $ra
     nop
+
+_GB_STOP_DMA:
+    li $at, 0xFF
+    jr $ra
+    write_register_direct $at, REG_HDMA5
 
 GB_DMA_BLOCK:
     read_register_direct $at, REG_KEY1
