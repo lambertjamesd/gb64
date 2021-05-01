@@ -52,8 +52,8 @@ extern void test_malloc();
 extern OSThread mainThread;
 extern OSPiHandle	*handler;
 extern OSMesgQueue     dmaMessageQ;
-
-char gTmpBuffer[512];
+OSMesgQueue gResetMessageQueue;
+OSMesg gResetMessageMem;
 
 /*
  * This is the main routine of the app.
@@ -104,11 +104,11 @@ game(void)
 	setLayerGraphics(SPRITE_FACE_LAYER, gUseFaceButtons);
     setLayerGraphics(SPRITE_FONT_LAYER, gUseFontTexture);
 
-    /*
-     * Main game loop
-     */
-    /*osSyncPrintf("Use the L button and crosshair for menu options.\n");*/
-    while (1) {
+	osCreateMesgQueue(&gResetMessageQueue, &gResetMessageMem, 1);
+    osSetEventMesg(OS_EVENT_PRENMI, &gResetMessageQueue, 0);    
+
+	OSMesg resetMsg;
+    while (osRecvMesg(&gResetMessageQueue, &resetMsg, OS_MESG_NOBLOCK) == -1) {
     	initSprites();
 		lastButton = ReadLastButton(0);
 		pad = ReadController(0);
@@ -197,4 +197,6 @@ game(void)
 
 		faultHandlerHeartbeat();
     }
+
+	osStopThread(0);
 }
