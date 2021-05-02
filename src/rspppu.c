@@ -85,9 +85,7 @@ void startPPUFrame(struct Memory* memory, int gbc)
 
     osSpTaskStart(&task);
     // clear mode 3 bit
-    IO_WRITE(SP_STATUS_REG, SP_CLR_SIG0);
-    IO_WRITE(SP_STATUS_REG, SP_SET_SIG1);
-    IO_WRITE(SP_STATUS_REG, SP_CLR_SIG2);
+    IO_WRITE(SP_STATUS_REG, SP_CLR_SIG0 | SP_SET_SIG1 | SP_CLR_SIG2);
 }
 
 void renderPPURow(struct Memory* memory, struct GraphicsState* state)
