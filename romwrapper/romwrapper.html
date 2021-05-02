@@ -228,7 +228,7 @@
                 }
             }
 
-            function convert(emulatorArrayBuffer, romName, rom, dmgBoot, cgbBios, saveType) {
+            function convert(emulatorArrayBuffer, romName, rom, dmgBoot, cgbBios, saveType, padSize) {
                 try {
                     const romIndex = findIndex(emulatorArrayBuffer, 'GB64_ROM');
 
@@ -238,7 +238,19 @@
                         return;
                     }
 
-                    const result = new Uint8Array(new ArrayBuffer(Math.max(romIndex + rom.length, 0x101000)));
+                    let outLength = Math.max(romIndex + rom.length, 0x101000);
+
+                    if (padSize)
+                    {
+                        const padAmount = padSize - outLength % padSize;
+
+                        if (padAmount != padSize)
+                        {
+                            outLength += padAmount;
+                        }
+                    }
+
+                    const result = new Uint8Array(new ArrayBuffer(outLength));
                     copyInto(result, 0, emulatorArrayBuffer);
                     
                     const dmgIndex = findIndex(emulatorArrayBuffer, 'DMG_BOOT');
@@ -346,6 +358,7 @@
 
             async function convertROMsAsFiles(roms) {
                 const saveType = document.getElementById('save-type');
+                const padMB = document.getElementById('pad-mb');
                 const biosFiles = await readBIOSFiles();
                 const dmgBootFile = biosFiles.dmgBootFile;
                 const cgbBiosFile = biosFiles.cgbBiosFile;
@@ -364,7 +377,8 @@
                         await readAsArrayBuffer(rom), 
                         dmgBootFile, 
                         cgbBiosFile,
-                        saveType.selectedIndex
+                        saveType.selectedIndex,
+                        padMB.checked ? 1024 * 1024 : 0,
                     );
 
                     if (result) {
@@ -474,6 +488,12 @@
                                 <option>FLASH</option>
                                 <option>SRAM (64drive)</option>
                             </select>
+                        </div>
+                        <div class="form-section">
+                            <h2>Pad to MB</h2>
+                            <p>Retroblaster requires the ROM to be an even multiple of a megabyte. Check this to apply padding to the output ROM to size it up to the next MB. </p>
+                            <input id="pad-mb" type="checkbox">
+                            <label for="pad-mb">Add padding</label>
                         </div>
                     </div>
                 </div>
