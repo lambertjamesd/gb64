@@ -96,6 +96,7 @@ CODEFILES   =	boot.c game.c controller.c dram_stack.c \
        src/inputmapping.c                    \
        src/graphicsmenu.c                    \
        src/clockmenu.c                       \
+       src/erasemenu.c                       \
        src/upgrade.c                         \
        src/save.c                            \
        src/sprite.c                          \

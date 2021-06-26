@@ -268,6 +268,14 @@ void initMainMenu(struct MainMenu* mainMenu)
     );
 
     menuItemInit(
+        &mainMenu->menuItems[MainMenuItemMainErase],
+        &mainMenu->eraseMenu,
+        eraseMenuRender,
+        eraseMenuHandleInput,
+        NULL
+    );
+
+    menuItemInit(
         &mainMenu->menuItems[MainMenuItemMainClock],
         &mainMenu->clockMenu,
         clockMenuRender,
@@ -296,6 +304,13 @@ void initMainMenu(struct MainMenu* mainMenu)
     );
 
     initCursorMenuItem(
+        &mainMenu->mainMenuState.items[MainMenuStateItemsErase],
+        &mainMenu->menuItems[MainMenuItemMainErase],
+        "ERASE",
+        32
+    );
+
+    initCursorMenuItem(
         &mainMenu->mainMenuState.items[MainMenuStateItemsClock],
         &mainMenu->menuItems[MainMenuItemMainClock],
         "CLOCK",
@@ -317,6 +332,11 @@ void initMainMenu(struct MainMenu* mainMenu)
 
     initClockMenu(
         &mainMenu->clockMenu,
+        &mainMenu->menuItems[MainMenuItemMainMenu]
+    );
+
+    initEraseMenu(
+        &mainMenu->eraseMenu,
         &mainMenu->menuItems[MainMenuItemMainMenu]
     );
 

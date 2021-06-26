@@ -674,6 +674,31 @@ enum StoredInfoType saveGameboyState(struct GameBoy* gameboy)
     return storeType;
 }
 
+int eraseSaveData()
+{
+    if (gSaveTypeSetting.saveType == SaveTypeFlash)
+    {
+        u8 flashStatus;
+        osFlashReadStatus(&flashStatus);
+
+        if (flashStatus == (u8)FLASH_STATUS_ERASE_ERROR || osFlashAllErase())
+        {
+            DEBUG_PRINT_F("Save fail clear\n");
+            return -1;
+        }
+    }
+    else
+    {
+        zeroMemory(gCompressedMemory, sizeof(gCompressedMemory));
+        if (gSaveWriteCallback(gCompressedMemory, 0, getSaveTypeSize(gSaveTypeSetting.saveType)))
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 int getSaveStateSize(struct GameBoy* gameboy)
 {
     int offset = 0;

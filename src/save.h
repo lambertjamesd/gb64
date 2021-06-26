@@ -28,6 +28,7 @@ enum StoredInfoType loadSettings(struct GameBoy* gameboy);
 int loadGameboyState(struct GameBoy* gameboy, enum StoredInfoType storeType);
 void loadRAM(struct Memory* memory, enum StoredInfoType storeType, int compressedSize);
 enum StoredInfoType saveGameboyState(struct GameBoy* gameboy);
+int eraseSaveData();
 int getSaveStateSize(struct GameBoy* gameboy);
 void initSaveCallbacks();
 enum StoredInfoType getStoredInfoType(struct GameBoy* gameboy);

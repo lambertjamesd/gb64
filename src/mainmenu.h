@@ -7,6 +7,7 @@
 #include "inputmapping.h"
 #include "graphicsmenu.h"
 #include "clockmenu.h"
+#include "erasemenu.h"
 
 #define SAVE_TIMER_FRAMES       96
 #define SAVE_TIMER_FADE_TIME    64
@@ -21,6 +22,7 @@ enum MainMenuItems {
     MainMenuItemMainMenu,
     MainMenuItemMainInput,
     MainMenuItemMainScreen,
+    MainMenuItemMainErase,
     MainMenuItemMainClock,
     MainMenuItemsCount,
 };
@@ -28,6 +30,7 @@ enum MainMenuItems {
 enum MainMenuStateItems {
     MainMenuStateItemsInput,
     MainMenuStateItemsScreen,
+    MainMenuStateItemsErase,
     MainMenuStateItemsClock,
     MainMenuStateItemsCount,
 };
@@ -53,6 +56,7 @@ struct MainMenu {
     struct MainMenuState mainMenuState;
     struct InputMappingMenu inputMapping;
     struct GraphicsMenu graphicsMenu;
+    struct EraseMenu eraseMenu;
     struct ClockMenu clockMenu;
     struct MenuState menu;
     struct MenuItem menuItems[MainMenuItemsCount];
