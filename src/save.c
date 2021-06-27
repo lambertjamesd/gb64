@@ -17,6 +17,9 @@ extern OSMesg          dmaMessageBuf;
 extern OSPiHandle	   *handler;
 extern OSIoMesg        dmaIOMessageBuf;
 
+OSMesgQueue     timerQueue;
+OSMesg     timerQueueBuf;
+
 #define FLASH_BLOCK_SIZE    0x80
 
 #define ALIGN_FLASH_OFFSET(offset) (((offset) + 0x7F) & ~0x7F)
@@ -90,6 +93,8 @@ OSPiHandle * osSramInit(void)
     gSramHandle.domain = PI_DOMAIN2;
     gSramHandle.speed = 0;
 
+    osCreateMesgQueue(&timerQueue, &timerQueueBuf, 1);
+
     /* TODO gSramHandle.speed = */
 
     zeroMemory(&(gSramHandle.transferInfo), sizeof(gSramHandle.transferInfo));
@@ -106,8 +111,12 @@ OSPiHandle * osSramInit(void)
     return(&gSramHandle);
 }
 
+#define SRAM_CHUNK_DELAY        OS_USEC_TO_CYCLES(10 * 1000)
+
 int loadFromSRAM(void* target, int sramOffset, int length)
 {
+    OSTimer timer;
+
     OSIoMesg dmaIoMesgBuf;
     int saveSize = getSaveTypeSize(gSaveTypeSetting.saveType);
 
@@ -124,12 +133,17 @@ int loadFromSRAM(void* target, int sramOffset, int length)
     }
     (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
 
+    osSetTimer(&timer, SRAM_CHUNK_DELAY, 0, &timerQueue, 0);
+    (void) osRecvMesg(&timerQueue, NULL, OS_MESG_BLOCK);
+
     return 0;
 }
 
 int saveToSRAM(void* target, int sramOffset, int length)
 {
-	OSIoMesg dmaIoMesgBuf;
+    OSTimer timer;
+
+    OSIoMesg dmaIoMesgBuf;
 
     dmaIoMesgBuf.hdr.pri = OS_MESG_PRI_HIGH;
     dmaIoMesgBuf.hdr.retQueue = &dmaMessageQ;
@@ -142,7 +156,11 @@ int saveToSRAM(void* target, int sramOffset, int length)
     {
         return -1;
     }
-	(void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+    (void) osRecvMesg(&dmaMessageQ, NULL, OS_MESG_BLOCK);
+
+    osSetTimer(&timer, SRAM_CHUNK_DELAY, 0, &timerQueue, 0);
+    (void) osRecvMesg(&timerQueue, NULL, OS_MESG_BLOCK);
+
     return 0;
 }
 
@@ -689,8 +707,8 @@ int eraseSaveData()
     }
     else
     {
-        zeroMemory(gCompressedMemory, sizeof(gCompressedMemory));
-        if (gSaveWriteCallback(gCompressedMemory, 0, getSaveTypeSize(gSaveTypeSetting.saveType)))
+        zeroMemory(gUncompressedMemory, getSaveTypeSize(gSaveTypeSetting.saveType));
+        if (gSaveWriteCallback(&gUncompressedMemory, 0, getSaveTypeSize(gSaveTypeSetting.saveType)))
         {
             return -1;
         }
