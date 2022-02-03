@@ -15,7 +15,7 @@ include $(ROOT)/usr/include/make/PRdefs
 
 WARNING_FLAGS = -Werror=implicit-function-declaration
 
-RSP2DWARF = /home/james/go/src/github.com/lambertjamesd/rsp2dwarf/rsp2dwarf
+RSP2DWARF ?= /home/james/go/src/github.com/lambertjamesd/rsp2dwarf/rsp2dwarf
 
 # INCLUDE_DEBUGGER = TRUE
 
