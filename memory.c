@@ -9,7 +9,7 @@ void* gHeapEnd;
 /*
  * Symbol genererated by "makerom" (RAM)
  */
-extern char     _codeSegmentEnd[];
+extern char     _heapStart[];
 extern char    *_gEndSegments;
 
 
@@ -31,7 +31,7 @@ void initBlock(struct HeapSegment* segment, void* end, int type)
 
 void initHeap(void* heapEnd)
 {
-    gFirstFreeSegment = (struct HeapSegment*)(((int)_codeSegmentEnd + 7) & ~0x7);
+    gFirstFreeSegment = (struct HeapSegment*)(((int)_heapStart + 7) & ~0x7);
     initBlock(gFirstFreeSegment, heapEnd, MALLOC_FREE_BLOCK);
 
     gHeapStart = gFirstFreeSegment;

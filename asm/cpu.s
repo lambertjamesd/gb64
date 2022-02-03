@@ -2,6 +2,8 @@
 .set noat      # allow manual use of $at
 .set noreorder # don't insert nops after branches
 
+.set DEBUG, 0
+
 .include "asm/registers.inc"
 .include "asm/memory.inc"
 

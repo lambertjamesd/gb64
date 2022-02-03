@@ -33,18 +33,22 @@ OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
 N64LIB          = -lultra_rom
-N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared --defsym DEBUG=0
+# N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared --defsym DEBUG=0
 else
 OPTIMIZER       = $(DEBUG_FLAGS) -g -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -DDEBUG -DF3DEX_GBI_2
 ASFLAGS         = -mabi=32
 N64LIB          = -lultra_rom
-N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared --defsym DEBUG=1
+# N64_ASFLAGS     = --gen-debug -call_nonpic -march=r4300 -mtune=vr4300 -mabi=32 -mno-shared --defsym DEBUG=1
 endif
 
-APP =		bin/gb.out
+TARGET_BASE_NAME =	bin/gb
 
-TARGETS =	bin/gb.n64
+LD_SCRIPT	= gb64.ld
+CP_LD_SCRIPT	= build/gb64.ld
+
+BOOT		=	/usr/lib/n64/PR/bootcode/boot.6102
+BOOT_OBJ	=	build/boot.6102.o
 
 COMPSOURCE = gzip/adler32.c \
        gzip/crc32.c \
@@ -102,27 +106,31 @@ CODEFILES   =	boot.c game.c controller.c dram_stack.c \
        src/sprite.c                          \
        src/spritefont.c                      \
        src/faulthandler.c                    \
+	   src/polyfill.c                        \
        tex/textures.c                        \
        $(DEBUG_FILES)                        \
        $(COMPSOURCE)
 
-S_FILES = asm/cpu.s
+S_FILES = asm/cpu.s asm/entry.s asm/rom_header.s asm/data.s asm/data_placeholder.s
 
-CODEOBJECTS =	$(CODEFILES:.c=.o) $(S_FILES:.s=.o)
+CODEOBJECTS = $(patsubst %.c, build/%.o, $(CODEFILES)) build/asm/cpu.o
+
+ASMOBJECTS = $(patsubst %.s, build/%.o, $(S_FILES))
 
 DATAFILES   =	gfxinit.c
 
-DATAOBJECTS =	$(DATAFILES:.c=.o)
+DATAOBJECTS =	$(patsubst %.c, build/%.o, $(DATAFILES))
 
-CODESEGMENT =	codesegment.o
+CODESEGMENT =	build/codesegment.o
 
-OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.o
+OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) $(ASMOBJECTS) $(BOOT_OBJ) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.o
+
+build/asm/data.o build/asm/data_placeholder.o: data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin
 
 LCDEFS +=	$(HW_FLAGS)
-LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64 -I$(N64_NEWLIBINCDIR)
+LCINCS =	-I. -I/usr/include/n64/PR -I/usr/include/n64 -I/usr/include/n64/nustd
 LCOPTS =	-G 0
-LDFLAGS =	$(MKDEPOPT)  -L/usr/lib/n64 $(N64LIB) -L$(N64_LIBGCCDIR) -L$(N64_NEWLIBDIR) -lgcc -lc 
-LDIRT  =	$(APP) $(TARGETS)
+LDFLAGS =	-L/usr/lib/n64 $(N64LIB)  -L$(N64_LIBGCCDIR) -lgcc
 
 data/cgb_bios_placeholder.bin: data/cgb_bios_placeholder.asm
 	rgbasm data/cgb_bios_placeholder.asm -o data/cgb_bios_placeholder.o
@@ -145,7 +153,16 @@ bin/rsp/ppu.o: bin/rsp/ppu bin/rsp/ppu.dat
 bin/rsp/ppu.tvd: bin/rsp/ppu bin/rsp/ppu.dat
 	rsp2elf bin/rsp/ppu
 
-default:	$(TARGETS)
+default:	$(TARGET_BASE_NAME).z64
+
+build/%.o: %.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -MM $^ -MF "$(@:.o=.d)" -MT"$@"
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+build/%.o: %.s
+	@mkdir -p $(@D)
+	$(AS) -Wa,-Iasm -o $@ $<
 
 asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \
        asm/_cpu_inst_prefix.s asm/_math.s asm/_stopping_point.s \
@@ -161,30 +178,32 @@ asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \
 
 include $(COMMONRULES)
 
+$(BOOT_OBJ): $(BOOT)
+	$(OBJCOPY) -I binary -B mips -O elf32-bigmips $< $@
+
+$(CP_LD_SCRIPT): $(LD_SCRIPT)
+	cpp -P -Wno-trigraphs $(LCDEFS) -DCODE_SEGMENT=$(CODESEGMENT) -o $@ $<
+
 $(CODESEGMENT):	$(CODEOBJECTS)
 		$(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LDFLAGS)
 
-ifeq ($(FINAL), YES)
-$(TARGETS) $(APP):      spec $(OBJECTS)
-	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec 
-	makemask $(TARGETS)
-else
-$(TARGETS) $(APP):      spec $(OBJECTS)
-	$(MAKEROM) -s 9 -r $(TARGETS) -e $(APP) spec 
-	makemask $(TARGETS)
-endif
+$(TARGET_BASE_NAME).z64: $(CODESEGMENT) $(OBJECTS) $(CP_LD_SCRIPT)
+	$(LD) -L. -T $(CP_LD_SCRIPT) -Map $(TARGET_BASE_NAME).map -o $(TARGET_BASE_NAME).elf
+	$(OBJCOPY) --pad-to=0x100000 --gap-fill=0xFF $(TARGET_BASE_NAME).elf $(TARGET_BASE_NAME).z64 -O binary
+	makemask $(TARGET_BASE_NAME).z64
 
 cleanall: clean
 	rm -f $(CODEOBJECTS) $(OBJECTS)
 	rm -rf bin/rsp
+	rm -rfd build/
 
 rsp/%.o: rsp/%.s
 	$(RSPASM) $< -o $@
 
-romwrapper/gb.n64.js: bin/gb.n64
+romwrapper/gb.n64.js: $(TARGET_BASE_NAME).z64
 	echo "const gGB64Base64 = \`" > romwrapper/gb.n64.js
-	base64 bin/gb.n64 >> romwrapper/gb.n64.js
+	base64 $(TARGET_BASE_NAME).z64 >> romwrapper/gb.n64.js
 	echo "\`.trim()" >> romwrapper/gb.n64.js
 
-bin/objdump.txt: bin/gb.n64
+bin/objdump.txt: $(TARGET_BASE_NAME).z64
 	mips64-elf-objdump -S game.out > bin/objdump.txt

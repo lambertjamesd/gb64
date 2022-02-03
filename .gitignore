@@ -16,3 +16,4 @@ data/tests/*
 debugger/*
 !/bin/DUMMY
 tmp/
+build/*
