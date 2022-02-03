@@ -27,7 +27,7 @@ DEBUG_FILES =
 DEBUG_FLAGS =
 endif
 
-FINAL = YES
+# FINAL = YES
 ifeq ($(FINAL), YES)
 OPTIMIZER       = $(DEBUG_FLAGS) -g -O2 -std=gnu99 -Werror $(WARNING_FLAGS)
 LCDEFS          = -D_FINALROM -DNDEBUG -DF3DEX_GBI_2
@@ -162,7 +162,7 @@ build/%.o: %.c
 
 build/%.o: %.s
 	@mkdir -p $(@D)
-	$(AS) -Wa,-Iasm -o $@ $<
+	$(AS) -g -Wa,-Iasm -o $@ $<
 
 asm/cpu.o: asm/memory.inc asm/registers.inc asm/_branch.s \
        asm/_cpu_inst_prefix.s asm/_math.s asm/_stopping_point.s \
