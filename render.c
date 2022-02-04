@@ -62,7 +62,6 @@ void renderFrame(int clear)
     * Tell RCP where each segment is
     */
     gSPSegment(glistp++, 0, 0x0);	/* physical segment */
-    gSPSegment(glistp++, STATIC_SEGMENT, OS_K0_TO_PHYSICAL(staticSegment));
 
     gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD, OS_K0_TO_PHYSICAL(getColorBuffer()));
 

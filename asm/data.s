@@ -13,6 +13,6 @@ glabel _cgb_biosSegmentRomStart
 glabel _cgb_biosSegmentRomEnd
 
 glabel _gbromSegmentRomStart
-.incbin "data/PokemonBlue.gb"
+.incbin "data/PokemonYellow.gb"
 .balign 16
 glabel _gbromSegmentRomEnd

@@ -64,7 +64,7 @@ HFILES =	boot.h game.h controller.h font.h font_ext.h \
 		src/cpu.h              \
 		src/memory_map.h
 
-CODEFILES   =	boot.c game.c controller.c dram_stack.c \
+CODEFILES   =	boot.c game.c controller.c dram_stack.c gfxinit.c \
        src/assert.c                          \
        src/test/cpu_test.c                   \
        src/test/cpu_tests_0.c                \
@@ -117,13 +117,9 @@ CODEOBJECTS = $(patsubst %.c, build/%.o, $(CODEFILES)) build/asm/cpu.o
 
 ASMOBJECTS = $(patsubst %.s, build/%.o, $(S_FILES))
 
-DATAFILES   =	gfxinit.c
-
-DATAOBJECTS =	$(patsubst %.c, build/%.o, $(DATAFILES))
-
 CODESEGMENT =	build/codesegment.o
 
-OBJECTS =	$(CODESEGMENT) $(DATAOBJECTS) $(ASMOBJECTS) $(BOOT_OBJ) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.o
+OBJECTS =	$(CODESEGMENT) $(ASMOBJECTS) $(BOOT_OBJ) data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin bin/rsp/ppu.o
 
 build/asm/data.o build/asm/data_placeholder.o: data/cgb_bios_placeholder.bin data/dmg_boot_placeholder.bin
 

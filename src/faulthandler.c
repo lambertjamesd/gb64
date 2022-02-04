@@ -22,7 +22,7 @@ void installFaultHandler(OSThread *targetThread)
 	 * Create main thread
 	 */
 	osCreateThread(&faultThread, 4, faultHandlerProc, targetThread,
-		   faultThreadStack + FAULT_STACK_SIZE / sizeof(u64), 10);
+		   faultThreadStack + FAULT_STACK_SIZE / sizeof(u64), 11);
 
 	osStartThread(&faultThread);
 }
@@ -41,10 +41,19 @@ void dumpThreadInfo(OSThread *targetThread)
 static void faultHandlerProc(void* arg)
 {
     OSThread *targetThread = (OSThread*)arg;
+    OSMesgQueue timerQueue;
+    OSMesg timerMessages[10];
+    OSTimer timer;
+    
+    osCreateMesgQueue(&timerQueue, timerMessages, 10);
+    osSetTimer(&timer, 0, HANG_DELAY, &timerQueue, NULL);
 
     faultHandlerHeartbeat();
 
     while (1) {
+        OSMesg msg;
+        osRecvMesg(&timerQueue, &msg, OS_MESG_BLOCK);
+
         if (osGetTime() - lastHeartbeatTime >= HANG_DELAY) {
             DEBUG_PRINT_F("Main thread frozen:\n");
             dumpThreadInfo(targetThread);
@@ -57,8 +66,6 @@ static void faultHandlerProc(void* arg)
             DEBUG_PRINT_F("Main thread faulted:\n");
             dumpThreadInfo(curr);
             break;
-        } else {
-            osYieldThread();
         }
     }
 

@@ -17,7 +17,6 @@
  *
  */
 
-#define	STATIC_SEGMENT		1
 #define	DYNAMIC_SEGMENT		3
 
 #define	SCREEN_HT	480

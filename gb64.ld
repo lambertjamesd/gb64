@@ -84,13 +84,6 @@ SECTIONS
    _codeSegmentBssEnd = .;
    
    _heapStart = .;
-   
-   BEGIN_SEG(static, 0x01000000)
-   {
-      build/gfxinit.o(.data);
-      build/gfxinit.o(.bss);
-   }
-   END_SEG(static)
 
    . = 0x80200000;
 

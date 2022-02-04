@@ -10,8 +10,6 @@ void* gHeapEnd;
  * Symbol genererated by "makerom" (RAM)
  */
 extern char     _heapStart[];
-extern char    *_gEndSegments;
-
 
 void initBlock(struct HeapSegment* segment, void* end, int type)
 {

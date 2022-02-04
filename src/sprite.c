@@ -2,7 +2,7 @@
 #include "sprite.h"
 #include "assert.h"
 
-#define DL_CHUNK_SIZE       16
+#define DL_CHUNK_SIZE       64
 #define SPRITE_GL_LENGTH    2098
 
 Gfx* gLayerSetup[MAX_LAYER_COUNT];

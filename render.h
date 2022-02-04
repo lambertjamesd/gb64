@@ -16,7 +16,6 @@ extern OSMesgQueue
  * global variables
  */
 extern int	rdp_flag;
-extern char	*staticSegment;
 
 /*
  * frame buffer symbols
