@@ -407,7 +407,7 @@ void loadRAM(struct Memory* memory, enum StoredInfoType storeType, int compresse
 
             if (mbc7Data->dataCheck != GB_SETTINGS_HEADER)
             {
-                memset(mbc7Data->eeprom, 0, 256);
+                memset_s(mbc7Data->eeprom, sizeof(mbc7Data->eeprom), 0, sizeof(mbc7Data->eeprom));
                 mbc7Data->dataCheck = GB_SETTINGS_HEADER;
             }
         }
