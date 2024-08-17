@@ -60,8 +60,8 @@ const crc_table = [
 function gen_table() {
     let crc = 0;
     let poly = 0;
+    let crc;
 
-	poly = 0xEDB88320;
 	for (let i = 0; i < 256; i++) {
 		crc = i;
 		for (let j = 8; j > 0; j--) {
