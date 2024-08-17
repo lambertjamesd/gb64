@@ -16,13 +16,16 @@ void test_malloc()
 
     void* a = malloc(16);
     void* b = malloc(16);
-    void* c = malloc(16);
-
+  
+    teqassert(a == b);
     free(b);
+    free(a);
+
     c = realloc(c, 32);
 
     free(a);
     free(b);
+    b = NULL;
     free(c);
 
     b = malloc(16);
